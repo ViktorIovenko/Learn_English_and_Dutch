@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Урок {{ lesson_id }}</h2>
+<div class="toolbar">
+  <label>Язык обучения:
+    <select id="lang">
+      <option value="nl">Учить NL→EN/RU</option>
+      <option value="en">Учить EN→NL/RU</option>
+    </select>
+  </label>
+</div>
+<div id="words" class="grid"></div>
+{% endblock %}
+{% block scripts %}
+<script type="module">
+  const lessonId = {{ lesson_id }};
+  const langSel = document.getElementById("lang");
+  const wordsEl = document.getElementById("words");
+  async function loadWords() {
+    const lang = langSel.value;
+    const r = await apiFetch(`/api/lessons/${lessonId}/words?lang=${lang}`);
+    const data = await r.json();
+    const items = data.items || [];
+    wordsEl.innerHTML = "";
+    items.forEach(w => {
+      const card = document.createElement("div");
+      card.className = "card";
+      const srcWord = (data.lang === "nl") ? w.nl_word : w.en_word;
+      const srcAudio = (data.lang === "nl") ? w.nl_audio : w.en_audio;
+      const trgWord = (data.lang === "nl") ? `${w.en_word} / ${w.ru_word}` : `${w.nl_word} / ${w.ru_word}`;
+      const nlSent = w.nl_sentence || "";
+      const enSent = w.en_sentence || "";
+      const ruSent = w.ru_sentence || "";
+      card.innerHTML = `
+        <div class="card-title">${srcWord}</div>
+        <div class="card-sub">${trgWord}</div>
+        <div class="sentences">
+          ${nlSent ? `<div><b>NL:</b> ${nlSent}</div>` : ""}
+          ${enSent ? `<div><b>EN:</b> ${enSent}</div>` : ""}
+          ${ruSent ? `<div><b>RU:</b> ${ruSent}</div>` : ""}
+        </div>
+        <div class="actions">
+          ${srcAudio ? `<audio controls src="${srcAudio}"></audio>` : ""}
+          <label class="chk">
+            <input type="checkbox" ${w.difficult ? "checked" : ""} data-id="${w.id}" class="diff-toggle">
+            В «сложные»
+          </label>
+        </div>
+      `;
+      wordsEl.appendChild(card);
+    });
+    document.querySelectorAll(".diff-toggle").forEach(chk => {
+      chk.addEventListener("change", async (e) => {
+        const id = e.target.dataset.id;
+        const difficult = e.target.checked ? 1 : 0;
+        await apiFetch("/api/difficult/set", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ id, difficult })
+        });
+      });
+    });
+  }
+  langSel.addEventListener("change", loadWords);
+  loadWords();
+</script>
+{% endblock %}

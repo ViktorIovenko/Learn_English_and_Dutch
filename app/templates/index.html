@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="subbar">
+  <div class="sub-title">Список уроков</div>
+  <div class="subtabs">
+    <a href="{{ url_for('web.home') }}" class="active">Уроки</a>
+    <a href="{{ url_for('web.difficult_page') }}">Сложные слова</a>
+  </div>
+</div>
+
+<!-- Приветствие (SSR + обновление из JS) -->
+<div id="helloLine" class="hello-line" style="margin:6px 0 10px 0;color:#64748b;">
+  {% if display_name %}
+    Продуктивного изучения, {{ display_name }}!
+  {% endif %}
+</div>
+
+<div id="lessons" class="grid"></div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  const helloEl = document.getElementById("helloLine");
+  function setHello(name){
+    const n = (name || "").trim();
+    helloEl.textContent = n ? `Продуктивного изучения, ${n}!` : "";
+  }
+  if (window._HELLO_NAME_) setHello(window._HELLO_NAME_);
+  document.addEventListener("hello-name-ready", (e)=> setHello(e.detail||""));
+
+  const WORDS_CACHE = new Map();
+  const root = document.getElementById("lessons");
+
+  function ensureWordList(container){
+    let wrap = container.querySelector(".word-list");
+    if (!wrap) { wrap = document.createElement("div"); wrap.className = "word-list"; container.appendChild(wrap); }
+    return wrap;
+  }
+  function renderSingleLine(wrap, items){
+    if (!items.length){
+      wrap.innerHTML = "<div class='card-sub'>Пока нет слов</div>";
+      return;
+    }
+    wrap.innerHTML = items.map(w => `
+      <div class="word-line">
+        <b>${w.nl_word}</b><span class="word-dash"></span><span>${w.ru_word}</span>
+      </div>
+    `).join("");
+  }
+  function toggleLessonWords(container, lessonTitle){
+    const wrap = ensureWordList(container);
+    if (wrap.classList.contains("visible")) { wrap.classList.remove("visible"); return; }
+    wrap.innerHTML = "<div class='card-sub'>Загрузка...</div>";
+    wrap.classList.add("visible");
+    const cached = WORDS_CACHE.get(lessonTitle);
+    if (cached) { renderSingleLine(wrap, cached); return; }
+    apiFetch(`/api/lesson_words?lesson=${encodeURIComponent(lessonTitle)}`)
+      .then(r => r.json())
+      .then(js => {
+        const items = (js && js.items) ? js.items : [];
+        WORDS_CACHE.set(lessonTitle, items);
+        renderSingleLine(wrap, items);
+      })
+      .catch(() => { wrap.innerHTML = "<div class='card-sub'>Ошибка загрузки</div>"; });
+  }
+
+  /** Пересортировка карточек (видимые сверху) */
+  function resortLessons() {
+    const nodes = Array.from(root.children);
+    nodes.sort((a, b) => {
+      const ah = Number(a.dataset.hidden || 0), bh = Number(b.dataset.hidden || 0);
+      if (ah !== bh) return ah - bh;
+      const ai = Number(a.dataset.index || 0),  bi = Number(b.dataset.index || 0);
+      if (ai !== bi) return ai - bi;
+      return (a.dataset.title || "").localeCompare(b.dataset.title || "", 'ru');
+    });
+    nodes.forEach(n => root.appendChild(n));
+  }
+
+  async function loadLessons() {
+    const r = await apiFetch("/api/lessons");
+    const lessons = await r.json();
+
+    root.innerHTML = "";
+    lessons.forEach(ls => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.dataset.lesson = ls.lesson;
+      card.dataset.index  = Number(ls.lesson_index || 0);
+      card.dataset.title  = (ls.lesson_title || ls.lesson || "");
+      card.dataset.hidden = Number(ls.hidden ? 1 : 0);
+      if (Number(card.dataset.hidden)) card.classList.add("is-hidden");
+
+      const titleRaw = (ls.lesson_title && ls.lesson_title.trim())
+                        ? ls.lesson_title.trim()
+                        : (ls.lesson || "Без названия");
+      const idx = Number(ls.lesson_index || 0);
+      const title = idx > 0 ? `${idx}. ${titleRaw}` : titleRaw;
+      const cnt = Number(ls.words_count || 0);
+
+      card.innerHTML = `
+        <div class="card-head">
+          <div class="card-title lesson-open" data-lesson="${ls.lesson_title}">${title}</div>
+          <label class="chk">
+            <input type="checkbox" ${ls.hidden ? "checked" : ""} data-lesson="${ls.lesson}">
+          </label>
+        </div>
+        <div class="card-sub">
+          <span class="word-toggle" data-lesson="${ls.lesson_title}">Слов: ${cnt}</span>
+        </div>
+      `;
+
+      // ►► [ДОБАВЛЕНО v4] переход на страницу обучения по клику на заголовок/карточку
+      card.querySelector(".lesson-open").addEventListener("click", (e)=>{
+        const ltitle = e.currentTarget.getAttribute("data-lesson") || ls.lesson_title || ls.lesson;
+        const url = `/learn?lesson=${encodeURIComponent(ltitle)}`;
+        window.location.href = url;
+      });
+      // чтобы клик по телу карточки (кроме чекбокса/слова) тоже открывал
+      card.addEventListener("click", (e)=>{
+        const isInteractive = e.target.closest("input, label, .word-toggle");
+        if (isInteractive) return;
+        const url = `/learn?lesson=${encodeURIComponent(ls.lesson_title || ls.lesson)}`;
+        window.location.href = url;
+      });
+
+      card.querySelector(".word-toggle").addEventListener("click", (e) => {
+        const ltitle = e.currentTarget.getAttribute("data-lesson");
+        toggleLessonWords(card, ltitle);
+      });
+
+      card.querySelector("input[type=checkbox]").addEventListener("change", async (e) => {
+        const lesson = e.target.getAttribute("data-lesson");
+        const newHidden = e.target.checked ? 1 : 0;
+        card.dataset.hidden = String(newHidden);
+        card.classList.toggle("is-hidden", !!newHidden);
+        resortLessons();
+        try {
+          const resp = await apiFetch("/api/lessons/set_hidden", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({lesson, hidden: newHidden})
+          });
+          if (!resp.ok) throw new Error("server error");
+        } catch(err) {
+          const prev = newHidden ? 0 : 1;
+          card.dataset.hidden = String(prev);
+          card.classList.toggle("is-hidden", !!prev);
+          e.target.checked = !!prev;
+          resortLessons();
+        }
+      });
+
+      root.appendChild(card);
+    });
+    resortLessons();
+  }
+
+  loadLessons();
+</script>
+{% endblock %}

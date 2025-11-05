@@ -1,0 +1,20 @@
+.learn-page{padding:8px}
+.learn-header{display:flex;gap:16px;align-items:center;margin:8px 0}
+.learn-lesson{font-weight:600}
+.lang-switch{display:flex;gap:8px;margin:8px 0 16px}
+.btn{padding:6px 12px;border:0;border-radius:8px;background:#e7efff}
+.btn:hover{filter:brightness(0.98);cursor:pointer}
+.btn-primary{background:#2563eb;color:#fff}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;box-shadow:0 4px 16px rgba(2,6,23,.06)}
+.builder{margin-top:16px}
+.builder-controls{display:flex;gap:8px;margin-bottom:10px}
+.letters-pool, .answer-slots{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;margin:8px 0}
+.letter{min-width:40px;min-height:40px;border:1px solid #d9e2f2;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f8fbff;font-weight:600}
+.letter.clickable{background:#eef4ff}
+.slot{min-width:40px;min-height:40px;border:2px dashed #c9d4ea;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.modal{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal-content{background:#fff;border-radius:16px;padding:20px;min-width:280px;max-width:640px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.close{float:right;font-size:24px;cursor:pointer}
+.word-title{font-size:18px;font-weight:700;margin:6px 0}
+.word-sentence{opacity:.8;margin:6px 0}
+.badge{font-size:12px;padding:2px 8px;border-radius:999px;background:#eef2ff}

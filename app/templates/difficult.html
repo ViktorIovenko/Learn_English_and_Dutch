@@ -1,0 +1,152 @@
+<!-- [ДОБАВЛЕНО v1] -->
+{% extends "base.html" %}
+{% block content %}
+<h2>Сложные слова</h2>
+
+<section class="card">
+  <h3>Добавить своё слово</h3>
+  <form id="addForm">
+    <div class="row">
+      <label>Ваш user_id (для Telegram): <input type="text" id="user_id" placeholder="например, 5220795439"></label>
+    </div>
+    <div class="row">
+      <label>Исходный язык:
+        <select id="src_lang">
+          <option value="nl">nl</option>
+          <option value="en">en</option>
+          <option value="ru">ru</option>
+        </select>
+      </label>
+      <label>Исходный текст: <input type="text" id="src_text"></label>
+    </div>
+    <div class="row">
+      <label>Целевой язык:
+        <select id="tgt_lang">
+          <option value="ru">ru</option>
+          <option value="en">en</option>
+          <option value="nl">nl</option>
+        </select>
+      </label>
+      <label>Перевод: <input type="text" id="tgt_text"></label>
+    </div>
+    <div class="row">
+      <label>Примечание: <input type="text" id="note" placeholder="опционально"></label>
+    </div>
+    <button type="submit">Добавить в «сложные»</button>
+    <span id="addStatus"></span>
+  </form>
+</section>
+
+<section>
+  <h3>Слова из базы (помеченные как сложные)</h3>
+  <div id="preset" class="grid"></div>
+</section>
+
+<section>
+  <h3>Мои добавленные</h3>
+  <div id="custom" class="grid"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  const presetEl = document.getElementById("preset");
+  const customEl = document.getElementById("custom");
+  const addForm = document.getElementById("addForm");
+  const addStatus = document.getElementById("addStatus");
+
+  async function loadDifficult() {
+    const r = await fetch("/api/difficult");
+    const data = await r.json();
+
+    presetEl.innerHTML = "";
+    data.preset.forEach(w => {
+      const d = document.createElement("div");
+      d.className = "card";
+      d.innerHTML = `
+        <div class="card-title">${w.nl_word} / ${w.en_word} / ${w.ru_word}</div>
+        <div class="sentences">
+          ${w.nl_sentence ? `<div><b>NL:</b> ${w.nl_sentence}</div>` : ""}
+          ${w.en_sentence ? `<div><b>EN:</b> ${w.en_sentence}</div>` : ""}
+          ${w.ru_sentence ? `<div><b>RU:</b> ${w.ru_sentence}</div>` : ""}
+        </div>
+        <div class="actions">
+          <label class="chk">
+            <input type="checkbox" checked data-id="${w.id}" class="preset-toggle">
+            В «сложные»
+          </label>
+        </div>
+      `;
+      presetEl.appendChild(d);
+    });
+
+    customEl.innerHTML = "";
+    data.custom.forEach(cw => {
+      const d = document.createElement("div");
+      d.className = "card";
+      d.innerHTML = `
+        <div class="card-title">${cw.source_lang}: ${cw.source_text} → ${cw.target_lang}: ${cw.target_text}</div>
+        ${cw.note ? `<div class="card-sub">${cw.note}</div>` : ""}
+        <div class="actions">
+          <label class="chk">
+            <input type="checkbox" ${cw.difficult ? "checked" : ""} data-id="${cw.id}" class="custom-toggle">
+            В «сложные»
+          </label>
+        </div>
+      `;
+      customEl.appendChild(d);
+    });
+
+    // переключатели
+    document.querySelectorAll(".preset-toggle").forEach(chk => {
+      chk.addEventListener("change", async (e) => {
+        const id = e.target.dataset.id;
+        const difficult = e.target.checked ? 1 : 0;
+        await fetch("/api/difficult/set", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ id, difficult })
+        });
+      });
+    });
+    document.querySelectorAll(".custom-toggle").forEach(chk => {
+      chk.addEventListener("change", async (e) => {
+        const id = e.target.dataset.id;
+        const difficult = e.target.checked ? 1 : 0;
+        await fetch("/api/custom_words/set_difficult", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ id, difficult })
+        });
+      });
+    });
+  }
+
+  addForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    addStatus.textContent = "Сохраняю...";
+    const payload = {
+      user_id: document.getElementById("user_id").value || "anon",
+      source_lang: document.getElementById("src_lang").value,
+      source_text: document.getElementById("src_text").value,
+      target_lang: document.getElementById("tgt_lang").value,
+      target_text: document.getElementById("tgt_text").value,
+      note: document.getElementById("note").value
+    };
+    const r = await fetch("/api/custom_words/add", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+    if (r.ok) {
+      addStatus.textContent = "Добавлено ✅";
+      addForm.reset();
+      loadDifficult();
+    } else {
+      addStatus.textContent = "Ошибка при добавлении";
+    }
+  });
+
+  loadDifficult();
+</script>
+{% endblock %}

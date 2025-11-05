@@ -1,0 +1,98 @@
+/* [ИЗМЕНЕНО v5.2] Светлая тема + верстка вкладок, title-строки и карточек */
+:root{
+  --bg:#ffffff;
+  --fg:#0f172a;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --card:#ffffff;
+  --acc:#2563eb;
+  --acc-hover:#1d4ed8;
+  --shadow:0 6px 20px rgba(2,6,23,.06);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,Segoe UI,Roboto,Arial}
+/* header */
+.header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.container{max-width:960px;margin:0 auto;padding:16px}
+.header h1{margin:0;font-size:20px}
+/* вкладки слева + имя справа */
+.header .tabsbar{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.header nav{display:flex;gap:16px}
+.header nav a{
+  color:var(--muted);text-decoration:none;padding:6px 0;border-bottom:2px solid transparent
+}
+.header nav a:hover{color:var(--fg);border-color:var(--line)}
+.header nav a.active{color:var(--acc);border-color:var(--acc)}
+.user-mini{color:var(--muted);font-weight:600;white-space:nowrap}
+/* [ДОБАВЛЕНО v5.7] На всякий случай полностью скрываем user-mini,
+   чтобы старый «iovenko» в шапке не появлялся */
+.user-mini{display:none !important}
+/* [ДОБАВЛЕНО v5.2] строка с заголовком слева и локальными вкладками справа */
+.subbar{display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px 0}
+.subtabs{display:flex;gap:16px}
+.subtabs a{color:var(--muted);text-decoration:none;padding:6px 0;border-bottom:2px solid transparent}
+.subtabs a:hover{color:var(--fg);border-color:var(--line)}
+.subtabs a.active{color:var(--acc);border-color:var(--acc)}
+/* [ДОБАВЛЕНО v5.5] компактный левый заголовок в subbar */
+.sub-title{font-size:16px;font-weight:600;color:var(--fg);white-space:nowrap}
+h2{margin:0;font-size:20px}
+h3{margin:10px 0 6px 0;color:var(--fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);transition:opacity .2s ease, transform .2s ease}
+.card-title{font-weight:650;font-size:16px;color:var(--fg)}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.chk{display:inline-flex;align-items:center}
+.chk input{width:18px;height:18px;cursor:pointer}
+.card-sub{color:var(--muted);margin-bottom:8px}
+.sentences div{margin:4px 0}
+.toolbar{display:flex;gap:12px;align-items:center;margin:8px 0 12px}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0}
+button{background:var(--acc);border:none;color:#fff;padding:9px 14px;border-radius:10px;cursor:pointer}
+button:hover{background:var(--acc-hover)}
+audio{width:100%}
+a{color:inherit;text-decoration:none}
+a.card .card-title{color:var(--acc)}
+a.card:hover .card-title{color:var(--acc-hover);text-decoration:underline}
+.word-list{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px;display:none}
+.word-list.visible{display:block}
+.word-line{display:flex;gap:8px;padding:3px 0}
+.word-line b{font-weight:700}
+.word-dash::before{content:"—";margin:0 4px;color:var(--muted)}
+.word-toggle{cursor:pointer;color:var(--acc)}
+.word-toggle:hover{color:var(--acc-hover);text-decoration:underline}
+
+/* [ДОБАВЛЕНО v5.8] Панель аккаунта в шапке */
+.account-panel{
+  margin-top:10px;
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px 12px;
+  box-shadow:var(--shadow);
+  color:#0f172a;
+}
+.account-panel .acc-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 18px;
+  align-items:center;
+}
+.account-panel .acc-item{
+  font-size:13px;
+  color:#334155;
+}
+.account-panel .acc-item b{ color:#0f172a; font-weight:600; }
+.account-panel .acc-badge{
+  margin-left:auto;
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid #94a3b8;
+  color:#334155;
+  background:#fff;
+}
+.account-panel .acc-badge.ok{ border-color:#22c55e; color:#065f46; background:#ecfdf5; }
+
+/* [ДОБАВЛЕНО v5.9] Визуал скрытого урока */
+.card.is-hidden{ opacity:.55 }
