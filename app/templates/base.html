@@ -3,45 +3,25 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>{{ title or "Iovenko" }}</title>
+  <title>{{ title or "Learning words" }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <header class="header">
-    <div class="container">
-      <h1>Iovenko</h1>
-      <!-- [Скрытая старая панель] -->
-      <div class="tabsbar" style="display:none">
-        <div></div>
-        <div id="userMini" class="user-mini"></div>
-      </div>
+    
 
-      <!-- [ДОБАВЛЕНО v5.8] Панель аккаунта -->
-      <section id="accountPanel" class="account-panel" aria-live="polite">
-        <div class="acc-row">
-          <div class="acc-item"><b>ID:</b> <span id="acc_id">—</span></div>
-          <div class="acc-item"><b>username:</b> <span id="acc_username">—</span></div>
-          <div class="acc-item"><b>first_name:</b> <span id="acc_first">—</span></div>
-          <div class="acc-item"><b>last_name:</b> <span id="acc_last">—</span></div>
-          <div class="acc-badge" id="acc_auth">auth: false</div>
-        </div>
-      </section>
-      <!-- /Панель аккаунта -->
+     
     </div>
   </header>
-
   <main class="container">
     {% block content %}{% endblock %}
   </main>
-
   <script>
     const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-
     // [НЕ МЕНЯЛОСЬ] Разворачиваем WebApp и защита от случайного закрытия
     if (tg) { try { tg.expand(); tg.enableClosingConfirmation(); } catch(e){} }
-
     // [НЕ МЕНЯЛОСЬ] Быстрое имя для приветствия
     (function putNameInstant(){
       try{
@@ -55,7 +35,6 @@
         }
       }catch(e){}
     })();
-
     // [НЕ МЕНЯЛОСЬ] USER_ID для API (fallback через ?uid=)
     const params = new URLSearchParams(window.location.search);
     const urlUid = params.get("uid") || "";
@@ -67,8 +46,7 @@
       o.headers = Object.assign({}, o.headers || {}, {"X-User-Id": USER_ID});
       return fetch(url, o);
     };
-
-    // [ДОБАВЛЕНО v5.8] Утилиты для панели аккаунта
+    // [ДОБАВЛЕНО v5.8] Утилиты для панели аккаунта (оставляем — они нужны на index.html)
     function _setText(id, val){ try{ document.getElementById(id).textContent = val || "—"; }catch(e){} }
     function _setAuth(val){
       try{
@@ -88,7 +66,6 @@
         _setText("acc_last", u.last_name || "");
       }catch(e){}
     }
-
     // [НЕ МЕНЯЛОСЬ] Авто-логин WebApp
     (async () => {
       try {
@@ -103,7 +80,6 @@
           if (js && js.ok) sessionStorage.setItem("auth_ok", "1");
         }
       } catch(e) {}
-
       // [ДОБАВЛЕНО v5.8] Сначала быстро показать то, что знаем от Telegram,
       // затем подтвердить с сервера (истинный источник).
       _fillFromTGUnsafe();
@@ -130,7 +106,6 @@
       } catch(e) { _setAuth(false); }
     })();
   </script>
-
   {% block scripts %}{% endblock %}
 </body>
 </html>

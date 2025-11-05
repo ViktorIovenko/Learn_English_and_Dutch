@@ -1,6 +1,6 @@
 # run.py
-# [ИЗМЕНЕНО v5.2] SESSION_COOKIE_SECURE теперь зависит от HTTPS, чтобы имя/фамилия
-# корректно подтягивались в мини-приложении при запуске по http:// (локально).
+# [ИЗМЕНЕНО v6.0] Добавлены авто-миграции: колонка words.difficult и таблица user_custom_words.
+
 import asyncio
 import logging
 import os
@@ -24,6 +24,7 @@ def _conn(db_path: str) -> sqlite3.Connection:
 def init_db(db_path: str) -> None:
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     with _conn(db_path) as c:
+        # базовые таблицы
         c.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id    TEXT PRIMARY KEY,
@@ -52,6 +53,26 @@ def init_db(db_path: str) -> None:
         """)
         c.execute("CREATE INDEX IF NOT EXISTS idx_words_lesson ON words(lesson);")
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS u_words_number ON words(number);")
+
+        # [ДОБАВЛЕНО v6.0] авто-миграция: колонка difficult
+        cols = [r["name"] for r in c.execute("PRAGMA table_info(words)")]
+        if "difficult" not in cols:
+            c.execute("ALTER TABLE words ADD COLUMN difficult INTEGER NOT NULL DEFAULT 0;")
+
+        # [ДОБАВЛЕНО v6.0] таблица пользовательских сложных слов
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS user_custom_words (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id    TEXT NOT NULL,
+                source_lang TEXT NOT NULL,
+                source_text TEXT NOT NULL,
+                target_lang TEXT NOT NULL,
+                target_text TEXT NOT NULL,
+                note TEXT DEFAULT NULL,
+                difficult INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
         c.commit()
 
 def _is_https_base(url: str) -> bool:
@@ -60,8 +81,7 @@ def _is_https_base(url: str) -> bool:
 def create_app() -> Flask:
     app = Flask(__name__, static_folder="app/static", template_folder="app/templates")
     app.config.from_object(Config)
-
-    # [ИЗМЕНЕНО v5.2] Secure only if HTTPS
+    # cookie-политика
     secure_cookies = _is_https_base(os.getenv("PUBLIC_BASE_URL", ""))
     app.config.update(
         SESSION_COOKIE_SAMESITE="None" if secure_cookies else "Lax",

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Урок {{ lesson_id }}</h2>
+<h2>Сложные слова</h2>
 <div class="toolbar">
   <label>Язык обучения:
     <select id="lang">
@@ -13,25 +13,23 @@
 {% endblock %}
 {% block scripts %}
 <script type="module">
-  const lessonId = {{ lesson_id }};
   const langSel = document.getElementById("lang");
   const wordsEl = document.getElementById("words");
 
   async function loadWords() {
+    const r = await apiFetch(`/api/difficult_words_user`);
+    const js = await r.json();
+    const items = (js && js.items) ? js.items : [];
     const lang = langSel.value;
-    const r = await apiFetch(`/api/lessons/${lessonId}/words?lang=${lang}`);
-    const data = await r.json();
-    const items = data.items || [];
-    wordsEl.innerHTML = "";
 
+    wordsEl.innerHTML = "";
     items.forEach(w => {
+      const srcWord  = (lang === "nl") ? w.nl_word : w.en_word;
+      const srcAudio = (lang === "nl") ? w.nl_audio : w.en_audio;
+      const trgWord  = (lang === "nl") ? `${w.en_word} / ${w.ru_word}` : `${w.nl_word} / ${w.ru_word}`;
+
       const card = document.createElement("div");
       card.className = "card";
-
-      const srcWord  = (data.lang === "nl") ? w.nl_word : w.en_word;
-      const srcAudio = (data.lang === "nl") ? w.nl_audio : w.en_audio;
-      const trgWord  = (data.lang === "nl") ? `${w.en_word} / ${w.ru_word}` : `${w.nl_word} / ${w.ru_word}`;
-
       card.innerHTML = `
         <div class="card-title">${srcWord}</div>
         <div class="card-sub">${trgWord}</div>
@@ -43,8 +41,7 @@
         <div class="actions">
           ${srcAudio ? `<audio controls src="${srcAudio}"></audio>` : ""}
           <label class="chk">
-            <input type="checkbox"
-                   ${w.difficult ? "checked" : ""}
+            <input type="checkbox" checked
                    data-id="${w.id}" data-number="${w.number||''}"
                    class="diff-toggle">
             В «сложные»
@@ -64,6 +61,10 @@
           headers: {"Content-Type":"application/json"},
           body: JSON.stringify({ id, number, difficult })
         });
+        // если сняли чекбокс — убираем карточку из списка
+        if (!difficult) {
+          e.target.closest(".card")?.remove();
+        }
       });
     });
   }

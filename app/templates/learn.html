@@ -1,69 +1,66 @@
 {% extends "base.html" %}
 {% block title %}Обучение{% endblock %}
-
 {% block content %}
-<a href="{{ url_for('web.home') }}">← Назад к урокам</a>
-
 <link rel="stylesheet" href="{{ url_for('static', filename='learn.css') }}">
-
-<!-- [ВАЖНО] Корневой контейнер + название урока в data-lesson -->
-<div id="learn-root"
-     data-lesson="{{ lesson_title }}"
-     class="learn-page">
-
-  <div class="learn-header">
-    <div class="learn-lesson">Обучение: {{ lesson_title }}</div>
-    <div id="progress"></div>
+<div id="learn-root" data-lesson="{{ lesson_title }}" class="learn-page">
+  <div class="topbar">
+    <a href="{{ url_for('web.home') }}" class="pill-btn">← Назад к урокам</a>
+    <!-- [ИЗМЕНЕНО v7.5] Показываем имя текущего урока -->
+    <a href="#" class="pill-btn ghost">{{ lesson_title }}</a>
   </div>
-
+  <div id="progress" class="center-progress"></div>
   <div class="lang-switch">
-    <button data-lang=""  class="btn">Все</button>
-    <button data-lang="nl" class="btn">Dutch</button>
-    <button data-lang="en" class="btn">English</button>
-    <button data-lang="ru" class="btn">Русский</button>
+    <button data-lang=""  class="lang-btn">Все</button>
+    <button data-lang="nl" class="lang-btn">Dutch</button>
+    <button data-lang="en" class="lang-btn">English</button>
+    <button data-lang="ru" class="lang-btn">Русский</button>
   </div>
-
   <div id="word-view" class="card"></div>
-
+  <!-- поле ответа сверху, буквы ниже -->
+  <div id="answer-slots" class="answer-field"></div>
+  <div id="letters-pool" class="letter-grid"></div>
   <div class="builder">
     <div class="builder-controls">
-      <button id="undo-btn" class="btn">↩ Вернуть букву</button>
-      <button id="clear-btn" class="btn">Сброс</button>
-      <button id="check-btn" class="btn btn-primary">Проверить</button>
+      <div class="controls-row split">
+        <button id="clear-btn" class="ctrl-btn">Сброс</button>
+        <button id="undo-btn" class="ctrl-btn">↩ Вернуть букву</button>
+      </div>
+      <div class="controls-row center">
+        <button id="check-btn" class="ctrl-btn check-btn">Проверить</button>
+      </div>
     </div>
-
-    <div id="letters-pool" class="letters-pool"></div>
-    <div id="answer-slots" class="answer-slots"></div>
-
-    <div class="nav">
-      <button id="prev-btn" class="btn">← Предыдущее</button>
-      <button id="next-btn" class="btn">Следующее →</button>
+    <div class="nav-row">
+      <button id="prev-btn" class="ctrl-btn">← Предыдущее</button>
+      <button id="next-btn" class="ctrl-btn">Следующее →</button>
     </div>
   </div>
 
-  <!-- модалка результата -->
-  <div id="result-modal" class="modal" style="display:none">
+  <!-- Модалка проверки -->
+  <div id="result-modal" class="modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-line1">
     <div class="modal-content">
-      <span id="modal-close" class="close">&times;</span>
+      <button id="modal-close" class="close" aria-label="Закрыть">×</button>
       <p id="modal-line1"></p>
       <p id="modal-line2"></p>
       <p id="modal-line3"></p>
-      <button id="next-word-btn" class="btn btn-primary">Следующее слово</button>
+      <!-- [ДОБАВЛЕНО v7.5] Чекбокс сложного слова -->
+      <div class="controls-row" style="justify-content:flex-start;margin-top:8px">
+        <label class="chk">
+          <input type="checkbox" id="difficultToggle">
+          В «сложные слова»
+        </label>
+      </div>
+      <div class="controls-row center" style="margin-top:12px">
+        <button id="next-word-btn" class="ctrl-btn">Следующее слово</button>
+      </div>
     </div>
   </div>
 </div>
 {% endblock %}
-
 {% block scripts %}
-<!-- [ДОБАВЛЕНО] Резерв: передаём название урока глобально -->
 <script>
   window.LESSON_TITLE = {{ lesson_title|tojson }};
 </script>
-
-<!-- основной скрипт -->
 <script defer src="{{ url_for('static', filename='learn.js') }}"></script>
-
-<!-- [ДОБАВЛЕНО] Страховка: если learn.js не стартовал за 600 мс — грузим слова тут -->
 <script>
 (function(){
   function pickLessonTitle(){
@@ -72,7 +69,7 @@
     return (root && root.dataset.lesson) || window.LESSON_TITLE || q.get('lesson') || '';
   }
   function bootFallback(){
-    if (window.__LEARN_BOOTED__) return; // основной скрипт уже запущен
+    if (window.__LEARN_BOOTED__) return;
     var lesson = pickLessonTitle();
     var box = document.getElementById('word-view');
     if (!lesson){ if(box) box.textContent='Урок не выбран.'; return; }
@@ -83,16 +80,14 @@
         if(!js || js.ok===false){ if(box) box.textContent='Ошибка загрузки слов.'; return; }
         var items = js.items||[];
         if(!items.length){ if(box) box.textContent='В этом уроке пока нет слов.'; return; }
-        // простая выдача первой карточки, пока основной UI не поднялся
         var w = items[0];
         box.innerHTML =
+          '<div><b>(nl)</b> ' + (w.translation_nl||'') + '</div>' +
           '<div><b>(en)</b> ' + (w.word_en||'') + '</div>' +
-          '<div><b>(ru)</b> ' + (w.translation_ru||'') + '</div>' +
-          '<div><b>(nl)</b> ' + (w.translation_nl||'') + '</div>';
+          '<div><b>(ru)</b> ' + (w.translation_ru||'') + '</div>';
       })
       .catch(()=>{ if(box) box.textContent='Сеть недоступна.'; });
   }
-  // ждём основной learn.js 600 мс
   setTimeout(bootFallback, 600);
 })();
 </script>

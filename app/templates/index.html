@@ -1,14 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
+<section id="accountPanel" class="account-panel" aria-live="polite">
+  <div class="acc-row">
+    <div class="acc-item"><b>ID:</b> <span id="acc_id">—</span></div>
+    <div class="acc-item"><b>username:</b> <span id="acc_username">—</span></div>
+    <div class="acc-item"><b>first_name:</b> <span id="acc_first">—</span></div>
+    <div class="acc-item"><b>last_name:</b> <span id="acc_last">—</span></div>
+    <div class="acc-badge" id="acc_auth">auth: false</div>
+  </div>
+</section>
+
 <div class="subbar">
   <div class="sub-title">Список уроков</div>
   <div class="subtabs">
     <a href="{{ url_for('web.home') }}" class="active">Уроки</a>
-    <a href="{{ url_for('web.difficult_page') }}">Сложные слова</a>
+    <a class="btn" href="{{ url_for('web.difficult_page') }}">Сложные слова</a>
   </div>
 </div>
 
-<!-- Приветствие (SSR + обновление из JS) -->
 <div id="helloLine" class="hello-line" style="margin:6px 0 10px 0;color:#64748b;">
   {% if display_name %}
     Продуктивного изучения, {{ display_name }}!
@@ -17,6 +26,7 @@
 
 <div id="lessons" class="grid"></div>
 {% endblock %}
+
 
 {% block scripts %}
 <script type="module">
@@ -36,6 +46,11 @@
     if (!wrap) { wrap = document.createElement("div"); wrap.className = "word-list"; container.appendChild(wrap); }
     return wrap;
   }
+
+  // ---------- [ИЗМЕНЕНО v5.10] устойчивое чтение полей ----------
+  function pickNL(w){ return w.nl_word ?? w.translation_nl ?? w.nl ?? ""; }
+  function pickRU(w){ return w.ru_word ?? w.translation_ru ?? w.ru ?? ""; }
+
   function renderSingleLine(wrap, items){
     if (!items.length){
       wrap.innerHTML = "<div class='card-sub'>Пока нет слов</div>";
@@ -43,17 +58,20 @@
     }
     wrap.innerHTML = items.map(w => `
       <div class="word-line">
-        <b>${w.nl_word}</b><span class="word-dash"></span><span>${w.ru_word}</span>
+        <b>${pickNL(w)}</b><span class="word-dash"></span><span>${pickRU(w)}</span>
       </div>
     `).join("");
   }
+
   function toggleLessonWords(container, lessonTitle){
     const wrap = ensureWordList(container);
     if (wrap.classList.contains("visible")) { wrap.classList.remove("visible"); return; }
     wrap.innerHTML = "<div class='card-sub'>Загрузка...</div>";
     wrap.classList.add("visible");
+
     const cached = WORDS_CACHE.get(lessonTitle);
     if (cached) { renderSingleLine(wrap, cached); return; }
+
     apiFetch(`/api/lesson_words?lesson=${encodeURIComponent(lessonTitle)}`)
       .then(r => r.json())
       .then(js => {
@@ -80,8 +98,8 @@
   async function loadLessons() {
     const r = await apiFetch("/api/lessons");
     const lessons = await r.json();
-
     root.innerHTML = "";
+
     lessons.forEach(ls => {
       const card = document.createElement("div");
       card.className = "card";
@@ -110,13 +128,12 @@
         </div>
       `;
 
-      // ►► [ДОБАВЛЕНО v4] переход на страницу обучения по клику на заголовок/карточку
       card.querySelector(".lesson-open").addEventListener("click", (e)=>{
         const ltitle = e.currentTarget.getAttribute("data-lesson") || ls.lesson_title || ls.lesson;
         const url = `/learn?lesson=${encodeURIComponent(ltitle)}`;
         window.location.href = url;
       });
-      // чтобы клик по телу карточки (кроме чекбокса/слова) тоже открывал
+
       card.addEventListener("click", (e)=>{
         const isInteractive = e.target.closest("input, label, .word-toggle");
         if (isInteractive) return;
@@ -135,6 +152,7 @@
         card.dataset.hidden = String(newHidden);
         card.classList.toggle("is-hidden", !!newHidden);
         resortLessons();
+
         try {
           const resp = await apiFetch("/api/lessons/set_hidden", {
             method: "POST",
@@ -153,6 +171,7 @@
 
       root.appendChild(card);
     });
+
     resortLessons();
   }
 
