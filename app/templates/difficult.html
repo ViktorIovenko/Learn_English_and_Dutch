@@ -1,198 +1,70 @@
 {% extends "base.html" %}
-
+{% block title %}Сложные слова{% endblock %}
 {% block content %}
-<div class="container">
-  <h1 class="page-title">Сложные слова</h1>
+<link rel="stylesheet" href="{{ url_for('static', filename='learn.css') }}">
 
-  <!-- Тренажёр как в уроке -->
-  <div id="trainView" class="train">
-    <div class="train-card">
-      <div class="train-word" id="tWord">—</div>
-      <div class="train-audio" id="tAudio"></div>
+<div id="learn-root" data-mode="difficult" class="learn-page">
+  <div class="topbar">
+    <a href="{{ url_for('web.home') }}" class="pill-btn">← Назад к урокам</a>
+    <!-- [ДОБАВЛЕНО v8.0] Отображаем заголовок раздела вместо названия урока -->
+    <a href="#" class="pill-btn ghost">Сложные слова</a>
+  </div>
 
-      <div class="train-actions">
-        <button id="showBtn" class="btn">Показать перевод</button>
-        <button id="knowBtn" class="btn btn-ok">Знаю</button>
-        <button id="nextBtn" class="btn btn-lite">Далее ➜</button>
+  <div id="progress" class="center-progress"></div>
+
+  <!-- Оставляем тот же переключатель (как в learn.html), если понадобится фильтр -->
+  <div class="lang-switch">
+    <button data-lang=""  class="lang-btn">Все</button>
+    <button data-lang="nl" class="lang-btn">Dutch</button>
+    <button data-lang="en" class="lang-btn">English</button>
+    <button data-lang="ru" class="lang-btn">Русский</button>
+  </div>
+
+  <div id="word-view" class="card"></div>
+
+  <!-- поле ответа сверху, буквы ниже -->
+  <div id="answer-slots" class="answer-field"></div>
+  <div id="letters-pool" class="letter-grid"></div>
+
+  <div class="builder">
+    <div class="builder-controls">
+      <div class="controls-row split">
+        <button id="clear-btn" class="ctrl-btn">Сброс</button>
+        <button id="undo-btn" class="ctrl-btn">↩ Вернуть букву</button>
       </div>
+      <div class="controls-row center">
+        <button id="check-btn" class="ctrl-btn check-btn">Проверить</button>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button id="prev-btn" class="ctrl-btn">← Предыдущее</button>
+      <button id="next-btn" class="ctrl-btn">Следующее →</button>
+    </div>
+  </div>
 
-      <div class="train-answer hidden" id="tAnswer"></div>
-
-      <label class="chk" id="tDiffWrap" style="margin-top:10px">
-        <input type="checkbox" id="tDiff" checked> В «сложные»
-      </label>
-
-      <div class="train-progress" id="tProg">0 / 0</div>
+  <!-- Модалка проверки (идентична learn.html) -->
+  <div id="result-modal" class="modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-line1">
+    <div class="modal-content">
+      <button id="modal-close" class="close" aria-label="Закрыть">×</button>
+      <p id="modal-line1"></p>
+      <p id="modal-line2"></p>
+      <p id="modal-line3"></p>
+      <!-- [НЕ МЕНЯЛОСЬ] Чекбокс персонального статуса -->
+      <div class="controls-row" style="justify-content:flex-start;margin-top:8px">
+        <label class="chk">
+          <input type="checkbox" id="difficultToggle" checked>
+          В «сложные слова»
+        </label>
+      </div>
+      <div class="controls-row center" style="margin-top:12px">
+        <button id="next-word-btn" class="ctrl-btn">Следующее слово</button>
+      </div>
     </div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script type="module">
-  // ===== Вспомогательное =====
-  function isCustom(id) { return String(id).startsWith('c_'); }
-  function customIdNum(id) { return Number(String(id).replace(/^c_/, '')); }
-  async function apiFetch(url, options={}) { return fetch(url, options); }
-
-  // ===== Состояние =====
-  let ITEMS = [];  // персональный список сложных
-  let TRAIN = [];  // порядок показа
-  let idx = 0;     // текущий индекс
-
-  // ===== Ссылки на DOM =====
-  const tWord   = document.getElementById('tWord');
-  const tAudio  = document.getElementById('tAudio');
-  const tAnswer = document.getElementById('tAnswer');
-  const tProg   = document.getElementById('tProg');
-  const tDiff   = document.getElementById('tDiff');
-  const tDiffWrap = document.getElementById('tDiffWrap');
-  const showBtn = document.getElementById('showBtn');
-  const knowBtn = document.getElementById('knowBtn');
-  const nextBtn = document.getElementById('nextBtn');
-
-  // ===== Загрузка слов пользователя =====
-  async function loadItems() {
-    const r = await apiFetch('/api/difficult_words_user');
-    const js = await r.json();
-    ITEMS = (js && js.items) ? js.items : [];
-    buildTrain();
-  }
-
-  function buildTrain() {
-    TRAIN = ITEMS.slice();   // без перемешивания, как в уроке (если нужно — можно добавить shuffle)
-    idx = 0;
-    renderCard();
-  }
-
-  // Берём NL как исходный язык (как в уроках по умолчанию):
-  function normalizeForLesson(w) {
-    const srcWord  = w.nl_word || w.en_word || w.ru_word || '';
-    const trgWord  = [
-      w.en_word ? `EN: ${w.en_word}` : '',
-      w.ru_word ? `RU: ${w.ru_word}` : ''
-    ].filter(Boolean).join(' · ');
-
-    // предложения (если есть)
-    const exNL = w.sentence_nl || '';
-    const exEN = w.sentence_en || '';
-    const exRU = w.sentence_ru || '';
-
-    // аудио: NL в приоритете (как в уроках для NL-тренировки)
-    const srcAudio = w.nl_audio || w.en_audio || '';
-
-    return { srcWord, trgWord, exNL, exEN, exRU, srcAudio };
-  }
-
-  function renderCard() {
-    if (!TRAIN.length) {
-      tWord.textContent = 'Нет слов для тренировки';
-      tAudio.innerHTML = '';
-      tAnswer.classList.add('hidden');
-      tAnswer.innerHTML = '';
-      tDiffWrap.style.display = 'none';
-      tProg.textContent = `0 / 0`;
-      return;
-    }
-
-    if (idx >= TRAIN.length) idx = 0;
-    const w = TRAIN[idx];
-    const { srcWord, trgWord, exNL, exEN, exRU, srcAudio } = normalizeForLesson(w);
-
-    tWord.textContent = srcWord || '—';
-    tAudio.innerHTML = srcAudio ? `<audio controls src="${srcAudio}" autoplay></audio>` : '';
-    tAnswer.classList.add('hidden');
-    tAnswer.innerHTML = `
-      <div class="answer-title">${trgWord || '&nbsp;'}</div>
-      <div class="answer-ex">
-        ${exNL ? `<div><b>NL:</b> ${exNL}</div>` : ``}
-        ${exEN ? `<div><b>EN:</b> ${exEN}</div>` : ``}
-        ${exRU ? `<div><b>RU:</b> ${exRU}</div>` : ``}
-      </div>
-    `;
-
-    // чекбокс персонального статуса
-    tDiff.checked = true;
-    tDiffWrap.style.display = 'block';
-    tDiffWrap.dataset.id = String(w.id);
-
-    tProg.textContent = `${idx + 1} / ${TRAIN.length}`;
-  }
-
-  // ===== События =====
-  document.getElementById('showBtn').addEventListener('click', () => {
-    tAnswer.classList.remove('hidden');
-  });
-
-  document.getElementById('knowBtn').addEventListener('click', () => {
-    idx = (idx + 1) % Math.max(TRAIN.length, 1);
-    renderCard();
-  });
-
-  document.getElementById('nextBtn').addEventListener('click', () => {
-    idx = (idx + 1) % Math.max(TRAIN.length, 1);
-    renderCard();
-  });
-
-  tDiff.addEventListener('change', async (e) => {
-    const id = tDiffWrap.dataset.id;
-    const difficult = e.target.checked ? 1 : 0;
-
-    try {
-      if (isCustom(id)) {
-        await apiFetch('/api/custom_words/set_difficult', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ id: customIdNum(id), difficult })
-        });
-      } else {
-        await apiFetch('/api/difficult/user_set', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ word_id: Number(id), difficult })
-        });
-      }
-      if (!difficult) {
-        // убрать карточку из тренировки
-        ITEMS = ITEMS.filter(x => String(x.id) !== String(id));
-        TRAIN = TRAIN.filter(x => String(x.id) !== String(id));
-        if (idx >= TRAIN.length) idx = 0;
-        renderCard();
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Не удалось обновить статус.');
-      e.target.checked = !e.target.checked;
-    }
-  });
-
-  // ===== Старт =====
-  await loadItems();
-</script>
-
-<style>
-.container { max-width: 980px; margin: 0 auto; padding: 12px; }
-.page-title { margin: 8px 0 12px; }
-
-.btn { padding:8px 12px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; cursor:pointer; }
-.btn:hover { background:#f8fafc; }
-.btn-ok { border-color:#22c55e; }
-.btn-lite { border-color:#94a3b8; }
-.chk { display:flex; align-items:center; gap:6px; }
-
-.hidden { display:none; }
-
-.train { display:block; }
-.train-card { border:1px solid #e2e8f0; border-radius:12px; padding:16px; background:#fff; box-shadow: var(--shadow, 0 6px 20px rgba(2,6,23,.06)); }
-.train-word { font-size:28px; font-weight:800; margin-bottom:8px; }
-.train-audio { margin-bottom:8px; }
-.train-actions { display:flex; gap:8px; margin-bottom:10px; flex-wrap: wrap; }
-.train-answer .answer-title { font-size:18px; font-weight:700; margin-bottom:6px; }
-.train-answer .answer-ex { font-size:14px; color:#475569; display:grid; gap:4px; }
-.train-progress { margin-top:10px; font-size:12px; color:#64748b; }
-
-@media (max-width: 720px){
-  .train-word { font-size:22px; }
-}
-</style>
+<!-- [ДОБАВЛЕНО v8.0] Отдельный скрипт для «Сложных слов» -->
+<script defer src="{{ url_for('static', filename='difficult.js') }}"></script>
 {% endblock %}

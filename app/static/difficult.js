@@ -1,14 +1,13 @@
-/* app/static/learn.js
- * [v8.5] Гашим fallback из learn.html:
- *   - моментально ставим window.__LEARN_BOOTED__ = true;
- *   - стартовый язык "nl" до первого рендера;
- *   - DOMContentLoaded, чтобы исключить гонки.
+/* app/static/difficult.js
+ * [v8.4] Интерфейс как в learn:
+ *  - загрузка только персональных слов: /api/difficult_words_user
+ *  - язык по умолчанию "nl" (Dutch)
+ *  - режим "Все" показывает nl/en/ru + аудио и скрывает поле ввода/буквы/проверку
+ *  - поддержка пользовательских слов (id вида "c_<num>")
+ *  - при снятии "В сложные" слово удаляется из тренировки
  */
 
 (function () {
-  // [ДОБАВЛЕНО v8.5] сразу гасим fallback, чтобы он не перерисовал карточку через 600 мс
-  window.__LEARN_BOOTED__ = true;
-
   // ---------------- Утилиты ----------------
   const $  = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -20,15 +19,19 @@
       .replace(/>/g, "&gt;");
   }
   async function apiGet(url) {
-    const r = await window.apiFetch(url);
+    const r = await (window.apiFetch ? window.apiFetch(url) : fetch(url));
     return r.json();
   }
   async function apiPost(url, body) {
-    const r = await window.apiFetch(url, {
+    const r = await (window.apiFetch ? window.apiFetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body || {})
-    });
+    }) : fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {})
+    }));
     return r.json();
   }
   function shuffle(arr) {
@@ -39,21 +42,41 @@
     }
     return a;
   }
+  function isCustomId(id) { return String(id).startsWith("c_"); }
+  function customNum(id)  { return Number(String(id).replace(/^c_/, "")); }
 
-  // ---------------- DOM refs (инициализируются позже) ----------------
-  let root, wordBox, progress, answerSlots, lettersPool;
-  let builder, builderControls, navRow;
-  let btnClear, btnUndo, btnCheck, btnPrev, btnNext;
-  let modal, modalClose, line1, line2, line3, btnNextWord, diffToggle;
-  let langButtons;
+  // ---------------- DOM ----------------
+  const wordBox      = $("#word-view");
+  const progress     = $("#progress");
+  const answerSlots  = $("#answer-slots");
+  const lettersPool  = $("#letters-pool");
+
+  const builder      = $(".builder");
+  const builderControls = builder ? builder.querySelector(".builder-controls") : null;
+  const navRow       = builder ? builder.querySelector(".nav-row") : null;
+
+  const btnClear     = $("#clear-btn");
+  const btnUndo      = $("#undo-btn");
+  const btnCheck     = $("#check-btn");
+  const btnPrev      = $("#prev-btn");
+  const btnNext      = $("#next-btn");
+
+  const modal        = $("#result-modal");
+  const modalClose   = $("#modal-close");
+  const line1        = $("#modal-line1");
+  const line2        = $("#modal-line2");
+  const line3        = $("#modal-line3");
+  const btnNextWord  = $("#next-word-btn");
+  const diffToggle   = $("#difficultToggle");
+
+  const langButtons  = $$(".lang-switch .lang-btn");
 
   // ---------------- Состояние ----------------
-  let LESSON  = "";
-  let ITEMS   = [];
+  let ITEMS   = [];   // персональные «сложные» для пользователя
   let index   = 0;
   let current = null;
 
-  // стартовый язык — "nl"
+  // [ИЗМЕНЕНО v8.4] Стартовый язык — "nl"
   let currentLang = "nl";
 
   let correct = "";
@@ -67,40 +90,45 @@
     if (navRow)           navRow.style.display           = "";
   }
 
-  function setLanguage(langRaw) {
-    const norm = (langRaw === "" || langRaw == null) ? "all" : (langRaw || "nl");
-    currentLang = norm;
-    if (langButtons) {
-      langButtons.forEach(b => {
-        const dl = b.dataset.lang || "";
-        const btnNorm = (dl === "" ? "all" : dl);
-        b.classList.toggle("active", btnNorm === currentLang);
-      });
-    }
-    if (ITEMS.length) renderCurrent();
-  }
-
-  async function loadLesson() {
-    if (!LESSON) { wordBox.textContent = "Урок не выбран."; return; }
+  // ---------------- Загрузка ----------------
+  async function loadDifficult() {
     wordBox.textContent = "Загрузка...";
     try {
-      const js = await apiGet("/api/lesson_words?lesson=" + encodeURIComponent(LESSON));
-      if (!js || js.ok === false) { wordBox.textContent = "Ошибка загрузки слов."; return; }
-      const items = js.items || [];
-      if (!items.length) { wordBox.textContent = "В этом уроке пока нет слов."; return; }
-
+      const js = await apiGet("/api/difficult_words_user");
+      const items = (js && js.items) ? js.items : [];
+      if (!items.length) {
+        wordBox.textContent = "У вас пока нет отмеченных сложных слов.";
+        progress.textContent = "0 / 0";
+        setPracticeVisible(false);
+        return;
+      }
       ITEMS = items;
       index = 0;
 
-      // язык уже "nl" и отмечен кнопкой — просто синхронизируем и рендерим
+      // синхронизируем выбранный язык и рендерим
       setLanguage(currentLang);
       renderCurrent();
     } catch (e) {
       console.error(e);
-      wordBox.textContent = "Сеть недоступна.";
+      wordBox.textContent = "Не удалось загрузить список. Проверьте сеть.";
+      setPracticeVisible(false);
     }
   }
 
+  // ---------------- Язык ----------------
+  function setLanguage(langRaw) {
+    // "" → "all", иначе конкретный язык; по умолчанию "nl"
+    const norm = (langRaw === "" || langRaw == null) ? "all" : (langRaw || "nl");
+    currentLang = norm;
+    langButtons.forEach(b => {
+      const dl = b.dataset.lang || "";
+      const btnNorm = (dl === "" ? "all" : dl);
+      b.classList.toggle("active", btnNorm === currentLang);
+    });
+    if (ITEMS.length) renderCurrent();
+  }
+
+  // ---------------- Подготовка вью ----------------
   function pickByLang(item) {
     const nlW = item.translation_nl || item.nl_word || "";
     const enW = item.word_en        || item.en_word || "";
@@ -110,9 +138,9 @@
     const enS = item.sentence_en || "";
     const ruS = item.sentence_ru || "";
 
-    const nlA = item.audio_nl || "";
-    const enA = item.audio_en || "";
-    const ruA = item.audio_ru || "";
+    const nlA = item.nl_audio || item.audio_nl || "";
+    const enA = item.en_audio || item.audio_en || "";
+    const ruA = item.ru_audio || item.audio_ru || "";
 
     if (currentLang === "all") {
       return {
@@ -153,6 +181,7 @@
     return { mode: "one", correct: nextCorrect, showA, showB, sent, audioSrc };
   }
 
+  // ---------------- Рендер ----------------
   function renderCurrent() {
     current = ITEMS[index];
     renderWordCard();
@@ -171,8 +200,8 @@
     }
 
     setPracticeVisible(true);
-    correct = view.correct;
 
+    correct = view.correct;
     const [aHead, aBody] = (view.showA || "").split("\n");
     const [bHead, bBody] = (view.showB || "").split("\n");
 
@@ -183,7 +212,6 @@
       <div style="margin-bottom:8px">${bBody || ""}</div>
       ${view.audioSrc ? `<audio controls src="${view.audioSrc}" style="margin:6px 0"></audio>` : ``}
     `;
-
     current._sent_for_modal = (view.sent || "").trim();
 
     pool = shuffle(correct.split(""));
@@ -217,6 +245,7 @@
     });
   }
 
+  // ---------------- Проверка и статус ----------------
   function checkAnswer() {
     if (currentLang === "all") return;
     const user = answer.join("");
@@ -224,12 +253,59 @@
     line1.textContent = ok ? "Правильно!" : "Неправильно!";
     line2.innerHTML = `Правильно: <b>${escapeHtml(correct)}</b>`;
     line3.textContent = current._sent_for_modal || "";
-    diffToggle.checked = Number(current.difficult || 0) === 1;
-    diffToggle.dataset.wordId = String(current.id);
+
+    diffToggle.checked = Number(current.difficult || 1) === 1;
+    diffToggle.dataset.id = String(current.id);
+
     modal.style.display = "block";
   }
   function closeModal(){ modal.style.display = "none"; }
 
+  async function setPersonalDifficult(enabled){
+    const id = diffToggle.dataset.id || "";
+    try {
+      if (isCustomId(id)) {
+        const js = await apiPost("/api/custom_words/set_difficult", {
+          id: customNum(id),
+          difficult: enabled ? 1 : 0
+        });
+        if (!js || js.ok !== true) throw new Error("bad response");
+      } else {
+        const wid = Number(id);
+        if (!wid || isNaN(wid)) throw new Error("bad id");
+        const js = await apiPost("/api/difficult/user_set", {
+          word_id: wid,
+          difficult: enabled ? 1 : 0
+        });
+        if (!js || js.ok !== true) throw new Error("bad response");
+      }
+      current.difficult = enabled ? 1 : 0;
+
+      // Если сняли флаг — убираем слово из списка и рендерим следующее
+      if (!enabled) {
+        const idStr = String(id);
+        ITEMS = ITEMS.filter(x => String(x.id) !== idStr);
+        if (!ITEMS.length) {
+          closeModal();
+          wordBox.textContent = "Все слова изучены. Список пуст.";
+          progress.textContent = "0 / 0";
+          answerSlots.innerHTML = "";
+          lettersPool.innerHTML = "";
+          setPracticeVisible(false);
+          return;
+        }
+        index = index % ITEMS.length;
+        closeModal();
+        renderCurrent();
+      }
+    } catch (e) {
+      console.error(e);
+      diffToggle.checked = !enabled;
+      alert("Не удалось сохранить статус «сложное слово». Повторите позже.");
+    }
+  }
+
+  // ---------------- Навигация/действия ----------------
   function clearAnswer(){ answer = []; renderWordCard(); }
   function undo(){
     if (!answer.length) return;
@@ -241,73 +317,26 @@
   function prevWord(){ index = (index - 1 + ITEMS.length) % ITEMS.length; renderCurrent(); }
   function nextWord(){ index = (index + 1) % ITEMS.length; renderCurrent(); }
 
-  async function setDifficultForCurrent(enabled) {
-    const idRaw = diffToggle.dataset.wordId || "";
-    const wid = Number(idRaw);
-    if (!wid || isNaN(wid)) return;
-    try {
-      const js = await apiPost("/api/difficult/user_set", {
-        word_id: wid, difficult: enabled ? 1 : 0
-      });
-      if (!js || js.ok !== true) throw new Error("bad response");
-      current.difficult = enabled ? 1 : 0;
-    } catch (e) {
-      console.error(e);
-      diffToggle.checked = !enabled;
-      alert("Не удалось сохранить статус «сложное слово». Проверьте соединение.");
-    }
-  }
+  // ---------------- Слушатели ----------------
+  btnClear.addEventListener("click", clearAnswer);
+  btnUndo.addEventListener("click", undo);
+  btnPrev.addEventListener("click", prevWord);
+  btnNext.addEventListener("click", nextWord);
+  btnCheck.addEventListener("click", checkAnswer);
 
-  document.addEventListener("DOMContentLoaded", () => {
-    // Берём DOM
-    root         = $("#learn-root");
-    wordBox      = $("#word-view");
-    progress     = $("#progress");
-    answerSlots  = $("#answer-slots");
-    lettersPool  = $("#letters-pool");
+  modalClose.addEventListener("click", closeModal);
+  btnNextWord.addEventListener("click", () => { closeModal(); nextWord(); });
+  diffToggle.addEventListener("change", (e) => setPersonalDifficult(!!e.target.checked));
 
-    builder      = $(".builder");
-    builderControls = builder ? builder.querySelector(".builder-controls") : null;
-    navRow       = builder ? builder.querySelector(".nav-row") : null;
-
-    btnClear     = $("#clear-btn");
-    btnUndo      = $("#undo-btn");
-    btnCheck     = $("#check-btn");
-    btnPrev      = $("#prev-btn");
-    btnNext      = $("#next-btn");
-
-    modal        = $("#result-modal");
-    modalClose   = $("#modal-close");
-    line1        = $("#modal-line1");
-    line2        = $("#modal-line2");
-    line3        = $("#modal-line3");
-    btnNextWord  = $("#next-word-btn");
-    diffToggle   = $("#difficultToggle");
-
-    langButtons  = $$(".lang-switch .lang-btn");
-
-    LESSON  = (root && root.dataset.lesson) || window.LESSON_TITLE || "";
-
-    // Слушатели
-    btnClear?.addEventListener("click", clearAnswer);
-    btnUndo?.addEventListener("click", undo);
-    btnPrev?.addEventListener("click", prevWord);
-    btnNext?.addEventListener("click", nextWord);
-    btnCheck?.addEventListener("click", checkAnswer);
-    modalClose?.addEventListener("click", closeModal);
-    btnNextWord?.addEventListener("click", () => { closeModal(); nextWord(); });
-    diffToggle?.addEventListener("change", (e) => setDifficultForCurrent(!!e.target.checked));
-
-    langButtons.forEach(btn => {
-      btn.addEventListener("click", () => setLanguage(btn.dataset.lang || ""));
-    });
-
-    // Активируем Dutch визуально
-    const btnNl = document.querySelector('.lang-switch .lang-btn[data-lang="nl"]');
-    if (btnNl) btnNl.classList.add("active");
-    currentLang = "nl";
-
-    // Загружаем данные
-    loadLesson();
+  langButtons.forEach(btn => {
+    btn.addEventListener("click", () => setLanguage(btn.dataset.lang || ""));
   });
+
+  // [ДОБАВЛЕНО v8.4] Визуально активируем Dutch на старте
+  const btnNl = document.querySelector('.lang-switch .lang-btn[data-lang="nl"]');
+  if (btnNl) btnNl.classList.add("active");
+  currentLang = "nl";
+
+  // Старт
+  loadDifficult();
 })();

@@ -5,20 +5,25 @@
 <div id="learn-root" data-lesson="{{ lesson_title }}" class="learn-page">
   <div class="topbar">
     <a href="{{ url_for('web.home') }}" class="pill-btn">← Назад к урокам</a>
-    <!-- [ИЗМЕНЕНО v7.5] Показываем имя текущего урока -->
+    <!-- [ИЗМЕНЕНО v8.5] Показываем имя текущего урока -->
     <a href="#" class="pill-btn ghost">{{ lesson_title }}</a>
   </div>
+
   <div id="progress" class="center-progress"></div>
+
   <div class="lang-switch">
     <button data-lang=""  class="lang-btn">Все</button>
     <button data-lang="nl" class="lang-btn">Dutch</button>
     <button data-lang="en" class="lang-btn">English</button>
     <button data-lang="ru" class="lang-btn">Русский</button>
   </div>
+
   <div id="word-view" class="card"></div>
+
   <!-- поле ответа сверху, буквы ниже -->
   <div id="answer-slots" class="answer-field"></div>
   <div id="letters-pool" class="letter-grid"></div>
+
   <div class="builder">
     <div class="builder-controls">
       <div class="controls-row split">
@@ -42,7 +47,7 @@
       <p id="modal-line1"></p>
       <p id="modal-line2"></p>
       <p id="modal-line3"></p>
-      <!-- [ДОБАВЛЕНО v7.5] Чекбокс сложного слова -->
+      <!-- Чекбокс сложного слова -->
       <div class="controls-row" style="justify-content:flex-start;margin-top:8px">
         <label class="chk">
           <input type="checkbox" id="difficultToggle">
@@ -56,11 +61,16 @@
   </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
   window.LESSON_TITLE = {{ lesson_title|tojson }};
 </script>
+
+<!-- [НЕ МЕНЯЛОСЬ] основной скрипт -->
 <script defer src="{{ url_for('static', filename='learn.js') }}"></script>
+
+<!-- [ИЗМЕНЕНО v8.5] fallback: уважает флаг __LEARN_BOOTED__ -->
 <script>
 (function(){
   function pickLessonTitle(){
@@ -69,14 +79,19 @@
     return (root && root.dataset.lesson) || window.LESSON_TITLE || q.get('lesson') || '';
   }
   function bootFallback(){
+    // если основная логика уже стартовала — ничего не делаем
     if (window.__LEARN_BOOTED__) return;
+
     var lesson = pickLessonTitle();
     var box = document.getElementById('word-view');
     if (!lesson){ if(box) box.textContent='Урок не выбран.'; return; }
     if (box) box.textContent = 'Загрузка...';
+
     fetch('/api/lesson_words?lesson=' + encodeURIComponent(lesson))
       .then(r=>r.json())
       .then(js=>{
+        // перед выводом — ещё раз проверим флаг
+        if (window.__LEARN_BOOTED__) return;
         if(!js || js.ok===false){ if(box) box.textContent='Ошибка загрузки слов.'; return; }
         var items = js.items||[];
         if(!items.length){ if(box) box.textContent='В этом уроке пока нет слов.'; return; }
@@ -86,8 +101,9 @@
           '<div><b>(en)</b> ' + (w.word_en||'') + '</div>' +
           '<div><b>(ru)</b> ' + (w.translation_ru||'') + '</div>';
       })
-      .catch(()=>{ if(box) box.textContent='Сеть недоступна.'; });
+      .catch(()=>{ if(!window.__LEARN_BOOTED__ && box) box.textContent='Сеть недоступна.'; });
   }
+  // запуск fallback через паузу
   setTimeout(bootFallback, 600);
 })();
 </script>

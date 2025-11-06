@@ -45,7 +45,7 @@ def _current_user_id() -> str | None:
     uid = session.get("tg_user_id") or request.headers.get("X-User-Id") or None
     return str(uid) if uid else None
 
-# --- [ИЗМЕНЕНО v6.3] миграция схемы: персональные флаги + кастомные слова ---
+# --- [ИЗМЕНЕНО v6.4] миграция схемы: персональные флаги; УБРАНЫ кастомные слова ---
 def _ensure_schema() -> None:
     with _conn() as c:
         # (1) на всякий случай колонка difficult в words (оставляем как legacy)
@@ -61,20 +61,7 @@ def _ensure_schema() -> None:
                 PRIMARY KEY (user_id, word_id)
             );
         """)
-        # (3) пользовательские произвольные слова
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS user_custom_words (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id     TEXT NOT NULL,
-                source_lang TEXT NOT NULL,
-                source_text TEXT NOT NULL,
-                target_lang TEXT NOT NULL,
-                target_text TEXT NOT NULL,
-                note        TEXT DEFAULT NULL,
-                difficult   INTEGER NOT NULL DEFAULT 1,
-                created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
+        # [УДАЛЕНО v6.4] создание user_custom_words (больше не нужно)
         c.commit()
 
 # --- имя для приветствия ---
@@ -198,7 +185,7 @@ def api_lessons_set_hidden():
 
 @web.get("/api/lesson_words")
 def api_lesson_words_by_title():
-    _ensure_schema()  # [ИЗМЕНЕНО v6.3]
+    _ensure_schema()  # [не менялось]
     lesson = (request.args.get("lesson") or "").strip()
     uid = _current_user_id() or ""
     if not lesson:
@@ -209,7 +196,7 @@ def api_lesson_words_by_title():
                    w.nl AS nl_word, w.en AS en_word, w.ru AS ru_word,
                    w.ex_nl AS nl_sentence, w.ex_en AS en_sentence, w.ex_ru AS ru_sentence,
                    w.audio_nl AS nl_audio, w.audio_en AS en_audio, w.audio_ru AS ru_audio,
-                   COALESCE(uf.difficult, 0) AS difficult   -- [ИЗМЕНЕНО v6.3]
+                   COALESCE(uf.difficult, 0) AS difficult
             FROM words w
             LEFT JOIN user_word_flags uf
               ON uf.word_id = w.id AND uf.user_id = ?
@@ -219,7 +206,7 @@ def api_lesson_words_by_title():
     items = []
     for r in rows:
         d = dict(r)
-        d.setdefault("word_en",        d.get("en_word", ""))         
+        d.setdefault("word_en",        d.get("en_word", ""))
         d.setdefault("translation_ru", d.get("ru_word", ""))
         d.setdefault("translation_nl", d.get("nl_word", ""))
         d.setdefault("audio_en", d.get("en_audio", ""))
@@ -233,7 +220,7 @@ def api_lesson_words_by_title():
 
 @web.get("/api/lessons/<int:lesson_id>/words")
 def api_lesson_words(lesson_id: int):
-    _ensure_schema()  # [ИЗМЕНЕНО v6.3]
+    _ensure_schema()
     lang = (request.args.get("lang") or "nl").lower()
     uid = _current_user_id() or ""
     with _conn() as c:
@@ -242,7 +229,7 @@ def api_lesson_words(lesson_id: int):
                    w.nl AS nl_word, w.en AS en_word, w.ru AS ru_word,
                    w.ex_nl AS nl_sentence, w.ex_en AS en_sentence, w.ex_ru AS ru_sentence,
                    w.audio_nl AS nl_audio, w.audio_en AS en_audio, w.audio_ru AS ru_audio,
-                   COALESCE(uf.difficult, 0) AS difficult   -- [ИЗМЕНЕНО v6.3]
+                   COALESCE(uf.difficult, 0) AS difficult
             FROM words w
             LEFT JOIN user_word_flags uf
               ON uf.word_id = w.id AND uf.user_id = ?
@@ -264,13 +251,13 @@ def api_lesson_words(lesson_id: int):
         items.append(d)
     return jsonify({"lang": lang, "items": items})
 
-# --- [ДОБАВЛЕНО v6.3] Список сложных слов ДЛЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ---
+# --- [ИЗМЕНЕНО v6.4] Список сложных слов ДЛЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ (без custom)
 @web.get("/api/difficult_words_user")
 def api_difficult_words_user():
     """
     Персональный список:
       - слова из words, у которых user_word_flags.difficult=1 для текущего пользователя
-      - пользовательские слова (user_custom_words) с difficult=1 для пользователя
+      (кастомные слова удалены)
     """
     _ensure_schema()
     uid = _current_user_id() or ""
@@ -289,15 +276,6 @@ def api_difficult_words_user():
               ON uf.word_id = w.id AND uf.user_id = ? AND COALESCE(uf.difficult,0)=1
             ORDER BY w.lesson, w.number
         """, (uid,)).fetchall()
-
-        custom = c.execute("""
-            SELECT id, user_id, source_lang, source_text, target_lang, target_text, note, difficult,
-                   'custom' AS kind
-            FROM user_custom_words
-            WHERE user_id=? AND COALESCE(difficult,0)=1
-            ORDER BY created_at DESC, id DESC
-        """, (uid,)).fetchall()
-
     items: List[Dict[str, Any]] = []
     for r in preset:
         d = dict(r)
@@ -308,27 +286,6 @@ def api_difficult_words_user():
         d.setdefault("sentence_ru", d.get("ru_sentence", ""))
         d.setdefault("sentence_nl", d.get("nl_sentence", ""))
         items.append(d)
-
-    for r in custom:
-        rr = dict(r)
-        mapped = {
-            "id": f"c_{rr['id']}",
-            "nl_word": "", "en_word": "", "ru_word": "",
-            "nl_sentence": "", "en_sentence": "", "ru_sentence": "",
-            "nl_audio": "", "en_audio": "", "ru_audio": "",
-            "difficult": 1,
-            "kind": "custom",
-        }
-        sl, tl = (rr.get("source_lang") or "").lower(), (rr.get("target_lang") or "").lower()
-        st, tt = rr.get("source_text") or "", rr.get("target_text") or ""
-        if sl == "nl": mapped["nl_word"] = st
-        if sl == "en": mapped["en_word"] = st
-        if sl == "ru": mapped["ru_word"] = st
-        if tl == "nl": mapped["translation_nl"] = tt
-        if tl == "en": mapped["word_en"]        = tt
-        if tl == "ru": mapped["translation_ru"] = tt
-        items.append(mapped)
-
     return jsonify({"ok": True, "items": items})
 
 # --- [ДОБАВЛЕНО v6.3] Установить/снять флаг difficult ДЛЯ ПОЛЬЗОВАТЕЛЯ ---
@@ -355,7 +312,6 @@ def api_difficult_user_set():
                 ON CONFLICT(user_id, word_id) DO UPDATE SET difficult=1
             """, (uid, wid))
         else:
-            # при снятии отметки — ставим difficult=0 (не удаляем запись, чтобы можно было анализировать историю)
             c.execute("""
                 INSERT INTO user_word_flags (user_id, word_id, difficult)
                 VALUES (?, ?, 0)
@@ -383,46 +339,7 @@ def api_difficult_set_legacy():
         c.commit()
     return jsonify({"ok": True})
 
-# --- Пользовательские слова ---
-@web.post("/api/custom_words/add")
-def api_custom_add():
-    _ensure_schema()
-    data = request.get_json(silent=True) or {}
-    uid = _current_user_id() or (data.get("user_id") or "").strip() or ""
-    if not uid:
-        return jsonify({"ok": False, "error": "no_user"}), 400
-    src_lang = (data.get("source_lang") or "").strip().lower()
-    src_text = (data.get("source_text") or "").strip()
-    tgt_lang = (data.get("target_lang") or "").strip().lower()
-    tgt_text = (data.get("target_text") or "").strip()
-    note     = (data.get("note") or "").strip()
-    if not (src_lang and src_text and tgt_lang and tgt_text):
-        return jsonify({"ok": False, "error": "fields_required"}), 400
-    with _conn() as c:
-        c.execute("""
-            INSERT INTO user_custom_words (user_id, source_lang, source_text, target_lang, target_text, note, difficult)
-            VALUES (?, ?, ?, ?, ?, ?, 1)
-        """, (uid, src_lang, src_text, tgt_lang, tgt_text, note))
-        c.commit()
-    return jsonify({"ok": True})
-
-@web.post("/api/custom_words/set_difficult")
-def api_custom_set_difficult():
-    _ensure_schema()
-    data = request.get_json(silent=True) or {}
-    try:
-        id_ = int(data.get("id"))
-    except Exception:
-        return jsonify({"ok": False, "error": "bad_id"}), 400
-    difficult = 1 if str(data.get("difficult")) in ("1","true","True","on") else 0
-    uid = _current_user_id() or ""
-    with _conn() as c:
-        if uid:
-            c.execute("UPDATE user_custom_words SET difficult=? WHERE id=? AND user_id=?", (difficult, id_, uid))
-        else:
-            c.execute("UPDATE user_custom_words SET difficult=? WHERE id=?", (difficult, id_))
-        c.commit()
-    return jsonify({"ok": True})
+# [УДАЛЕНО v6.4] /api/custom_words/add и /api/custom_words/set_difficult
 
 # --- отладка ---
 @web.get("/api/debug/whoami")

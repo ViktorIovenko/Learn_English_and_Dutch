@@ -1,17 +1,19 @@
 # run.py
-# [ИЗМЕНЕНО v6.0] Добавлены авто-миграции: колонка words.difficult и таблица user_custom_words.
-
+# [ИЗМЕНЕНО v6.4] Удалены "custom-слова": больше не создаём user_custom_words, при старте удаляем если есть.
 import asyncio
 import logging
 import os
 import sqlite3
 import threading
 from pathlib import Path
+
 from flask import Flask
 from config import Config
 from app.routes import init_app as init_web
+
 from telegram import Update
 from telegram.ext import Application, ApplicationBuilder, Defaults
+
 from bot.auth import register_auth_handlers
 from bot.upload import register_upload_handlers
 
@@ -19,7 +21,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(
 log = logging.getLogger("runner")
 
 def _conn(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path); conn.row_factory = sqlite3.Row; return conn
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def init_db(db_path: str) -> None:
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -54,25 +58,28 @@ def init_db(db_path: str) -> None:
         c.execute("CREATE INDEX IF NOT EXISTS idx_words_lesson ON words(lesson);")
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS u_words_number ON words(number);")
 
-        # [ДОБАВЛЕНО v6.0] авто-миграция: колонка difficult
+        # [НЕ МЕНЯЛОСЬ] авто-миграция: колонка difficult в words
         cols = [r["name"] for r in c.execute("PRAGMA table_info(words)")]
         if "difficult" not in cols:
             c.execute("ALTER TABLE words ADD COLUMN difficult INTEGER NOT NULL DEFAULT 0;")
 
-        # [ДОБАВЛЕНО v6.0] таблица пользовательских сложных слов
+        # [НЕ МЕНЯЛОСЬ] таблица персональных флагов
         c.execute("""
-            CREATE TABLE IF NOT EXISTS user_custom_words (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id    TEXT NOT NULL,
-                source_lang TEXT NOT NULL,
-                source_text TEXT NOT NULL,
-                target_lang TEXT NOT NULL,
-                target_text TEXT NOT NULL,
-                note TEXT DEFAULT NULL,
+            CREATE TABLE IF NOT EXISTS user_word_flags (
+                user_id   TEXT NOT NULL,
+                word_id   INTEGER NOT NULL,
                 difficult INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                PRIMARY KEY (user_id, word_id)
             );
         """)
+
+        # [ИЗМЕНЕНО v6.4] Больше НЕ создаём user_custom_words
+        # [ДОБАВЛЕНО v6.4] На всякий случай удалим существующую таблицу
+        try:
+            c.execute("DROP TABLE IF EXISTS user_custom_words;")
+        except Exception:
+            pass
+
         c.commit()
 
 def _is_https_base(url: str) -> bool:
@@ -135,16 +142,21 @@ def _bot_thread():
     finally:
         try:
             pending = asyncio.all_tasks(loop=loop)
-            for task in pending: task.cancel()
+            for task in pending:
+                task.cancel()
             loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
         except Exception:
             pass
-        try: loop.close()
-        except Exception: pass
+        try:
+            loop.close()
+        except Exception:
+            pass
 
 if __name__ == "__main__":
-    t = threading.Thread(target=_bot_thread, name="tg-bot", daemon=True); t.start()
-    host = os.getenv("FLASK_HOST", "0.0.0.0"); port = int(os.getenv("FLASK_PORT", "5000"))
+    t = threading.Thread(target=_bot_thread, name="tg-bot", daemon=True)
+    t.start()
+    host = os.getenv("FLASK_HOST", "0.0.0.0")
+    port = int(os.getenv("FLASK_PORT", "5000"))
     debug = os.getenv("FLASK_DEBUG", "1") == "1"
     log.info("🌐 Flask запущен на http://%s:%s (debug=%s)", host, port, debug)
     app.run(host=host, port=port, debug=debug, use_reloader=False)
