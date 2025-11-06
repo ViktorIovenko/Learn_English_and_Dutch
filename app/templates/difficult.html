@@ -2,17 +2,14 @@
 {% block title %}Сложные слова{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='learn.css') }}">
-
 <div id="learn-root" data-mode="difficult" class="learn-page">
   <div class="topbar">
     <a href="{{ url_for('web.home') }}" class="pill-btn">← Назад к урокам</a>
-    <!-- [ДОБАВЛЕНО v8.0] Отображаем заголовок раздела вместо названия урока -->
     <a href="#" class="pill-btn ghost">Сложные слова</a>
   </div>
 
   <div id="progress" class="center-progress"></div>
 
-  <!-- Оставляем тот же переключатель (как в learn.html), если понадобится фильтр -->
   <div class="lang-switch">
     <button data-lang=""  class="lang-btn">Все</button>
     <button data-lang="nl" class="lang-btn">Dutch</button>
@@ -22,7 +19,6 @@
 
   <div id="word-view" class="card"></div>
 
-  <!-- поле ответа сверху, буквы ниже -->
   <div id="answer-slots" class="answer-field"></div>
   <div id="letters-pool" class="letter-grid"></div>
 
@@ -42,20 +38,23 @@
     </div>
   </div>
 
-  <!-- Модалка проверки (идентична learn.html) -->
+  <!-- [ИЗМЕНЕНО v8.16] Модалка по центру, без текста, с иконкой ★ -->
   <div id="result-modal" class="modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-line1">
     <div class="modal-content">
-      <button id="modal-close" class="close" aria-label="Закрыть">×</button>
+      <div class="modal-head">
+        <div class="modal-head-actions">
+          <label class="flag-toggle" title="Отметить как сложное">
+            <input type="checkbox" id="difficultToggle" checked>
+            <span class="icon">★</span>
+          </label>
+          <button id="modal-close" class="close" aria-label="Закрыть">×</button>
+        </div>
+      </div>
+
       <p id="modal-line1"></p>
       <p id="modal-line2"></p>
       <p id="modal-line3"></p>
-      <!-- [НЕ МЕНЯЛОСЬ] Чекбокс персонального статуса -->
-      <div class="controls-row" style="justify-content:flex-start;margin-top:8px">
-        <label class="chk">
-          <input type="checkbox" id="difficultToggle" checked>
-          В «сложные слова»
-        </label>
-      </div>
+
       <div class="controls-row center" style="margin-top:12px">
         <button id="next-word-btn" class="ctrl-btn">Следующее слово</button>
       </div>
@@ -65,6 +64,8 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- [ДОБАВЛЕНО v8.0] Отдельный скрипт для «Сложных слов» -->
+<!-- [ДОБАВЛЕНО v8.1] общий воркер озвучки -->
+<script defer src="{{ url_for('static', filename='audio_worker.js') }}"></script>
+<!-- основной скрипт раздела -->
 <script defer src="{{ url_for('static', filename='difficult.js') }}"></script>
 {% endblock %}

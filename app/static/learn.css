@@ -2,8 +2,8 @@
 .topbar{ display:flex; align-items:center; gap:10px; margin:6px 0 8px; }
 .pill-btn{
   display:inline-flex; align-items:center; gap:6px;
-  padding:6px 12px; border-radius:999px;
-  border:1px solid #d0d7e2; background:#f8fafc; color:#1e293b;
+  padding:10px 14px; border-radius:999px;
+  border:1px solid #d0d7e2; background:#9bd8f1; color:#1e293b;
   text-decoration:none; font-size:14px; line-height:1; transition:.2s;
 }
 .pill-btn:hover{ background:#eef2ff; border-color:#bcd; }
@@ -27,11 +27,11 @@
 .ctrl-btn:hover{ background:#1d4ed8; transform:translateY(-1px); }
 /* Зелёная большая «Проверить» */
 .check-btn{
-  background:#22c55e !important; font-size:18px; font-weight:600;
-  transform:scale(1.5); border-radius:12px; padding:12px 28px;
-  box-shadow:0 4px 10px rgba(34,197,94,.4);
+  background:#2894b2 !important; font-size:18px; font-weight:600;
+  transform:scale(1.1); border-radius:12px; padding:12px 28px;
+  box-shadow:0 4px 10px rgba(130, 226, 229, 0.4);
 }
-.check-btn:hover{ background:#16a34a !important; transform:scale(1.55); }
+.check-btn:hover{ background:#89d7dd !important; transform:scale(1.55); }
 /* Поле ответа — в одну строку */
 .answer-field{
   display:flex; justify-content:center; align-items:center; gap:6px;
@@ -43,7 +43,6 @@
   display:inline-flex; align-items:center; justify-content:center;
   font-size:22px; color:#0f172a; background:#f8fafc;
 }
-
 /* Кнопки букв — сетка */
 /* [ИЗМЕНЕНО v7.3] Центрируем сам блок с буквами и не растягиваем на 100% */
 .letter-grid{
@@ -64,19 +63,72 @@
 }
 .letter-btn:hover, .letter:hover{ background:#e0ecff; border-color:#2563eb; transform:scale(1.05); }
 .letter.clickable{ cursor:pointer; }
-
 /* Управляющие ряды */
 .builder-controls{ margin-top:10px; }
 .controls-row{ display:flex; margin:8px 0; gap:10px; }
 .controls-row.split{ justify-content:space-between; }
-.controls-row.center{ justify-content:center; }
-
+/* [ИЗМЕНЕНО v8.13] Ровно 10px сверху/снизу у ряда с «Проверить» за счёт padding */
+.controls-row.center{
+  justify-content:center;
+  margin:0;
+  padding:10px 0;
+}
 /* Навигация */
 .nav-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; }
-
 /* Скролл у ответа */
 .answer-field::-webkit-scrollbar{ height:6px; }
 .answer-field::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:6px; }
+
+/* [ИЗМЕНЕНО v8.15] Модальное окно — строго по центру */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff; color: #0f172a;
+  width: min(560px, 92vw);
+  padding: 22px 26px 26px;
+  border-radius: 14px; box-shadow: 0 14px 40px rgba(2,6,23,.28);
+  border: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+/* [ДОБАВЛЕНО v8.16] Шапка модалки с действиями справа */
+.modal-head{ display:flex; justify-content:flex-end; margin:-6px -6px 6px; }
+.modal-head-actions{ display:flex; gap:8px; align-items:center; }
+
+/* [ДОБАВЛЕНО v8.16] Кнопка-иконка «сложное слово» (★) без текста */
+.flag-toggle input{ display:none; }
+.flag-toggle .icon{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px;
+  border:1px solid #e2e8f0; border-radius:8px;
+  background:#f8fafc; color:#64748b;
+  font-size:18px; line-height:1;
+  cursor:pointer; user-select:none;
+}
+.flag-toggle .icon:hover{ background:#eef2ff; }
+.flag-toggle input:checked + .icon{
+  background:#fef3c7; color:#b45309; border-color:#f59e0b;
+}
+
+.close{
+  appearance:none; border:none; background:#f1f5f9; color:#0f172a;
+  width:34px; height:34px; border-radius:8px; cursor:pointer;
+  font-size:20px; line-height:1;
+}
+.close:hover{ background:#e2e8f0; }
+.modal-content p{ margin:8px 0; }
+.modal-content strong{ font-weight:700; }
 
 /* Адаптация */
 @media (max-width:420px){
@@ -86,26 +138,3 @@
   }
   .letter-btn, .letter{ width:48px; height:48px; font-size:20px; }
 }
-
-/* [ДОБАВЛЕНО v7.2] Стили модального окна проверки */
-.modal{
-  position:fixed; inset:0; display:none;
-  align-items:center; justify-content:center;
-  background:rgba(15,23,42,.55);
-  z-index:1000;
-}
-.modal.show{ display:flex; }
-.modal-content{
-  background:#fff; color:#0f172a;
-  width:min(560px, 92vw); padding:16px 16px 18px;
-  border-radius:14px; box-shadow:0 14px 40px rgba(2,6,23,.28);
-  border:1px solid #e2e8f0;
-}
-.close{
-  appearance:none; border:none; background:#f1f5f9; color:#0f172a;
-  width:34px; height:34px; border-radius:8px; cursor:pointer;
-  float:right; font-size:20px; line-height:1;
-}
-.close:hover{ background:#e2e8f0; }
-.modal-content p{ margin:8px 0; }
-.modal-content strong{ font-weight:700; }

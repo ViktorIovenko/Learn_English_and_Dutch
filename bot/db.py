@@ -158,6 +158,48 @@ def upsert_registered_user(db_path: str, tg_id: int, username: str, first_name: 
 
 # ---------------- СЛОВА ----------------
 
+# [ДОБАВЛЕНО v4.15] Гарантируем уникальность (lesson, number) и чистим дубли, если уже есть
+def _ensure_words_unique_pair(conn: sqlite3.Connection) -> None:
+    """
+    Обеспечивает UNIQUE(lesson, number) в таблице words.
+    Если в таблице уже есть дубли, оставляет по одной записи (минимальный rowid).
+    """
+    # Проверим, существует ли индекс
+    idx = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_words_lesson_number'"
+    ).fetchone()
+    if idx:
+        return
+    # Попытка создать индекс — может упасть, если есть дубли
+    try:
+        conn.execute("""
+            CREATE UNIQUE INDEX idx_words_lesson_number
+            ON words(lesson, number);
+        """)
+        conn.commit()
+        return
+    except sqlite3.OperationalError:
+        # Вероятно, дубли; удалим все повторы, оставив минимальный rowid
+        try:
+            conn.execute("""
+                DELETE FROM words
+                WHERE rowid NOT IN (
+                    SELECT MIN(rowid)
+                    FROM words
+                    GROUP BY lesson, number
+                )
+            """)
+            conn.commit()
+        except Exception:
+            # если таблицы нет или иная проблема — пробросим дальше на вставке
+            pass
+        # Повторная попытка создать индекс
+        conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_words_lesson_number
+            ON words(lesson, number);
+        """)
+        conn.commit()
+
 def bulk_upsert_words(db_path: str, rows: Iterable[Dict[str, Any]]) -> int:
     """
     Массовая вставка/обновление слов.
@@ -168,6 +210,15 @@ def bulk_upsert_words(db_path: str, rows: Iterable[Dict[str, Any]]) -> int:
     if not rows:
         return 0
     with _conn(db_path) as conn:
+        # [ДОБАВЛЕНО v4.15] гарантируем UNIQUE(lesson, number) перед upsert
+        try:
+            _ensure_words_unique_pair(conn)
+        except Exception:
+            # Если не удалось — пусть падение проявится на вставке,
+            # но в большинстве случаев мы индекс создадим успешно.
+            pass
+
+        # [ИЗМЕНЕНО v4.15] upsert по паре (lesson, number)
         conn.executemany(
             """
             INSERT INTO words (lesson, number, nl, en, ru, ex_nl, ex_en, ex_ru, audio_nl, audio_en, audio_ru)

@@ -7,6 +7,9 @@ from config import Config
 from app.telegram_auth import verify_telegram_init_data
 from app import models
 
+# [ДОБАВЛЕНО v7.0] генерация аудио
+from app.audio_gen import ensure_audio_for_ids  # ← НОВОЕ
+
 web = Blueprint("web", __name__)
 
 def _conn() -> sqlite3.Connection:
@@ -61,7 +64,6 @@ def _ensure_schema() -> None:
                 PRIMARY KEY (user_id, word_id)
             );
         """)
-        # [УДАЛЕНО v6.4] создание user_custom_words (больше не нужно)
         c.commit()
 
 # --- имя для приветствия ---
@@ -339,7 +341,23 @@ def api_difficult_set_legacy():
         c.commit()
     return jsonify({"ok": True})
 
-# [УДАЛЕНО v6.4] /api/custom_words/add и /api/custom_words/set_difficult
+# ----------------- [ДОБАВЛЕНО v7.0] AUDIO ENSURE -----------------
+@web.post("/api/audio/ensure")
+def api_audio_ensure():
+    """
+    Body: { ids: [int,...], langs: ["nl","en","ru"] }
+    Для каждого id создаёт недостающие MP3, обновляет ссылки в words.audio_*.
+    Возвращает { ok: true, items: [ {ok,id,nl,en,ru}, ... ] }
+    """
+    data = request.get_json(silent=True) or {}
+    ids = data.get("ids") or []
+    langs = data.get("langs") or ["nl", "en", "ru"]
+    try:
+        result = ensure_audio_for_ids(Config.DB_PATH, ids, langs)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+# ---------------------------------------------------------------
 
 # --- отладка ---
 @web.get("/api/debug/whoami")

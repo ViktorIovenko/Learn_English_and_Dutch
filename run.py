@@ -1,5 +1,7 @@
 # run.py
+# [ИЗМЕНЕНО v6.5] Порядок регистрации хендлеров: сначала upload, затем auth (важно для кнопок импорта).
 # [ИЗМЕНЕНО v6.4] Удалены "custom-слова": больше не создаём user_custom_words, при старте удаляем если есть.
+
 import asyncio
 import logging
 import os
@@ -12,7 +14,7 @@ from config import Config
 from app.routes import init_app as init_web
 
 from telegram import Update
-from telegram.ext import Application, ApplicationBuilder, Defaults
+from telegram.ext import ApplicationBuilder, Defaults
 
 from bot.auth import register_auth_handlers
 from bot.upload import register_upload_handlers
@@ -20,10 +22,12 @@ from bot.upload import register_upload_handlers
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
 log = logging.getLogger("runner")
 
+
 def _conn(db_path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db(db_path: str) -> None:
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -58,12 +62,12 @@ def init_db(db_path: str) -> None:
         c.execute("CREATE INDEX IF NOT EXISTS idx_words_lesson ON words(lesson);")
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS u_words_number ON words(number);")
 
-        # [НЕ МЕНЯЛОСЬ] авто-миграция: колонка difficult в words
+        # авто-миграция: колонка difficult в words
         cols = [r["name"] for r in c.execute("PRAGMA table_info(words)")]
         if "difficult" not in cols:
             c.execute("ALTER TABLE words ADD COLUMN difficult INTEGER NOT NULL DEFAULT 0;")
 
-        # [НЕ МЕНЯЛОСЬ] таблица персональных флагов
+        # таблица персональных флагов
         c.execute("""
             CREATE TABLE IF NOT EXISTS user_word_flags (
                 user_id   TEXT NOT NULL,
@@ -73,8 +77,7 @@ def init_db(db_path: str) -> None:
             );
         """)
 
-        # [ИЗМЕНЕНО v6.4] Больше НЕ создаём user_custom_words
-        # [ДОБАВЛЕНО v6.4] На всякий случай удалим существующую таблицу
+        # [ИЗМЕНЕНО v6.4] Больше НЕ создаём user_custom_words — удаляем, если была
         try:
             c.execute("DROP TABLE IF EXISTS user_custom_words;")
         except Exception:
@@ -82,12 +85,15 @@ def init_db(db_path: str) -> None:
 
         c.commit()
 
+
 def _is_https_base(url: str) -> bool:
     return str(url or "").strip().lower().startswith("https://")
+
 
 def create_app() -> Flask:
     app = Flask(__name__, static_folder="app/static", template_folder="app/templates")
     app.config.from_object(Config)
+
     # cookie-политика
     secure_cookies = _is_https_base(os.getenv("PUBLIC_BASE_URL", ""))
     app.config.update(
@@ -97,14 +103,16 @@ def create_app() -> Flask:
 
     @app.after_request
     def skip_ngrok_warning(response):
-        response.headers['ngrok-skip-browser-warning'] = 'true'
+        response.headers["ngrok-skip-browser-warning"] = "true"
         return response
 
     init_db(app.config["DB_PATH"])
     init_web(app)
     return app
 
+
 app = create_app()
+
 
 async def on_error(update: object, context) -> None:
     try:
@@ -116,16 +124,25 @@ async def on_error(update: object, context) -> None:
     except Exception:
         log.exception("Error inside error handler")
 
+
 def build_bot_application():
     if not Config.BOT_TOKEN:
         log.error("TELEGRAM_BOT_TOKEN пуст. Укажи токен в .env")
         return None
+
     defaults = Defaults(parse_mode="HTML")
     application = ApplicationBuilder().token(Config.BOT_TOKEN).defaults(defaults).build()
-    register_auth_handlers(application)
-    register_upload_handlers(application)
+
+    # ===== ВАЖНО: порядок регистрации =====
+    # [ИЗМЕНЕНО v6.5] Сначала upload-хендлеры (группа 0),
+    # затем auth (общий on_text в группе 100 внутри auth.py).
+    register_upload_handlers(application)     # ← сначала upload
+    register_auth_handlers(application)       # ← затем auth
+    log.info("Handlers registered: upload -> auth")  # [ИЗМЕНЕНО v6.5] лог
+
     application.add_error_handler(on_error)
     return application
+
 
 def _bot_thread():
     app_bot = build_bot_application()
@@ -152,9 +169,11 @@ def _bot_thread():
         except Exception:
             pass
 
+
 if __name__ == "__main__":
     t = threading.Thread(target=_bot_thread, name="tg-bot", daemon=True)
     t.start()
+
     host = os.getenv("FLASK_HOST", "0.0.0.0")
     port = int(os.getenv("FLASK_PORT", "5000"))
     debug = os.getenv("FLASK_DEBUG", "1") == "1"

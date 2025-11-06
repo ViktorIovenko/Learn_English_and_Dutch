@@ -26,7 +26,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,Segoe
 .header nav a.active{color:var(--acc);border-color:var(--acc)}
 .user-mini{color:var(--muted);font-weight:600;white-space:nowrap}
 /* [ДОБАВЛЕНО v5.7] На всякий случай полностью скрываем user-mini,
-   чтобы старый «iovenko» в шапке не появлялся */
+
 .user-mini{display:none !important}
 /* [ДОБАВЛЕНО v5.2] строка с заголовком слева и локальными вкладками справа */
 .subbar{display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px 0}
@@ -61,7 +61,6 @@ a.card:hover .card-title{color:var(--acc-hover);text-decoration:underline}
 .word-dash::before{content:"—";margin:0 4px;color:var(--muted)}
 .word-toggle{cursor:pointer;color:var(--acc)}
 .word-toggle:hover{color:var(--acc-hover);text-decoration:underline}
-
 /* [ДОБАВЛЕНО v5.8] Панель аккаунта в шапке */
 .account-panel{
   margin-top:10px;
@@ -93,6 +92,34 @@ a.card:hover .card-title{color:var(--acc-hover);text-decoration:underline}
   background:#fff;
 }
 .account-panel .acc-badge.ok{ border-color:#22c55e; color:#065f46; background:#ecfdf5; }
-
 /* [ДОБАВЛЕНО v5.9] Визуал скрытого урока */
 .card.is-hidden{ opacity:.55 }
+
+/* ----------------------------- */
+/* [ДОБАВЛЕНО v8.9] AUDIO КНОПКА */
+/* ----------------------------- */
+.audio-btn{
+  background:#fff;
+  color:var(--acc);
+  border:1px solid var(--line);
+  border-radius:9999px;
+  width:36px; height:36px;
+  display:grid; place-items:center;
+  font-size:14px; line-height:1;
+  padding:0;
+  box-shadow:0 1px 2px rgba(2,6,23,.06);
+  transition:transform .08s ease, box-shadow .2s ease, background .2s ease;
+}
+.audio-btn.mini{ width:28px; height:28px; font-size:12px; }
+.audio-btn:hover{ box-shadow:0 3px 10px rgba(2,6,23,.12); background:#f8fafc; }
+.audio-btn:active{ transform:scale(.92); }
+
+/* Пульс при нажатии */
+@keyframes audio-pulse{
+  0%{ box-shadow:0 0 0 0 rgba(37,99,235,.45); }
+  70%{ box-shadow:0 0 0 10px rgba(37,99,235,0); }
+  100%{ box-shadow:0 0 0 0 rgba(37,99,235,0); }
+}
+.audio-btn.playing{
+  animation:audio-pulse .8s ease-out 1;
+}
