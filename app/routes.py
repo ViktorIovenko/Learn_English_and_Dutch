@@ -6,16 +6,17 @@ from typing import Any, List, Dict
 from config import Config
 from app.telegram_auth import verify_telegram_init_data
 from app import models
-
 # [ДОБАВЛЕНО v7.0] генерация аудио
 from app.audio_gen import ensure_audio_for_ids  # ← НОВОЕ
 
 web = Blueprint("web", __name__)
 
+
 def _conn() -> sqlite3.Connection:
     conn = sqlite3.connect(Config.DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def _upsert_user(user: dict[str, Any]) -> None:
     with _conn() as c:
@@ -33,6 +34,7 @@ def _upsert_user(user: dict[str, Any]) -> None:
               user.get("last_name") or ""))
         c.commit()
 
+
 def _upsert_user_minimal(user_id: str) -> None:
     if not user_id:
         return
@@ -44,9 +46,11 @@ def _upsert_user_minimal(user_id: str) -> None:
         """, (str(user_id),))
         c.commit()
 
+
 def _current_user_id() -> str | None:
     uid = session.get("tg_user_id") or request.headers.get("X-User-Id") or None
     return str(uid) if uid else None
+
 
 # --- [ИЗМЕНЕНО v6.4] миграция схемы: персональные флаги; УБРАНЫ кастомные слова ---
 def _ensure_schema() -> None:
@@ -65,6 +69,7 @@ def _ensure_schema() -> None:
             );
         """)
         c.commit()
+
 
 # --- имя для приветствия ---
 def _display_name_for_request() -> str:
@@ -86,14 +91,22 @@ def _display_name_for_request() -> str:
             if usern: return f"@{usern}"
     return ""
 
+
 # --- страницы ---
 @web.route("/")
 def home():
     return render_template("index.html", title="Уроки", display_name=_display_name_for_request())
 
+
+@web.route("/lessons")  # ←←← [ДОБАВЛЕНО v8.17] алиас, чтобы фронтовый фолбэк не падал 404
+def lessons_alias():
+    return render_template("index.html", title="Уроки", display_name=_display_name_for_request())
+
+
 @web.route("/lesson/<int:lesson_id>")
 def lesson_page(lesson_id: int):
     return render_template("lesson.html", title=f"Урок {lesson_id}", lesson_id=lesson_id)
+
 
 @web.route("/learn")
 def learn_page():
@@ -105,10 +118,12 @@ def learn_page():
         display_name=_display_name_for_request(),
     )
 
+
 @web.route("/difficult")
 def difficult_page():
     # Страница «Сложные слова» (как урок)
     return render_template("difficult.html", title="Сложные слова")
+
 
 # --- API: авторизация WebApp ---
 @web.post("/api/auth/login_webapp")
@@ -131,6 +146,7 @@ def login_webapp():
         "first_name": session["tg_first_name"],
         "last_name": session["tg_last_name"]
     }})
+
 
 @web.get("/api/me")
 def api_me():
@@ -165,12 +181,14 @@ def api_me():
         })
     return jsonify({"ok": False, "auth": False})
 
+
 # --- API уроков/слов (ИЗМЕНЕНО: difficult берём из user_word_flags) ---
 @web.get("/api/lessons")
 def api_lessons():
     user_id = _current_user_id()
     lessons = models.get_lessons(Config.DB_PATH, user_id)
     return jsonify(lessons)
+
 
 @web.post("/api/lessons/set_hidden")
 def api_lessons_set_hidden():
@@ -184,6 +202,7 @@ def api_lessons_set_hidden():
         return jsonify({"ok": False, "error": "lesson_required"}), 400
     models.set_lesson_hidden(Config.DB_PATH, user_id, lesson, hidden)
     return jsonify({"ok": True})
+
 
 @web.get("/api/lesson_words")
 def api_lesson_words_by_title():
@@ -220,6 +239,7 @@ def api_lesson_words_by_title():
         items.append(d)
     return jsonify({"ok": True, "items": items})
 
+
 @web.get("/api/lessons/<int:lesson_id>/words")
 def api_lesson_words(lesson_id: int):
     _ensure_schema()
@@ -253,7 +273,7 @@ def api_lesson_words(lesson_id: int):
         items.append(d)
     return jsonify({"lang": lang, "items": items})
 
-# --- [ИЗМЕНЕНО v6.4] Список сложных слов ДЛЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ (без custom)
+
 @web.get("/api/difficult_words_user")
 def api_difficult_words_user():
     """
@@ -290,7 +310,7 @@ def api_difficult_words_user():
         items.append(d)
     return jsonify({"ok": True, "items": items})
 
-# --- [ДОБАВЛЕНО v6.3] Установить/снять флаг difficult ДЛЯ ПОЛЬЗОВАТЕЛЯ ---
+
 @web.post("/api/difficult/user_set")
 def api_difficult_user_set():
     """
@@ -322,24 +342,6 @@ def api_difficult_user_set():
         c.commit()
     return jsonify({"ok": True})
 
-# --- Глобальный (legacy) — оставлен для совместимости со старым фронтом ---
-@web.post("/api/difficult/set")
-def api_difficult_set_legacy():
-    """
-    Старый endpoint, меняющий глобальное поле words.difficult.
-    Оставлен для обратной совместимости. Новый фронт НЕ ДОЛЖЕН его вызывать.
-    """
-    _ensure_schema()
-    data = request.get_json(silent=True) or {}
-    try:
-        id_ = int(data.get("id"))
-    except Exception:
-        return jsonify({"ok": False, "error": "bad_id"}), 400
-    difficult = 1 if str(data.get("difficult")) in ("1","true","True","on") else 0
-    with _conn() as c:
-        c.execute("UPDATE words SET difficult=? WHERE id=?", (difficult, id_))
-        c.commit()
-    return jsonify({"ok": True})
 
 # ----------------- [ДОБАВЛЕНО v7.0] AUDIO ENSURE -----------------
 @web.post("/api/audio/ensure")
@@ -357,7 +359,24 @@ def api_audio_ensure():
         return jsonify(result)
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
-# ---------------------------------------------------------------
+
+
+# ------------------------------ НОВОЕ ------------------------------
+@web.get("/api/next_lesson")
+def api_next_lesson():
+    """
+    Возвращает следующий ВИДИМЫЙ урок относительно текущего названия.
+    Query: ?current=<lesson_title>
+    Ответ: { ok: true, next: "<lesson>" } или { ok: false }
+    """
+    current = (request.args.get("current") or "").strip()
+    user_id = _current_user_id()
+    nxt = models.get_next_lesson_title(Config.DB_PATH, current, user_id)
+    if not nxt:
+        return jsonify({"ok": False})
+    return jsonify({"ok": True, "next": nxt})
+# ------------------------------------------------------------------
+
 
 # --- отладка ---
 @web.get("/api/debug/whoami")
@@ -372,9 +391,10 @@ def api_debug_whoami():
         },
         "headers": {
             "X-User-Id": request.headers.get("X-User-Id"),
-            "User-Agent": request.headers.get("User-Agent"),
+            "User-Agent": request.get_json(silent=True) and request.get_json(silent=True).get("ua") or request.headers.get("User-Agent"),
         }
     })
+
 
 def init_app(app):
     app.register_blueprint(web)

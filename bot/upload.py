@@ -1,50 +1,160 @@
 # bot/upload.py
 # Импорт слов из CSV + кнопки подтверждения
-# [ИЗМЕНЕНО v4.19] Клавиатура подтверждения тоже persistent + небольшая пауза после Remove().
-# [ИЗМЕНЕНО v4.18] Сразу после загрузки CSV показываем кнопки «Импортировать как есть / Отменить импорт».
-# [ИЗМЕНЕНО v4.14] Перед показом постоянного меню убираем клавиатуру подтверждения ReplyKeyboardRemove().
-# [ИЗМЕНЕНО v4.12] После «Импортировать как есть» мгновенно возвращаем меню ("⏳ Импортирую...").
-# [ИЗМЕНЕНО v4.13] После «Отменить импорт» мгновенно возвращаем меню ("❎ Импорт отменён...").
-# [ИЗМЕНЕНО v4.15] Всегда предлагаем кнопки, если есть строки к импорту (даже без ошибок).
+# [ИЗМЕНЕНО v4.29] Добавлена защита от конфликтов нумерации уроков:
+#                  автоматическая перенумерация уроков файла в диапазон (max_урок_в_БД + 1 ...),
+#                  при этом вторая часть номера (индекс слова) сохраняется.
+#                  Отчёт дополняется картой переназначения уроков.
+# [ИЗМЕНЕНО v4.28] «Подтвердите импорт» тоже автоудаляется; «Меню» всегда одно — старое удаляем.
+# [ИЗМЕНЕНО v4.27] Кнопки подтверждения показываются сразу после парсинга.
 
 import os
 import tempfile
 import sqlite3
-import asyncio  # [ДОБАВЛЕНО v4.19]
-from typing import List, Dict
-
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+import asyncio
+import re  # ← [ДОБАВЛЕНО v4.29]
+from typing import List, Dict, Tuple
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-
 from config import Config
 from bot.db import is_user_registered, bulk_upsert_words
-from bot.validators import (
-    HELP_TEXT, parse_csv_to_rows, validate_example_usage, expected_word_for,
-)
-from bot.auth import get_persistent_keyboard
+from bot.validators import parse_csv_to_rows, validate_example_usage, expected_word_for
+from bot.auth import get_persistent_keyboard, show_menu_with_keyboard  # ← ИЗМЕНЕНО: новый хелпер
 
-# ---------------- УТИЛИТЫ ----------------
-def _norm_nl(nl: str) -> str:
-    return (nl or "").strip().lower()
+EPHEMERAL_SECONDS = 20.0
+
+def _norm_nl(nl: str) -> str: return (nl or "").strip().lower()
 
 def _get_existing_nl_set(db_path: str) -> set[str]:
     existing = set()
     try:
         conn = sqlite3.connect(db_path)
         try:
-            cur = conn.cursor()
-            cur.execute("SELECT nl FROM words")
-            for (nl,) in cur.fetchall():
-                existing.add(_norm_nl(nl))
+            cur = conn.cursor(); cur.execute("SELECT nl FROM words")
+            for (nl,) in cur.fetchall(): existing.add(_norm_nl(nl))
         finally:
             conn.close()
     except Exception:
         pass
     return existing
 
-def _format_full_list(items: List[tuple], header_emoji: str, header_text: str) -> str:
-    if not items:
+# ---------------- [ДОБАВЛЕНО v4.29] ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ НУМЕРАЦИИ ----------------
+
+_NUM_RE = re.compile(r'^\s*(\d+)(?:\.(\d+))?')
+
+def _parse_number(num: str) -> Tuple[int|None, int|None]:
+    """
+    Разбирает строку вида 'L.W' → (L, W). Если нет точки — (L, None).
+    При неуспехе возвращает (None, None).
+    """
+    if not num:
+        return None, None
+    m = _NUM_RE.match(str(num))
+    if not m:
+        return None, None
+    l = int(m.group(1))
+    w = int(m.group(2)) if m.group(2) is not None else None
+    return l, w
+
+def _get_db_lessons_set_and_max(db_path: str) -> Tuple[set[int], int]:
+    """
+    Считывает столбец number из таблицы words и вытаскивает из него номера уроков (часть до '.').
+    Возвращает (множество уроков, максимальный урок) — если пусто, max=0.
+    """
+    lessons = set()
+    max_lesson = 0
+    try:
+        conn = sqlite3.connect(db_path)
+        try:
+            cur = conn.cursor()
+            try:
+                cur.execute("SELECT number FROM words")
+            except Exception:
+                # Если столбца number нет, считаем что уроков нет
+                return set(), 0
+            for (num_str,) in cur.fetchall():
+                L, _ = _parse_number(num_str)
+                if L is not None:
+                    lessons.add(L)
+                    if L > max_lesson:
+                        max_lesson = L
+        finally:
+            conn.close()
+    except Exception:
+        pass
+    return lessons, max_lesson
+
+def _format_lesson_remap(mapping: Dict[int, int]) -> str:
+    if not mapping:
         return ""
+    lines = ["🔢 Перенумерация уроков:"]
+    for old in sorted(mapping.keys()):
+        lines.append(f" - Урок {old} → {mapping[old]}")
+    return "\n".join(lines)
+
+def _renumber_lessons_if_needed(rows: List[Dict[str, str]], db_path: str) -> Tuple[List[Dict[str, str]], Dict[int, int]]:
+    """
+    Проверяет конфликт нумерации уроков между файлом и БД.
+    Если любой урок из файла уже есть в БД ИЛИ <= max_урок_в_БД — перенумеровывает
+    ВСЕ уникальные уроки из файла в новый непрерывный диапазон, начиная с max+1.
+    ВТОРАЯ часть номера (индекс слова) сохраняется без изменений.
+    Возвращает (обновлённые rows, карта {старый_урок: новый_урок}).
+    """
+    if not rows:
+        return rows, {}
+
+    db_lessons, db_max = _get_db_lessons_set_and_max(db_path)
+
+    # Собираем уникальные уроки в порядке появления
+    file_lessons_order: List[int] = []
+    file_lessons_set: set[int] = set()
+    for r in rows:
+        L, _ = _parse_number(r.get("number", "") or "")
+        if L is None:
+            continue
+        if L not in file_lessons_set:
+            file_lessons_set.add(L)
+            file_lessons_order.append(L)
+
+    if not file_lessons_order:
+        # В файле нет корректных номеров — ничего не делаем
+        return rows, {}
+
+    # Условие перенумерации:
+    # 1) пересечение с уже существующими уроками в БД, или
+    # 2) любой номер урока в файле <= db_max (чтобы «продолжать» только вперёд)
+    conflict = any((L in db_lessons) or (L <= db_max) for L in file_lessons_order)
+
+    if not conflict:
+        return rows, {}  # уже «свежие» номера — оставляем как есть
+
+    # Строим отображение: старые уроки файла → новые, начиная с db_max + 1
+    mapping: Dict[int, int] = {}
+    next_lesson = db_max + 1
+    for L in file_lessons_order:
+        mapping[L] = next_lesson
+        next_lesson += 1
+
+    # Применяем перенумерацию к строкам
+    new_rows: List[Dict[str, str]] = []
+    for r in rows:
+        num = r.get("number", "") or ""
+        L, W = _parse_number(num)
+        if L is None:
+            new_rows.append(r)
+            continue
+        new_L = mapping.get(L, L)
+        # Если W отсутствовал — сохраняем «L.»; если был — «L.W»
+        new_number = f"{new_L}.{W}" if W is not None else f"{new_L}."
+        rr = dict(r)
+        rr["number"] = new_number
+        new_rows.append(rr)
+
+    return new_rows, mapping
+
+# ------------------------------------------------------------------------------------------
+
+def _format_full_list(items: List[tuple], header_emoji: str, header_text: str) -> str:
+    if not items: return ""
     lines = [f"{header_emoji} {header_text}: {len(items)}"]
     for n, w in items:
         n = n if n is not None else "?"
@@ -52,129 +162,131 @@ def _format_full_list(items: List[tuple], header_emoji: str, header_text: str) -
         lines.append(f" - {n} ({w})")
     return "\n".join(lines)
 
-async def _send_long(update: Update, text: str, kb, chunk_limit: int = 3500) -> None:
+async def _delete_user_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        if update and update.message:
+            await context.bot.delete_message(chat_id=update.message.chat_id, message_id=update.message.message_id)
+    except Exception: pass
+
+async def _delete_later(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int, delay: float = EPHEMERAL_SECONDS):
+    await asyncio.sleep(delay)
+    try: await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except Exception: pass
+
+async def _send_long(update: Update, text: str, chunk_limit: int = 3500) -> List[int]:
+    sent_ids: List[int] = []
     if len(text) <= chunk_limit:
-        await update.message.reply_text(text, reply_markup=kb)
-        return
+        m = await update.effective_chat.send_message(text); sent_ids.append(m.message_id); return sent_ids
     parts, acc, acc_len = [], [], 0
     for line in text.splitlines():
         ln = len(line) + 1
         if acc_len + ln > chunk_limit and acc:
-            parts.append("\n".join(acc))
-            acc, acc_len = [line], ln
+            parts.append("\n".join(acc)); acc, acc_len = [line], ln
         else:
             acc.append(line); acc_len += ln
-    if acc:
-        parts.append("\n".join(acc))
-    for i, p in enumerate(parts):
-        await update.message.reply_text(p, reply_markup=kb if i == 0 else None)
+    if acc: parts.append("\n".join(acc))
+    for p in parts:
+        m = await update.effective_chat.send_message(p); sent_ids.append(m.message_id)
+    return sent_ids
 
 def _filter_duplicates_by_nl(rows: List[Dict[str, str]], db_path: str):
     existing_db = _get_existing_nl_set(db_path)
-    seen_in_file = set()
-    filtered = []
-    skipped_in_file = []
-    skipped_in_db = []
+    seen_in_file = set(); filtered = []; skipped_in_file = []; skipped_in_db = []
     for r in rows:
         nl = _norm_nl(r.get("nl", ""))
         if not nl:
-            filtered.append(r)
-            continue
+            filtered.append(r); continue
         if nl in seen_in_file:
-            skipped_in_file.append((r.get("number", "?"), r.get("nl", "")))
-            continue
+            skipped_in_file.append((r.get("number", "?"), r.get("nl", ""))); continue
         if nl in existing_db:
-            skipped_in_db.append((r.get("number", "?"), r.get("nl", "")))
-            continue
-        seen_in_file.add(nl)
-        filtered.append(r)
+            skipped_in_db.append((r.get("number", "?"), r.get("nl", ""))); continue
+        seen_in_file.add(nl); filtered.append(r)
     return filtered, skipped_in_file, skipped_in_db
 
 # ---------------- ХЕНДЛЕРЫ ----------------
 async def cmd_upload_words(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Если pending_import_all есть — сразу предлагаем подтвердить; иначе просим прислать CSV."""
     user = update.effective_user
-    kb = get_persistent_keyboard(user.id)
+    await _delete_user_trigger(update, context)
+    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
 
     if not is_user_registered(Config.DB_PATH, user.id):
-        await update.message.reply_text(
-            "Сначала пройдите регистрацию: отправьте /start и введите пароль.",
-            reply_markup=kb
-        )
+        m = await update.effective_chat.send_message("Сначала пройдите регистрацию: отправьте /start и введите пароль.")
+        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
     pending = context.user_data.get("pending_import_all") or []
     if pending:
-        # [ИЗМЕНЕНО v4.19] Удаляем старую клавиатуру и даём клиенту «переключиться»
-        await update.message.reply_text("…", reply_markup=ReplyKeyboardRemove())
-        await asyncio.sleep(0.2)
-
         kb_confirm = ReplyKeyboardMarkup(
             [["Импортировать как есть", "Отменить импорт"]],
-            resize_keyboard=True,
-            is_persistent=True,          # ← было не persistent, из-за чего иногда не показывалось
-            one_time_keyboard=False
+            resize_keyboard=True, is_persistent=True, one_time_keyboard=False
         )
-        await update.message.reply_text(
-            f"Подготовлено к импорту строк: {len(pending)}.\nИмпортировать сейчас?",
-            reply_markup=kb_confirm
-        )
+        m = await update.effective_chat.send_message("Подтвердите импорт:", reply_markup=kb_confirm)
+        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))  # ← ИЗМЕНЕНО: удаляем подсказку
         return
 
-    await update.message.reply_text("Загрузите .csv файл со словами.\n\n" + HELP_TEXT, reply_markup=kb)
+    m = await update.effective_chat.send_message(
+        ("📥 <b>Загрузите .csv файл со словами</b>\n\n"
+         "Перед загрузкой посмотрите пример структуры таблицы:\n"
+         '<a href="https://docs.google.com/spreadsheets/d/1OBKebdrOGZMcT00Yq_RfB9FuyCIc8QBHoRmluuGpwr4/edit?usp=sharing">📄 Образец CSV таблицы</a>'),
+        parse_mode="HTML", disable_web_page_preview=True
+    )
+    asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
 
 async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
-    kb = get_persistent_keyboard(user.id)
+    await _delete_user_trigger(update, context)
+    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
 
     if not is_user_registered(Config.DB_PATH, user.id):
-        await update.message.reply_text(
-            "Сначала пройдите регистрацию: отправьте /start и введите пароль.",
-            reply_markup=kb
-        )
+        m = await update.effective_chat.send_message("Сначала пройдите регистрацию: отправьте /start и введите пароль.")
+        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
     doc = update.message.document
-    if not doc:
-        return
-
+    if not doc: return
     fname = (doc.file_name or "").lower()
     if not (fname.endswith(".csv") or (doc.mime_type and "csv" in doc.mime_type.lower())):
-        await update.message.reply_text("Это не .csv файл. Пожалуйста, пришлите CSV.", reply_markup=kb)
+        m = await update.effective_chat.send_message("Это не .csv файл. Пожалуйста, пришлите CSV.")
+        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
     tmpdir = tempfile.mkdtemp(prefix="csv_upload_")
     tmp_path = os.path.join(tmpdir, fname or "words.csv")
-    file = await context.bot.get_file(doc.file_id)
-    await file.download_to_drive(custom_path=tmp_path)
+    file = await context.bot.get_file(doc.file_id); await file.download_to_drive(custom_path=tmp_path)
 
     try:
         all_rows: List[Dict[str, str]] = parse_csv_to_rows(tmp_path)
-
-        # 1) Фильтр дублей по NL
+        # Фильтруем дубль-слова заранее
         filtered_rows, skipped_in_file, skipped_in_db = _filter_duplicates_by_nl(all_rows, Config.DB_PATH)
 
         if not filtered_rows:
-            blocks = ["⚠ Все загруженные слова уже есть (или повторяются в самом файле) и были пропущены."]
-            if skipped_in_file:
-                blocks.append(_format_full_list(skipped_in_file, "🔁", "Повторы внутри файла"))
-            if skipped_in_db:
-                blocks.append(_format_full_list(skipped_in_db, "📚", "Уже были в базе"))
-            await _send_long(update, "\n\n".join(blocks), kb)
+            blocks = ["⚠ Все загруженные слова уже есть (или повторяются в файле) и были пропущены."]
+            if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", "Повторы внутри файла"))
+            if skipped_in_db:   blocks.append(_format_full_list(skipped_in_db, "📚", "Уже были в базе"))
+            ids = await _send_long(update, "\n\n".join(blocks))
+            for mid in ids: asyncio.create_task(_delete_later(context, update.effective_chat.id, mid))
             return
 
-        # 2) Валидация примеров
-        _, bad_rows = validate_example_usage(filtered_rows)
+        # ---------- [ДОБАВЛЕНО v4.29] Защита нумерации уроков ----------
+        filtered_rows, remap = _renumber_lessons_if_needed(filtered_rows, Config.DB_PATH)
+        # ---------------------------------------------------------------
 
-        # 3) Сохраняем pending для подтверждения
+        _, bad_rows = validate_example_usage(filtered_rows)
         context.user_data["pending_import_all"] = filtered_rows
 
-        # 4) Текст отчёта
+        # 1) Кнопки подтверждения — сразу и тоже удалим через 20 сек (клавиатура останется)
+        kb_confirm = ReplyKeyboardMarkup(
+            [["Импортировать как есть", "Отменить импорт"]],
+            resize_keyboard=True, is_persistent=True, one_time_keyboard=False
+        )
+        m = await update.effective_chat.send_message("Подтвердите импорт:", reply_markup=kb_confirm)
+        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))  # ← ИЗМЕНЕНО
+
+        # 2) Отчёт — отдельно, самоуничтожится
         extra_blocks = []
-        if skipped_in_file:
-            extra_blocks.append(_format_full_list(skipped_in_file, "🔁", "Пропущены повторы внутри файла"))
-        if skipped_in_db:
-            extra_blocks.append(_format_full_list(skipped_in_db, "📚", "Пропущены как уже существующие в базе"))
+        if remap:            extra_blocks.append(_format_lesson_remap(remap))        # ← [ДОБАВЛЕНО v4.29]
+        if skipped_in_file:  extra_blocks.append(_format_full_list(skipped_in_file, "🔁", "Пропущены повторы внутри файла"))
+        if skipped_in_db:    extra_blocks.append(_format_full_list(skipped_in_db, "📚", "Пропущены как уже существующие в базе"))
 
         if bad_rows:
             tip_lines = []
@@ -193,80 +305,70 @@ async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             tail = ("\n\n" + "\n\n".join(extra_blocks)) if extra_blocks else ""
             msg = f"{head}\nНайдено строк к импорту: {len(filtered_rows)}{tail}"
 
-        # 5) Показ клавиатуры подтверждения
-        await update.message.reply_text("…", reply_markup=ReplyKeyboardRemove())
-        await asyncio.sleep(0.2)  # [ДОБАВЛЕНО v4.19] маленькая пауза для десктоп-клиента
-
-        kb_confirm = ReplyKeyboardMarkup(
-            [["Импортировать как есть", "Отменить импорт"]],
-            resize_keyboard=True,
-            is_persistent=True,          # [ДОБАВЛЕНО v4.19]
-            one_time_keyboard=False
-        )
-        await _send_long(update, msg + "\n\nВыберите действие:", kb_confirm)
+        ids = await _send_long(update, msg + "\n\nВыберите действие ниже.")
+        for mid in ids: asyncio.create_task(_delete_later(context, update.effective_chat.id, mid))
         return
 
     except Exception as e:
-        await update.message.reply_text(f"❌ Ошибка импорта: {e}\n\n" + HELP_TEXT, reply_markup=kb)
+        m = await update.effective_chat.send_message(f"❌ Ошибка импорта: {e}")
+        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
 
-# Подтверждение: импортировать ПОЛНЫЙ файл (после фильтра дублей)
 async def on_confirm_import_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+    await _delete_user_trigger(update, context)
+
     rows: List[Dict[str, str]] = context.user_data.get("pending_import_all") or []
-    kb = get_persistent_keyboard(user.id)
+
+    # Сразу вернём «меню» (это уберёт клавиатуру подтверждения) — старое меню удалится само
+    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
 
     if not rows:
-        await update.message.reply_text("Нет данных к импорту. Пришлите CSV снова.", reply_markup=kb)
+        m = await update.effective_chat.send_message("Нет данных к импорту. Пришлите CSV снова.")
+        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
-    # 1) Убираем confirm-клавиатуру и мгновенно возвращаем постоянное меню
-    await update.message.reply_text("…", reply_markup=ReplyKeyboardRemove())
-    await update.message.reply_text("⏳ Импортирую...", reply_markup=kb)
+    m = await update.effective_chat.send_message("⏳ Импортирую...")
+    asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
 
-    # 2) Повторная фильтрация на случай гонок
-    filtered_rows, skipped_in_file, skipped_in_db = _filter_duplicates_by_nl(rows, Config.DB_PATH)
+    # Повторная защита: если pending появился до обновления — всё равно перенумеруем при необходимости
+    rows2, remap = _renumber_lessons_if_needed(rows, Config.DB_PATH)  # ← [ДОБАВЛЕНО v4.29]
 
+    filtered_rows, skipped_in_file, skipped_in_db = _filter_duplicates_by_nl(rows2, Config.DB_PATH)
     if not filtered_rows:
-        blocks = ["⚠ Все загруженные слова уже есть (или повторяются в самом файле) и были пропущены."]
-        if skipped_in_file:
-            blocks.append(_format_full_list(skipped_in_file, "🔁", "Внутри файла повторов"))
-        if skipped_in_db:
-            blocks.append(_format_full_list(skipped_in_db, "📚", "Уже были в базе"))
-        await _send_long(update, "\n\n".join(blocks), kb)
+        blocks = ["⚠ Все загруженные слова уже есть (или повторяются в файле) и были пропущены."]
+        if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", "Внутри файла повторов"))
+        if skipped_in_db:   blocks.append(_format_full_list(skipped_in_db, "📚", "Уже были в базе"))
+        if remap:           blocks.append(_format_lesson_remap(remap))  # ← [ДОБАВЛЕНО v4.29]
+        ids = await _send_long(update, "\n\n".join(blocks))
+        for mid in ids: asyncio.create_task(_delete_later(context, update.effective_chat.id, mid))
         context.user_data.pop("pending_import_all", None)
         return
 
-    # 3) Импорт
     count = bulk_upsert_words(Config.DB_PATH, filtered_rows)
     context.user_data.pop("pending_import_all", None)
 
     blocks = [f"✅ Импортировано записей (после фильтра дублей): {count}"]
-    if skipped_in_file:
-        blocks.append(_format_full_list(skipped_in_file, "🔁", "Пропущены повторы внутри файла"))
-    if skipped_in_db:
-        blocks.append(_format_full_list(skipped_in_db, "📚", "Пропущены как уже существующие в базе"))
+    if remap:           blocks.append(_format_lesson_remap(remap))      # ← [ДОБАВЛЕНО v4.29]
+    if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", "Пропущены повторы внутри файла"))
+    if skipped_in_db:   blocks.append(_format_full_list(skipped_in_db, "📚", "Уже были в базе"))
+    ids = await _send_long(update, "\n\n".join(blocks))
+    for mid in ids: asyncio.create_task(_delete_later(context, update.effective_chat.id, mid))
 
-    await _send_long(update, "\n\n".join(blocks), kb)
-
-# Отмена импорта
 async def on_cancel_import(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
-    kb = get_persistent_keyboard(user.id)
+    await _delete_user_trigger(update, context)
 
-    await update.message.reply_text("…", reply_markup=ReplyKeyboardRemove())
-    await update.message.reply_text("❎ Импорт отменён...", reply_markup=kb)
+    # Возвращаем «меню» (и тем самым убираем клавиатуру подтверждения)
+    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
+
+    m = await update.effective_chat.send_message("❎ Импорт отменён...")
+    asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
     context.user_data.pop("pending_import_all", None)
-    await update.message.reply_text("Импорт отменён. Готово к работе.", reply_markup=kb)
 
 def register_upload_handlers(application: Application) -> None:
-    # Группа 0 — раньше общего on_text (который в группе 100)
     application.add_handler(CommandHandler("upload_words", cmd_upload_words))
     application.add_handler(MessageHandler(filters.Regex(r"^(Загрузить слова)$"), cmd_upload_words))
-    application.add_handler(MessageHandler(filters.Regex(r"^(Добавить слова)$"), cmd_upload_words))
-
-    # Документы (CSV)
+    application.add_handler(MessageHandler(filters.Regex(r"^(Добавить слова|Импортировать слова)$"), cmd_upload_words))
     application.add_handler(MessageHandler(filters.Document.ALL & (~filters.COMMAND), on_csv_document))
-
-    # Подтверждение/отмена
-    application.add_handler(MessageHandler(filters.Regex(r"^(Импортировать как есть)$"), on_confirm_import_all))
-    application.add_handler(MessageHandler(filters.Regex(r"^(Отменить импорт)$"), on_cancel_import))
+    application.add_handler(MessageHandler(filters.Regex(r"(?i)^(импортировать как есть)$"), on_confirm_import_all))
+    application.add_handler(MessageHandler(filters.Regex(r"(?i)^(отменить импорт)$"), on_cancel_import))

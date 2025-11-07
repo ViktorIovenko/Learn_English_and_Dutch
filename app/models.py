@@ -5,10 +5,12 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 from datetime import datetime
 
+
 def _conn(db_path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def ensure_user_tables(db_path: str) -> None:
     """Создаём таблицу пользовательских предпочтений (если ещё нет)."""
@@ -24,6 +26,7 @@ def ensure_user_tables(db_path: str) -> None:
         """)
         c.commit()
 
+
 def get_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
     """
     Возвращает список уроков с количеством слов и флагом hidden для данного пользователя.
@@ -32,10 +35,6 @@ def get_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
     """
     ensure_user_tables(db_path)
     with _conn(db_path) as c:
-        # Вытягиваем:
-        # - title из w.lesson (как есть — это твоё «Familie (1)», «Ik, jij, wij» и т.п.)
-        # - words_count
-        # - lesson_index = MIN(первое число из колонки number), например для "2.3" → 2
         rows = c.execute("""
             SELECT
                 w.lesson AS lesson,
@@ -75,6 +74,7 @@ def get_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
         lessons.sort(key=_lesson_key)
         return lessons
 
+
 def set_lesson_hidden(db_path: str, user_id: str, lesson: str, hidden: int) -> None:
     """Пометить урок скрытым/видимым для пользователя."""
     ensure_user_tables(db_path)
@@ -87,6 +87,7 @@ def set_lesson_hidden(db_path: str, user_id: str, lesson: str, hidden: int) -> N
                 updated_at=excluded.updated_at
         """, (str(user_id), lesson, int(hidden), datetime.utcnow().isoformat()))
         c.commit()
+
 
 def get_lesson_words(db_path: str, lesson: str) -> List[Dict[str, Any]]:
     """Все слова конкретного урока (для страницы урока)."""
@@ -110,3 +111,27 @@ def get_lesson_words(db_path: str, lesson: str) -> List[Dict[str, Any]]:
             ORDER BY number
         """, (lesson,)).fetchall()
         return [dict(r) for r in rows]
+
+
+# ------------------------------ НОВОЕ ------------------------------
+# [ДОБАВЛЕНО v8.17] Следующий видимый урок по «текущему» названию
+def get_next_lesson_title(db_path: str, current_lesson: str, user_id: Optional[str]) -> Optional[str]:
+    """
+    Возвращает название следующего ВИДИМОГО урока (hidden=0) в порядке, который
+    используется на главной: hidden → lesson_index → lesson.
+    Если current_lesson не найден — вернёт первый видимый.
+    Если видимых нет — None.
+    """
+    lessons = get_lessons(db_path, user_id)
+    visible = [x for x in lessons if int(x.get("hidden", 0)) == 0]
+    if not visible:
+        return None
+    # найти позицию текущего среди всех (учтём, что он мог быть скрыт)
+    try:
+        i = next(i for i, x in enumerate(visible) if (x.get("lesson") or "") == (current_lesson or ""))
+    except StopIteration:
+        # если текущего нет среди видимых — просто первый видимый
+        return visible[0]["lesson"]
+    nxt = (i + 1) % len(visible)
+    return visible[nxt]["lesson"]
+# -------------------------------------------------------------------

@@ -38,9 +38,9 @@
     </div>
   </div>
 
-  <!-- [ИЗМЕНЕНО v8.16] Модалка по центру, без текста, с иконкой ★ -->
+  <!-- Модалка результата -->
   <div id="result-modal" class="modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-line1">
-    <div class="modal-content">
+    <div class="modal-content" id="modal-content"><!-- [ДОБАВЛЕНО] id для делегата -->
       <div class="modal-head">
         <div class="modal-head-actions">
           <label class="flag-toggle" title="Отметить как сложное">
@@ -50,22 +50,18 @@
           <button id="modal-close" class="close" aria-label="Закрыть">×</button>
         </div>
       </div>
-
       <p id="modal-line1"></p>
       <p id="modal-line2"></p>
       <p id="modal-line3"></p>
-
       <div class="controls-row center" style="margin-top:12px">
         <button id="next-word-btn" class="ctrl-btn">Следующее слово</button>
+        <!-- без «Следующий урок» -->
       </div>
     </div>
   </div>
 </div>
 {% endblock %}
-
 {% block scripts %}
-<!-- [ДОБАВЛЕНО v8.1] общий воркер озвучки -->
 <script defer src="{{ url_for('static', filename='audio_worker.js') }}"></script>
-<!-- основной скрипт раздела -->
 <script defer src="{{ url_for('static', filename='difficult.js') }}"></script>
 {% endblock %}

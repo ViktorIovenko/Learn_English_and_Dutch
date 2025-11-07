@@ -8,9 +8,8 @@
 }
 .pill-btn:hover{ background:#eef2ff; border-color:#bcd; }
 .pill-btn.ghost{ background:#fff; }
-/* Прогресс — по центру, жирный */
+.topbar .spacer{ flex:1; }
 .center-progress{ text-align:center; font-weight:700; margin-bottom:6px; }
-/* Переключатель языков */
 .lang-switch{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
 .lang-btn{
   border:1px solid #d0d7e2; background:#f8fafc; color:#1e293b;
@@ -18,21 +17,19 @@
   transition:transform .15s, background .15s, color .15s, border-color .15s;
 }
 .lang-btn.active{ background:#2563eb; color:#fff; border-color:#2563eb; transform:scale(1.06); }
-/* Синие кнопки по умолчанию */
 .ctrl-btn{
   background:#2563eb; color:#fff; border:none; border-radius:10px;
   padding:8px 14px; font-size:15px; cursor:pointer; transition:all .2s;
   box-shadow:0 2px 6px rgba(37,99,235,.3);
 }
 .ctrl-btn:hover{ background:#1d4ed8; transform:translateY(-1px); }
-/* Зелёная большая «Проверить» */
 .check-btn{
   background:#2894b2 !important; font-size:18px; font-weight:600;
   transform:scale(1.1); border-radius:12px; padding:12px 28px;
   box-shadow:0 4px 10px rgba(130, 226, 229, 0.4);
 }
 .check-btn:hover{ background:#89d7dd !important; transform:scale(1.55); }
-/* Поле ответа — в одну строку */
+
 .answer-field{
   display:flex; justify-content:center; align-items:center; gap:6px;
   flex-wrap:nowrap; overflow-x:auto; padding:6px 4px; min-height:56px;
@@ -43,8 +40,11 @@
   display:inline-flex; align-items:center; justify-content:center;
   font-size:22px; color:#0f172a; background:#f8fafc;
 }
+/* [ДОБАВЛЕНО v8.20] интерактивные слоты */
+.slot.clickable{ cursor:pointer; border-style:solid; }
+.slot.clickable:hover{ background:#e0ecff; border-color:#2563eb; }
+
 /* Кнопки букв — сетка */
-/* [ИЗМЕНЕНО v7.3] Центрируем сам блок с буквами и не растягиваем на 100% */
 .letter-grid{
   width:auto;
   margin:16px auto 0;
@@ -63,23 +63,16 @@
 }
 .letter-btn:hover, .letter:hover{ background:#e0ecff; border-color:#2563eb; transform:scale(1.05); }
 .letter.clickable{ cursor:pointer; }
-/* Управляющие ряды */
+
 .builder-controls{ margin-top:10px; }
 .controls-row{ display:flex; margin:8px 0; gap:10px; }
 .controls-row.split{ justify-content:space-between; }
-/* [ИЗМЕНЕНО v8.13] Ровно 10px сверху/снизу у ряда с «Проверить» за счёт padding */
-.controls-row.center{
-  justify-content:center;
-  margin:0;
-  padding:10px 0;
-}
-/* Навигация */
+.controls-row.center{ justify-content:center; margin:0; padding:10px 0; }
 .nav-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; }
-/* Скролл у ответа */
+
 .answer-field::-webkit-scrollbar{ height:6px; }
 .answer-field::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:6px; }
 
-/* [ИЗМЕНЕНО v8.15] Модальное окно — строго по центру */
 .modal {
   position: fixed;
   top: 0; left: 0;
@@ -101,12 +94,8 @@
   border: 1px solid #e2e8f0;
   text-align: left;
 }
-
-/* [ДОБАВЛЕНО v8.16] Шапка модалки с действиями справа */
 .modal-head{ display:flex; justify-content:flex-end; margin:-6px -6px 6px; }
 .modal-head-actions{ display:flex; gap:8px; align-items:center; }
-
-/* [ДОБАВЛЕНО v8.16] Кнопка-иконка «сложное слово» (★) без текста */
 .flag-toggle input{ display:none; }
 .flag-toggle .icon{
   display:inline-flex; align-items:center; justify-content:center;
@@ -120,7 +109,6 @@
 .flag-toggle input:checked + .icon{
   background:#fef3c7; color:#b45309; border-color:#f59e0b;
 }
-
 .close{
   appearance:none; border:none; background:#f1f5f9; color:#0f172a;
   width:34px; height:34px; border-radius:8px; cursor:pointer;
@@ -130,7 +118,25 @@
 .modal-content p{ margin:8px 0; }
 .modal-content strong{ font-weight:700; }
 
-/* Адаптация */
+/* Фейерверк */
+#fw-canvas{
+  position:fixed; inset:0; width:100%; height:100%;
+  pointer-events:none; z-index:1200;
+}
+
+/* [ИЗМЕНЕНО v8.24] Кнопка аудио-иконки + выравнивание строки с правильным словом */
+#modal-line2{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.audio-btn{
+  appearance:none; border:1px solid #e2e8f0; background:#f8fafc; color:#0f172a;
+  border-radius:10px; cursor:pointer; line-height:1; font-weight:700;
+  padding:6px 10px; font-size:14px; transition:transform .15s, background .15s, border-color .15s;
+}
+.audio-btn.mini{ padding:2px 8px; font-size:12px; border-radius:8px; }
+.audio-btn.big{  padding:8px 14px; font-size:18px; border-radius:12px; }
+.audio-btn.icon{ width:32px; height:32px; padding:0; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; }
+.audio-btn:hover{ background:#eef2ff; border-color:#cbd5e1; transform:translateY(-1px); }
+.audio-btn.playing{ transform:scale(1.06); }
+
 @media (max-width:420px){
   .letter-grid{
     grid-template-columns:repeat(auto-fit, minmax(48px, max-content));

@@ -1,12 +1,12 @@
 # bot/auth.py
 # Регистрация по паролю + постоянная клавиатура с кнопками
-# [ИЗМЕНЕНО v5.2] Общий текстовый хендлер on_text перенесён в группу 100,
-#                 чтобы не перехватывать «Добавить слова» и другие точные кнопки.
-# [ИЗМЕНЕНО v4.8] Всегда добавляем ?uid=<id> в URL (даже для WebApp) как фолбэк.
+# [ИЗМЕНЕНО v5.8] Единственный «якорь-меню»: перед показом нового удаляем старый; все служебные сообщения автоудаляются.
+# [ИЗМЕНЕНО v5.7] Мгновенные ответы, удаление в фоне.
 # [ИЗМЕНЕНО v4.9] Автоудаление сообщений, связанных с паролем.
 
 import os
 import sqlite3
+import asyncio
 from urllib.parse import urlparse
 from telegram import (
     InlineKeyboardButton, InlineKeyboardMarkup, Update,
@@ -15,11 +15,11 @@ from telegram import (
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from config import Config
 
-# ---------- sqlite utils ----------
+EPHEMERAL_SECONDS = 20.0  # время жизни всех служебных сообщений
+
+# ---------- sqlite ----------
 def _conn(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+    conn = sqlite3.connect(db_path); conn.row_factory = sqlite3.Row; return conn
 
 def _columns(conn: sqlite3.Connection, table: str) -> list[str]:
     return [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]
@@ -105,18 +105,14 @@ def _is_https(url: str) -> bool:
 
 def _is_local_address(url: str) -> bool:
     try:
-        p = urlparse(url)
-        host = (p.hostname or "").lower()
-        if host in ("localhost",):
-            return True
-        if host.startswith("127.") or host.startswith("10.") or host.startswith("192.168."):
-            return True
+        p = urlparse(url); host = (p.hostname or "").lower()
+        if host in ("localhost",): return True
+        if host.startswith("127.") or host.startswith("10.") or host.startswith("192.168."): return True
         if host.startswith("172."):
             parts = host.split(".")
             if len(parts) >= 2:
                 try:
-                    second = int(parts[1])
-                    return 16 <= second <= 31
+                    second = int(parts[1]); return 16 <= second <= 31
                 except Exception:
                     pass
         return False
@@ -124,26 +120,18 @@ def _is_local_address(url: str) -> bool:
         return True
 
 def _build_app_url(user_id: int) -> tuple[str, bool, bool]:
-    """
-    Возвращает (url, use_webapp, use_inline).
-    [ИЗМЕНЕНО v4.8] Даже для HTTPS/WebApp добавляем ?uid=<id>, чтобы фронт
-    всегда мог подставить X-User-Id и авторизоваться без initData.
-    """
     base = f"{Config.PUBLIC_BASE_URL}".rstrip("/")
     uid_suffix = f"/?uid={user_id}"
-    if _is_https(base):
-        return (base + uid_suffix, True, True)
-    url = base + uid_suffix
-    return (url, False, not _is_local_address(url))
+    if _is_https(base): return (base + uid_suffix, True, True)
+    url = base + uid_suffix; return (url, False, not _is_local_address(url))
 
-# экспорт клавиатуры
 def get_persistent_keyboard(user_id: int) -> ReplyKeyboardMarkup:
     url, use_webapp, _ = _build_app_url(user_id)
     if use_webapp:
         btn_learn = KeyboardButton(text="Учить слова", web_app=WebAppInfo(url=url))
     else:
         btn_learn = KeyboardButton(text="Учить слова")
-    btn_add = KeyboardButton(text="Добавить слова")
+    btn_add = KeyboardButton(text="Загрузить слова")
     return ReplyKeyboardMarkup(
         keyboard=[[btn_learn], [btn_add]],
         resize_keyboard=True,
@@ -151,17 +139,37 @@ def get_persistent_keyboard(user_id: int) -> ReplyKeyboardMarkup:
         one_time_keyboard=False
     )
 
-# ---------- password-messages utils ----------
+# ---------- удаление/эфемерность ----------
 async def _safe_delete(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int) -> None:
-    try:
-        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-    except Exception:
-        pass
+    try: await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except Exception: pass
 
-def _pwd_bot_msg_ids(context: ContextTypes.DEFAULT_TYPE) -> list[int]:
-    if "pwd_bot_msg_ids" not in context.user_data:
-        context.user_data["pwd_bot_msg_ids"] = []
-    return context.user_data["pwd_bot_msg_ids"]
+async def _delete_user_trigger(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        if update and update.message:
+            await context.bot.delete_message(chat_id=update.message.chat_id, message_id=update.message.message_id)
+    except Exception: pass
+
+async def _delete_later(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int, delay: float = EPHEMERAL_SECONDS):
+    await asyncio.sleep(delay); await _safe_delete(context, chat_id, message_id)
+
+async def _ephemeral_send(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str, delay: float = EPHEMERAL_SECONDS):
+    m = await update.effective_chat.send_message(text)
+    asyncio.create_task(_delete_later(context, m.chat_id, m.message_id, delay))
+
+# ---------- НОВОЕ: единый показ «Меню» ----------
+async def show_menu_with_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
+    """
+    Удаляет предыдущее 'меню-сообщение', шлёт новое с клавиатурой
+    и планирует его удаление через EPHEMERAL_SECONDS.
+    """
+    anchor_key = "kb_anchor_msg_id"
+    old_id = context.user_data.get(anchor_key)
+    if old_id:
+        asyncio.create_task(_safe_delete(context, update.effective_chat.id, old_id))
+    m = await update.effective_chat.send_message("⬇️ Меню", reply_markup=get_persistent_keyboard(user_id))
+    context.user_data[anchor_key] = m.message_id
+    asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
 
 # ---------- handlers ----------
 ASK_PWD = "Введите пароль для регистрации:"
@@ -169,15 +177,17 @@ OK_PWD  = "✅ Готово! Вы зарегистрированы."
 
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+    await _delete_user_trigger(update, context)
+    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
     if _is_user_registered(Config.DB_PATH, user.id):
-        await update.message.reply_text("С возвращением!", reply_markup=get_persistent_keyboard(user.id))
+        await _ephemeral_send(update, context, "С возвращением!")
         return
-    sent = await update.message.reply_text(ASK_PWD, reply_markup=get_persistent_keyboard(user.id))
-    _pwd_bot_msg_ids(context).append(sent.message_id)
+    ask = await update.effective_chat.send_message(ASK_PWD)
+    context.user_data.setdefault("pwd_bot_msg_ids", []).append(ask.message_id)
     context.user_data["await_pwd"] = True
+    asyncio.create_task(_delete_later(context, ask.chat_id, ask.message_id))
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Если ждём пароль — обрабатываем
     if context.user_data.get("await_pwd"):
         pwd_message = update.message
         chat_id = pwd_message.chat_id
@@ -188,56 +198,45 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if pwd == expected:
             _register_user(Config.DB_PATH, update.effective_user)
             context.user_data.pop("await_pwd", None)
-            for mid in _pwd_bot_msg_ids(context):
-                await _safe_delete(context, chat_id, mid)
+            for mid in context.user_data.get("pwd_bot_msg_ids", []):
+                asyncio.create_task(_delete_later(context, chat_id, mid, 0))
             context.user_data["pwd_bot_msg_ids"] = []
-            await update.effective_chat.send_message(
-                OK_PWD,
-                reply_markup=get_persistent_keyboard(user_id)
-            )
+            await show_menu_with_keyboard(update, context, user_id)  # ← ИЗМЕНЕНО
+            await _ephemeral_send(update, context, OK_PWD)
         else:
-            sent = await update.effective_chat.send_message(
-                "Пароль неверный. Попробуйте снова.",
-                reply_markup=get_persistent_keyboard(user_id)
-            )
-            _pwd_bot_msg_ids(context).append(sent.message_id)
+            await show_menu_with_keyboard(update, context, user_id)  # ← ИЗМЕНЕНО
+            err = await update.effective_chat.send_message("Пароль неверный. Попробуйте снова.")
+            context.user_data.setdefault("pwd_bot_msg_ids", []).append(err.message_id)
+            asyncio.create_task(_delete_later(context, err.chat_id, err.message_id))
         return
-
-    # Кнопка «Учить слова» — отдельный хендлер ниже; здесь ничего не делаем.
     return
 
 async def open_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await send_open(update, context)
 
 async def send_open(update: Update, context: ContextTypes.DEFAULT_TYPE, hello: str = "") -> None:
-    user_id = update.effective_user.id if (update and update.effective_user) else ""
+    user_id = update.effective_user.id if (update and update.effective_user) else 0
+    await _delete_user_trigger(update, context)
     url, use_webapp, use_inline = _build_app_url(user_id)
     if use_webapp:
-        kb_inline = InlineKeyboardMarkup(
-            [[InlineKeyboardButton(text="Открыть мини-приложение", web_app=WebAppInfo(url=url))]]
-        )
-        await update.message.reply_text(hello or "Откройте мини-приложение:", reply_markup=kb_inline)
+        kb_inline = InlineKeyboardMarkup([[InlineKeyboardButton(text="Открыть мини-приложение", web_app=WebAppInfo(url=url))]])
+        m = await update.effective_chat.send_message(hello or "Откройте мини-приложение:", reply_markup=kb_inline)
+        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
     elif use_inline:
-        kb_inline = InlineKeyboardMarkup(
-            [[InlineKeyboardButton(text="Открыть приложение в браузере", url=url)]]
-        )
-        await update.message.reply_text(hello or f"Откройте приложение:\n{url}", reply_markup=kb_inline)
+        kb_inline = InlineKeyboardMarkup([[InlineKeyboardButton(text="Открыть приложение в браузере", url=url)]])
+        m = await update.effective_chat.send_message(hello or f"Откройте приложение:\n{url}", reply_markup=kb_inline)
+        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
     else:
-        await update.message.reply_text(hello or f"Откройте приложение в браузере:\n{url}")
-    try:
-        await update.message.reply_text("Меню внизу ⬇️", reply_markup=get_persistent_keyboard(user_id))
-    except Exception:
-        pass
+        await _ephemeral_send(update, context, hello or f"Откройте приложение в браузере:\n{url}")
+    await show_menu_with_keyboard(update, context, user_id)  # ← ИЗМЕНЕНО
 
 def register_auth_handlers(application: Application) -> None:
-    # Точные хендлеры — ГРУППА 0 (по умолчанию)
     application.add_handler(CommandHandler("start", start_cmd))
     application.add_handler(CommandHandler("open", open_cmd))
     application.add_handler(MessageHandler(filters.Regex(r"^(Учить слова)$"), open_cmd))
-
-    # ОБЩИЙ текстовый — ПЕРЕНЕСЁН В ГРУППУ 100  ←←← ИЗМЕНЕНО
-    exclude_import_btns = ~filters.Regex(r"^(Импортировать как есть|Отменить импорт)$")
+    # Исключаем кнопки подтверждения (регистронезависимо)
+    exclude_import_btns = ~filters.Regex(r"(?i)^(импортировать как есть|отменить импорт)$")
     application.add_handler(
         MessageHandler(filters.TEXT & (~filters.COMMAND) & exclude_import_btns, on_text),
-        group=100  # ← ИЗМЕНЕНО: низкий приоритет
+        group=100
     )
