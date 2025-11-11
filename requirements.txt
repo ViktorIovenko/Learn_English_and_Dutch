@@ -8,6 +8,7 @@ click==8.1.7
 google-cloud-texttospeech>=2.16.4
 gTTS==2.5.1
 pydub==0.25.1
+python-telegram-bot[job-queue]
 
 
 

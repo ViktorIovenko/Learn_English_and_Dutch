@@ -25,8 +25,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,Segoe
 .header nav a:hover{color:var(--fg);border-color:var(--line)}
 .header nav a.active{color:var(--acc);border-color:var(--acc)}
 .user-mini{color:var(--muted);font-weight:600;white-space:nowrap}
-/* [ДОБАВЛЕНО v5.7] На всякий случай полностью скрываем user-mini,
-
+/* [ДОБАВЛЕНО v5.7] На всякий случай полностью скрываем user-mini, */
 .user-mini{display:none !important}
 /* [ДОБАВЛЕНО v5.2] строка с заголовком слева и локальными вкладками справа */
 .subbar{display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px 0}
@@ -94,7 +93,6 @@ a.card:hover .card-title{color:var(--acc-hover);text-decoration:underline}
 .account-panel .acc-badge.ok{ border-color:#22c55e; color:#065f46; background:#ecfdf5; }
 /* [ДОБАВЛЕНО v5.9] Визуал скрытого урока */
 .card.is-hidden{ opacity:.55 }
-
 /* ----------------------------- */
 /* [ДОБАВЛЕНО v8.9] AUDIO КНОПКА */
 /* ----------------------------- */
@@ -113,7 +111,6 @@ a.card:hover .card-title{color:var(--acc-hover);text-decoration:underline}
 .audio-btn.mini{ width:28px; height:28px; font-size:12px; }
 .audio-btn:hover{ box-shadow:0 3px 10px rgba(2,6,23,.12); background:#f8fafc; }
 .audio-btn:active{ transform:scale(.92); }
-
 /* Пульс при нажатии */
 @keyframes audio-pulse{
   0%{ box-shadow:0 0 0 0 rgba(37,99,235,.45); }
@@ -123,3 +120,49 @@ a.card:hover .card-title{color:var(--acc-hover);text-decoration:underline}
 .audio-btn.playing{
   animation:audio-pulse .8s ease-out 1;
 }
+
+/* =============================== */
+/* [ДОБАВЛЕНО v5.11] Шапочный таймер */
+/* =============================== */
+.daily-timer{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 12px;
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:999px;
+  box-shadow:var(--shadow);
+  width:max-content;
+}
+.daily-timer .dt-label{
+  font-size:13px;
+  color:#334155;
+  white-space:nowrap;
+}
+.daily-timer .dt-time{
+  font-weight:800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing:.5px;
+  padding:4px 10px;
+  border-radius:8px;
+  background:#ffffff;
+  border:1px solid #e2e8f0;
+  min-width:64px;
+  text-align:center;
+}
+.daily-timer.done .dt-time{
+  background:#ecfdf5;
+  border-color:#86efac;
+  color:#065f46;
+}
+.pill-btn{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:10px 14px; border-radius:999px;
+  border:1px solid #d0d7e2; background:#9bd8f1; color:#1e293b;
+  text-decoration:none; font-size:14px; line-height:1; transition:.2s;
+}
+.pill-btn:hover{ background:#eef2ff; border-color:#bcd; }
+.pill-btn.ghost{ background:#fff; }
+.pill-btn.small{ padding:6px 10px; font-size:13px; }
+/* Конец добавления таймера */

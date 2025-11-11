@@ -1,6 +1,7 @@
 # run.py
-# [ИЗМЕНЕНО v6.5] Порядок регистрации хендлеров: сначала upload, затем auth (важно для кнопок импорта).
-# [ИЗМЕНЕНО v6.4] Удалены "custom-слова": больше не создаём user_custom_words, при старте удаляем если есть.
+# [ИЗМЕНЕНО v6.11] Переход на ежедневное напоминание в 12:00 (Europe/Amsterdam) вместо интервала.
+# [ИЗМЕНЕНО v6.10] Фолбэк: создаём JobQueue вручную, если отсутствует (экстры не установлены).
+# [ИЗМЕНЕНО v6.8]  Бот в главном потоке (run_polling), Flask — в отдельном.
 
 import asyncio
 import logging
@@ -10,16 +11,24 @@ import threading
 from pathlib import Path
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from app.routes import init_app as init_web
 
 from telegram import Update
-from telegram.ext import ApplicationBuilder, Defaults
+from telegram.ext import ApplicationBuilder, Defaults, JobQueue
 
 from bot.auth import register_auth_handlers
 from bot.upload import register_upload_handlers
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+# ▼▼▼ напоминания
+from bot.reminder import (
+    register_admin_handlers,
+    register_reminders_daily_at,   # ← ИЗМЕНЕНО: используем ежедневное расписание
+)
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
 log = logging.getLogger("runner")
 
 
@@ -32,7 +41,6 @@ def _conn(db_path: str) -> sqlite3.Connection:
 def init_db(db_path: str) -> None:
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     with _conn(db_path) as c:
-        # базовые таблицы
         c.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id    TEXT PRIMARY KEY,
@@ -62,27 +70,17 @@ def init_db(db_path: str) -> None:
         c.execute("CREATE INDEX IF NOT EXISTS idx_words_lesson ON words(lesson);")
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS u_words_number ON words(number);")
 
-        # авто-миграция: колонка difficult в words
         cols = [r["name"] for r in c.execute("PRAGMA table_info(words)")]
         if "difficult" not in cols:
             c.execute("ALTER TABLE words ADD COLUMN difficult INTEGER NOT NULL DEFAULT 0;")
 
-        # таблица персональных флагов
         c.execute("""
-            CREATE TABLE IF NOT EXISTS user_word_flags (
-                user_id   TEXT NOT NULL,
-                word_id   INTEGER NOT NULL,
-                difficult INTEGER NOT NULL DEFAULT 1,
-                PRIMARY KEY (user_id, word_id)
+            CREATE TABLE IF NOT EXISTS reminder_state (
+                user_id        TEXT PRIMARY KEY,
+                last_msg_id    INTEGER,
+                last_sent_date TEXT
             );
         """)
-
-        # [ИЗМЕНЕНО v6.4] Больше НЕ создаём user_custom_words — удаляем, если была
-        try:
-            c.execute("DROP TABLE IF EXISTS user_custom_words;")
-        except Exception:
-            pass
-
         c.commit()
 
 
@@ -94,12 +92,15 @@ def create_app() -> Flask:
     app = Flask(__name__, static_folder="app/static", template_folder="app/templates")
     app.config.from_object(Config)
 
-    # cookie-политика
+    # безопасные cookie только при https
     secure_cookies = _is_https_base(os.getenv("PUBLIC_BASE_URL", ""))
     app.config.update(
         SESSION_COOKIE_SAMESITE="None" if secure_cookies else "Lax",
         SESSION_COOKIE_SECURE=secure_cookies,
     )
+
+    # корректная работа за reverse-proxy
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     @app.after_request
     def skip_ngrok_warning(response):
@@ -107,7 +108,8 @@ def create_app() -> Flask:
         return response
 
     init_db(app.config["DB_PATH"])
-    init_web(app)
+    init_app = init_web
+    init_app(app)
     return app
 
 
@@ -133,49 +135,47 @@ def build_bot_application():
     defaults = Defaults(parse_mode="HTML")
     application = ApplicationBuilder().token(Config.BOT_TOKEN).defaults(defaults).build()
 
-    # ===== ВАЖНО: порядок регистрации =====
-    # [ИЗМЕНЕНО v6.5] Сначала upload-хендлеры (группа 0),
-    # затем auth (общий on_text в группе 100 внутри auth.py).
-    register_upload_handlers(application)     # ← сначала upload
-    register_auth_handlers(application)       # ← затем auth
-    log.info("Handlers registered: upload -> auth")  # [ИЗМЕНЕНО v6.5] лог
+    # === ФОЛБЭК ДЛЯ JobQueue ===
+    if application.job_queue is None:
+        log.warning(
+            "JobQueue не инициализирован. Включаю фолбэк через telegram.ext.JobQueue. "
+            "Рекомендуется установить: pip install \"python-telegram-bot[job-queue]\""
+        )
+        jq = JobQueue()
+        jq.set_application(application)
+        jq.start()
+        application.job_queue = jq
+        log.info("JobQueue: фолбэк запущен.")
 
+    # порядок важен
+    register_upload_handlers(application)
+    register_auth_handlers(application)
+
+    # напоминания: АДМИН-команда + ЕЖЕДНЕВНО в 12:00 Europe/Amsterdam
+    register_admin_handlers(application)
+    register_reminders_daily_at(application)  # ← ИЗМЕНЕНО: ежедневное расписание (12:00 по TZ из reminder.py)
+
+    log.info("Handlers registered: upload -> auth -> reminder_admin; jobs: reminder daily@12:00 Europe/Amsterdam")
     application.add_error_handler(on_error)
     return application
 
 
-def _bot_thread():
-    app_bot = build_bot_application()
-    if app_bot is None:
-        log.info("Бот не запущен из-за отсутствия токена.")
-        return
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        log.info("✅ Бот запускается (polling).")
-        loop.run_until_complete(app_bot.run_polling(allowed_updates=Update.ALL_TYPES))
-    except Exception as e:
-        log.exception("Ошибка при запуске бота: %s", e)
-    finally:
-        try:
-            pending = asyncio.all_tasks(loop=loop)
-            for task in pending:
-                task.cancel()
-            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-        except Exception:
-            pass
-        try:
-            loop.close()
-        except Exception:
-            pass
+# === запуск Flask в отдельном потоке ===
+def _flask_thread():
+    host = os.getenv("FLASK_HOST", "127.0.0.1")
+    port = int(os.getenv("FLASK_PORT", "7001"))
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    log.info("🌐 Flask запущен на http://%s:%s (debug=%s)", host, port, debug)
+    app.run(host=host, port=port, debug=debug, use_reloader=False)
 
 
 if __name__ == "__main__":
-    t = threading.Thread(target=_bot_thread, name="tg-bot", daemon=True)
+    t = threading.Thread(target=_flask_thread, name="flask", daemon=True)
     t.start()
 
-    host = os.getenv("FLASK_HOST", "0.0.0.0")
-    port = int(os.getenv("FLASK_PORT", "5000"))
-    debug = os.getenv("FLASK_DEBUG", "1") == "1"
-    log.info("🌐 Flask запущен на http://%s:%s (debug=%s)", host, port, debug)
-    app.run(host=host, port=port, debug=debug, use_reloader=False)
+    bot_app = build_bot_application()
+    if bot_app is None:
+        log.info("Бот не запущен из-за отсутствия токена.")
+    else:
+        log.info("✅ Бот запускается (polling).")
+        bot_app.run_polling(allowed_updates=Update.ALL_TYPES)

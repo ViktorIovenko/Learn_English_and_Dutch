@@ -3,6 +3,7 @@
 # [ИЗМЕНЕНО v5.8] Единственный «якорь-меню»: перед показом нового удаляем старый; все служебные сообщения автоудаляются.
 # [ИЗМЕНЕНО v5.7] Мгновенные ответы, удаление в фоне.
 # [ИЗМЕНЕНО v4.9] Автоудаление сообщений, связанных с паролем.
+# [ИСПРАВЛЕНО v5.9] Миграция схемы users: убран ранний return по наличию user_id; добавлена проверка полного набора столбцов и безопасная миграция.
 
 import os
 import sqlite3
@@ -24,8 +25,11 @@ def _conn(db_path: str) -> sqlite3.Connection:
 def _columns(conn: sqlite3.Connection, table: str) -> list[str]:
     return [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]
 
+# [ИСПРАВЛЕНО v5.9] Полноценная проверка схемы и миграция
 def _ensure_users_schema(db_path: str) -> None:
+    expected = ["user_id", "username", "first_name", "last_name", "is_active", "created_at"]
     with _conn(db_path) as c:
+        # Создадим таблицу, если её не было
         c.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id    TEXT PRIMARY KEY,
@@ -37,8 +41,12 @@ def _ensure_users_schema(db_path: str) -> None:
             );
         """)
         cols = _columns(c, "users")
-        if "user_id" in cols:
+
+        # Если схема уже совпадает (множества равны) — ничего не делаем
+        if set(cols) == set(expected):
             return
+
+        # Иначе мигрируем в новую таблицу с полной схемой
         c.execute("""
             CREATE TABLE IF NOT EXISTS users_new (
                 user_id    TEXT PRIMARY KEY,
@@ -49,24 +57,30 @@ def _ensure_users_schema(db_path: str) -> None:
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
         old = set(cols)
-        if "id" in old:
-            user_id_expr = "CAST(id AS TEXT)"
-        elif "user" in old:
-            user_id_expr = "CAST(user AS TEXT)"
-        else:
-            c.execute("DROP TABLE IF EXISTS users")
-            c.execute("ALTER TABLE users_new RENAME TO users")
-            c.commit()
-            return
+
+        # Подготовим выражения-источники для копирования данных
+        user_id_expr    = "CAST(user_id AS TEXT)" if "user_id" in old else (
+                          "CAST(id AS TEXT)" if "id" in old else (
+                          "CAST(user AS TEXT)" if "user" in old else "NULL"))
         username_expr   = "username"   if "username"   in old else "NULL"
         first_name_expr = "first_name" if "first_name" in old else "NULL"
         last_name_expr  = "last_name"  if "last_name"  in old else "NULL"
         is_active_expr  = "COALESCE(is_active,1)" if "is_active" in old else "1"
         created_at_expr = "COALESCE(created_at,CURRENT_TIMESTAMP)" if "created_at" in old else "CURRENT_TIMESTAMP"
+
+        # Если старой таблицы вообще нет совместимых источников id — просто пересоздаём
+        if user_id_expr == "NULL":
+            c.execute("DROP TABLE IF EXISTS users")
+            c.execute("ALTER TABLE users_new RENAME TO users")
+            c.commit()
+            return
+
+        # Переливаем данные из старой таблицы в новую (в рамках того, что есть)
         c.execute(f"""
             INSERT OR IGNORE INTO users_new (user_id, username, first_name, last_name, is_active, created_at)
-            SELECT {user_id_expr},{username_expr},{first_name_expr},{last_name_expr},{is_active_expr},{created_at_expr}
+            SELECT {user_id_expr}, {username_expr}, {first_name_expr}, {last_name_expr}, {is_active_expr}, {created_at_expr}
             FROM users
         """)
         c.execute("DROP TABLE users")
@@ -78,6 +92,7 @@ def _is_user_registered(db_path: str, user_id: int) -> bool:
     with _conn(db_path) as c:
         return bool(c.execute("SELECT 1 FROM users WHERE user_id=?", (str(user_id),)).fetchone())
 
+# [БЕЗ ИЗМЕНЕНИЙ] — сама запись уже включает username/first_name/last_name
 def _register_user(db_path: str, user: "telegram.User") -> None:
     _ensure_users_schema(db_path)
     with _conn(db_path) as c:

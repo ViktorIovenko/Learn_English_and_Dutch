@@ -10,19 +10,25 @@
 </head>
 <body>
   <header class="header">
-    
-
-     
+    <!-- [ДОБАВЛЕНО v5.11] Контейнер с 10-минутным таймером -->
+    <div class="container">
+      <div id="daily-timer" class="daily-timer" role="group" aria-label="10-minute study timer">
+        <span class="dt-label" id="dt_label">Ежедневная цель:</span>
+        <span class="dt-time" id="dt_time" aria-live="polite">10:00</span>
+        <button id="dt_pause" class="pill-btn small" type="button" aria-pressed="false">Пауза</button>
+        <!-- [ДОБАВЛЕНО v5.13] Кнопка перезапуска -->
+        <button id="dt_restart" class="pill-btn small" type="button" title="Перезапустить таймер">Перезапуск</button>
+        <button id="dt_reset" class="pill-btn small ghost" type="button" style="display:none">Сброс</button>
+      </div>
     </div>
+    <!-- /[ДОБАВЛЕНО v5.11] -->
   </header>
   <main class="container">
     {% block content %}{% endblock %}
   </main>
   <script>
     const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-    // [НЕ МЕНЯЛОСЬ] Разворачиваем WebApp и защита от случайного закрытия
     if (tg) { try { tg.expand(); tg.enableClosingConfirmation(); } catch(e){} }
-    // [НЕ МЕНЯЛОСЬ] Быстрое имя для приветствия
     (function putNameInstant(){
       try{
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user){
@@ -35,7 +41,6 @@
         }
       }catch(e){}
     })();
-    // [НЕ МЕНЯЛОСЬ] USER_ID для API (fallback через ?uid=)
     const params = new URLSearchParams(window.location.search);
     const urlUid = params.get("uid") || "";
     const tgUserId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "";
@@ -46,7 +51,6 @@
       o.headers = Object.assign({}, o.headers || {}, {"X-User-Id": USER_ID});
       return fetch(url, o);
     };
-    // [ДОБАВЛЕНО v5.8] Утилиты для панели аккаунта (оставляем — они нужны на index.html)
     function _setText(id, val){ try{ document.getElementById(id).textContent = val || "—"; }catch(e){} }
     function _setAuth(val){
       try{
@@ -66,7 +70,6 @@
         _setText("acc_last", u.last_name || "");
       }catch(e){}
     }
-    // [НЕ МЕНЯЛОСЬ] Авто-логин WebApp
     (async () => {
       try {
         const already = sessionStorage.getItem("auth_ok");
@@ -80,8 +83,6 @@
           if (js && js.ok) sessionStorage.setItem("auth_ok", "1");
         }
       } catch(e) {}
-      // [ДОБАВЛЕНО v5.8] Сначала быстро показать то, что знаем от Telegram,
-      // затем подтвердить с сервера (истинный источник).
       _fillFromTGUnsafe();
       try {
         const r = await apiFetch("/api/me");
@@ -92,7 +93,6 @@
           _setText("acc_first", me.first_name || "");
           _setText("acc_last", me.last_name || "");
           _setAuth(true);
-          // Обновим имя для приветствия (если есть)
           const name = (me.first_name && me.first_name.trim())
                        ? me.first_name.trim()
                        : ((me.username && me.username.trim()) ? "@"+me.username.trim() : "");
@@ -105,6 +105,123 @@
         }
       } catch(e) { _setAuth(false); }
     })();
+    /* ===========================================
+       [ИЗМЕНЕНО v5.12] Таймер с сохранением в sessionStorage
+       - НЕ сбрасывается при переходе по страницам
+       - Сбрасывается только при полном закрытии WebApp/браузера
+       =========================================== */
+    (function attachDailyTimer(){
+      const wrap    = document.getElementById('daily-timer');
+      const timeEl  = document.getElementById('dt_time');
+      const pause   = document.getElementById('dt_pause');
+      const restart = document.getElementById('dt_restart'); // [ДОБАВЛЕНО v5.13]
+      const reset   = document.getElementById('dt_reset');
+      if (!wrap || !timeEl || !pause || !reset || !restart) return;
+
+      const TOTAL = 10 * 60; // 10 минут
+
+      function readState(){
+        let remaining = Number(sessionStorage.getItem('dt_remaining'));
+        let running   = sessionStorage.getItem('dt_running');
+        let lastTs    = Number(sessionStorage.getItem('dt_last'));
+        if (!Number.isFinite(remaining) || remaining <= 0 || remaining > TOTAL) remaining = TOTAL;
+        if (running === null) running = '1';
+        if (!Number.isFinite(lastTs) || lastTs <= 0) lastTs = Date.now();
+        if (running === '1') {
+          const now = Date.now();
+          const deltaSec = Math.floor((now - lastTs) / 1000);
+          if (deltaSec > 0) {
+            remaining = Math.max(0, remaining - deltaSec);
+            lastTs = now;
+          }
+        }
+        return { remaining, running: (running === '1'), lastTs };
+      }
+      function writeState(state){
+        sessionStorage.setItem('dt_remaining', String(state.remaining));
+        sessionStorage.setItem('dt_running',   state.running ? '1' : '0');
+        sessionStorage.setItem('dt_last',      String(state.lastTs));
+      }
+
+      let state = readState();
+
+      function fmt(sec){
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return String(m) + ':' + String(s).padStart(2,'0');
+      }
+      function render(){
+        timeEl.textContent = fmt(state.remaining);
+        wrap.classList.toggle('done', state.remaining <= 0);
+        pause.style.display  = state.remaining <= 0 ? 'none' : '';
+        reset.style.display  = state.remaining <= 0 ? '' : 'none';
+        // restart всегда виден
+        restart.style.display = ''; // [ДОБАВЛЕНО v5.13]
+        pause.textContent = state.running ? 'Пауза' : 'Продолжить';
+        pause.setAttribute('aria-pressed', state.running ? 'false' : 'true');
+      }
+
+      let tickId = null;
+      function stopTick(){ if (tickId){ clearInterval(tickId); tickId = null; } }
+      function startTick(){
+        stopTick();
+        tickId = setInterval(()=>{
+          if (!state.running || state.remaining <= 0) return;
+          const now = Date.now();
+          const deltaSec = Math.floor((now - state.lastTs) / 1000);
+          if (deltaSec >= 1){
+            state.remaining = Math.max(0, state.remaining - deltaSec);
+            state.lastTs = now;
+            writeState(state);
+            render();
+          }
+        }, 1000);
+      }
+
+      pause.addEventListener('click', ()=>{
+        state.running = !state.running;
+        state.lastTs  = Date.now();
+        writeState(state);
+        render();
+        if (state.running && !tickId) startTick();
+      });
+
+      reset.addEventListener('click', ()=>{
+        state.remaining = TOTAL;
+        state.running   = true;
+        state.lastTs    = Date.now();
+        writeState(state);
+        render();
+        startTick();
+      });
+
+      // [ДОБАВЛЕНО v5.13] Обработчик «Перезапуск»
+      restart.addEventListener('click', ()=>{
+        state.remaining = TOTAL;   // сброс до 10:00
+        state.running   = true;    // сразу запустить
+        state.lastTs    = Date.now();
+        writeState(state);
+        render();
+        startTick();
+      });
+
+      window.addEventListener('beforeunload', ()=>{
+        if (state.running){
+          const now = Date.now();
+          const deltaSec = Math.floor((now - state.lastTs) / 1000);
+          if (deltaSec > 0){
+            state.remaining = Math.max(0, state.remaining - deltaSec);
+            state.lastTs = now;
+          }
+        }
+        writeState(state);
+      });
+
+      writeState(state);
+      render();
+      startTick();
+    })();
+    /* ===== /Сеансовый таймер ===== */
   </script>
   {% block scripts %}{% endblock %}
 </body>
