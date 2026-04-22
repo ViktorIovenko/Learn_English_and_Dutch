@@ -24,12 +24,14 @@ EPHEMERAL_SECONDS = 20.0
 
 def _norm_nl(nl: str) -> str: return (nl or "").strip().lower()
 
-def _get_existing_nl_set(db_path: str) -> set[str]:
+def _get_existing_nl_set(db_path: str, user_id: str) -> set[str]:
     existing = set()
+    if not user_id:
+        return existing
     try:
         conn = sqlite3.connect(db_path)
         try:
-            cur = conn.cursor(); cur.execute("SELECT nl FROM words")
+            cur = conn.cursor(); cur.execute("SELECT nl FROM words WHERE user_id = ?", (str(user_id),))
             for (nl,) in cur.fetchall(): existing.add(_norm_nl(nl))
         finally:
             conn.close()
@@ -55,19 +57,21 @@ def _parse_number(num: str) -> Tuple[int|None, int|None]:
     w = int(m.group(2)) if m.group(2) is not None else None
     return l, w
 
-def _get_db_lessons_set_and_max(db_path: str) -> Tuple[set[int], int]:
+def _get_db_lessons_set_and_max(db_path: str, user_id: str) -> Tuple[set[int], int]:
     """
     Считывает столбец number из таблицы words и вытаскивает из него номера уроков (часть до '.').
     Возвращает (множество уроков, максимальный урок) — если пусто, max=0.
     """
     lessons = set()
     max_lesson = 0
+    if not user_id:
+        return set(), 0
     try:
         conn = sqlite3.connect(db_path)
         try:
             cur = conn.cursor()
             try:
-                cur.execute("SELECT number FROM words")
+                cur.execute("SELECT number FROM words WHERE user_id = ?", (str(user_id),))
             except Exception:
                 # Если столбца number нет, считаем что уроков нет
                 return set(), 0
@@ -91,7 +95,7 @@ def _format_lesson_remap(mapping: Dict[int, int]) -> str:
         lines.append(f" - Урок {old} → {mapping[old]}")
     return "\n".join(lines)
 
-def _renumber_lessons_if_needed(rows: List[Dict[str, str]], db_path: str) -> Tuple[List[Dict[str, str]], Dict[int, int]]:
+def _renumber_lessons_if_needed(rows: List[Dict[str, str]], db_path: str, user_id: str) -> Tuple[List[Dict[str, str]], Dict[int, int]]:
     """
     Проверяет конфликт нумерации уроков между файлом и БД.
     Если любой урок из файла уже есть в БД ИЛИ <= max_урок_в_БД — перенумеровывает
@@ -102,7 +106,7 @@ def _renumber_lessons_if_needed(rows: List[Dict[str, str]], db_path: str) -> Tup
     if not rows:
         return rows, {}
 
-    db_lessons, db_max = _get_db_lessons_set_and_max(db_path)
+    db_lessons, db_max = _get_db_lessons_set_and_max(db_path, user_id)
 
     # Собираем уникальные уроки в порядке появления
     file_lessons_order: List[int] = []
@@ -189,8 +193,8 @@ async def _send_long(update: Update, text: str, chunk_limit: int = 3500) -> List
         m = await update.effective_chat.send_message(p); sent_ids.append(m.message_id)
     return sent_ids
 
-def _filter_duplicates_by_nl(rows: List[Dict[str, str]], db_path: str):
-    existing_db = _get_existing_nl_set(db_path)
+def _filter_duplicates_by_nl(rows: List[Dict[str, str]], db_path: str, user_id: str):
+    existing_db = _get_existing_nl_set(db_path, user_id)
     seen_in_file = set(); filtered = []; skipped_in_file = []; skipped_in_db = []
     for r in rows:
         nl = _norm_nl(r.get("nl", ""))
@@ -205,32 +209,31 @@ def _filter_duplicates_by_nl(rows: List[Dict[str, str]], db_path: str):
 
 # ---------------- ХЕНДЛЕРЫ ----------------
 async def cmd_upload_words(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     user = update.effective_user
     await _delete_user_trigger(update, context)
-    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
+    await show_menu_with_keyboard(update, context, user.id)
 
     if not is_user_registered(Config.DB_PATH, user.id):
-        m = await update.effective_chat.send_message("Сначала пройдите регистрацию: отправьте /start и введите пароль.")
+        m = await update.effective_chat.send_message(
+            "Сначала пройдите регистрацию: отправьте /start и введите пароль."
+        )
         asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
-    pending = context.user_data.get("pending_import_all") or []
-    if pending:
-        kb_confirm = ReplyKeyboardMarkup(
-            [["Импортировать как есть", "Отменить импорт"]],
-            resize_keyboard=True, is_persistent=True, one_time_keyboard=False
-        )
-        m = await update.effective_chat.send_message("Подтвердите импорт:", reply_markup=kb_confirm)
-        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))  # ← ИЗМЕНЕНО: удаляем подсказку
-        return
-
+    upload_url = f"{Config.PUBLIC_BASE_URL}/upload?uid={user.id}"
+    keyboard = InlineKeyboardMarkup([[
+        InlineKeyboardButton("📤 Открыть страницу загрузки", url=upload_url)
+    ]])
     m = await update.effective_chat.send_message(
-        ("📥 <b>Загрузите .csv файл со словами</b>\n\n"
-         "Перед загрузкой посмотрите пример структуры таблицы:\n"
-         '<a href="https://docs.google.com/spreadsheets/d/1OBKebdrOGZMcT00Yq_RfB9FuyCIc8QBHoRmluuGpwr4/edit?usp=sharing">📄 Образец CSV таблицы</a>'),
-        parse_mode="HTML", disable_web_page_preview=True
+        "📤 <b>Загрузка слов</b>\n\n"
+        "Откройте страницу на компьютере, вставьте слова и нажмите «Сгенерировать» — "
+        "Ollama создаст переводы и примеры.\n\n"
+        "💡 <i>Одиночное слово можно добавить прямо здесь: просто напишите его.</i>",
+        parse_mode="HTML",
+        reply_markup=keyboard
     )
-    asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
+    asyncio.create_task(_delete_later(context, m.chat_id, m.message_id, delay=60.0))
 
 async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
@@ -257,7 +260,7 @@ async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     try:
         all_rows: List[Dict[str, str]] = parse_csv_to_rows(tmp_path)
         # Фильтруем дубль-слова заранее
-        filtered_rows, skipped_in_file, skipped_in_db = _filter_duplicates_by_nl(all_rows, Config.DB_PATH)
+        filtered_rows, skipped_in_file, skipped_in_db = _filter_duplicates_by_nl(all_rows, Config.DB_PATH, str(user.id))
 
         if not filtered_rows:
             blocks = ["⚠ Все загруженные слова уже есть (или повторяются в файле) и были пропущены."]
@@ -268,7 +271,7 @@ async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return
 
         # ---------- [ДОБАВЛЕНО v4.29] Защита нумерации уроков ----------
-        filtered_rows, remap = _renumber_lessons_if_needed(filtered_rows, Config.DB_PATH)
+        filtered_rows, remap = _renumber_lessons_if_needed(filtered_rows, Config.DB_PATH, str(user.id))
         # ---------------------------------------------------------------
 
         _, bad_rows = validate_example_usage(filtered_rows)
@@ -331,9 +334,9 @@ async def on_confirm_import_all(update: Update, context: ContextTypes.DEFAULT_TY
     asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
 
     # Повторная защита: если pending появился до обновления — всё равно перенумеруем при необходимости
-    rows2, remap = _renumber_lessons_if_needed(rows, Config.DB_PATH)  # ← [ДОБАВЛЕНО v4.29]
+    rows2, remap = _renumber_lessons_if_needed(rows, Config.DB_PATH, str(user.id))  # ← [ДОБАВЛЕНО v4.29]
 
-    filtered_rows, skipped_in_file, skipped_in_db = _filter_duplicates_by_nl(rows2, Config.DB_PATH)
+    filtered_rows, skipped_in_file, skipped_in_db = _filter_duplicates_by_nl(rows2, Config.DB_PATH, str(user.id))
     if not filtered_rows:
         blocks = ["⚠ Все загруженные слова уже есть (или повторяются в файле) и были пропущены."]
         if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", "Внутри файла повторов"))
@@ -344,7 +347,7 @@ async def on_confirm_import_all(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data.pop("pending_import_all", None)
         return
 
-    count = bulk_upsert_words(Config.DB_PATH, filtered_rows)
+    count = bulk_upsert_words(Config.DB_PATH, str(user.id), filtered_rows)
     context.user_data.pop("pending_import_all", None)
 
     blocks = [f"✅ Импортировано записей (после фильтра дублей): {count}"]
@@ -365,6 +368,82 @@ async def on_cancel_import(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
     context.user_data.pop("pending_import_all", None)
 
+def _find_word_in_db(db_path: str, user_id: str, word: str) -> int | None:
+    """Ищет слово по полям nl или en. Возвращает id строки или None."""
+    word_lower = word.strip().lower()
+    try:
+        conn = sqlite3.connect(db_path)
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id FROM words WHERE user_id=? AND (LOWER(nl)=? OR LOWER(en)=?) LIMIT 1",
+                (str(user_id), word_lower, word_lower)
+            )
+            row = cur.fetchone()
+            return row[0] if row else None
+        finally:
+            conn.close()
+    except Exception:
+        return None
+
+
+def _mark_difficult_by_id(db_path: str, user_id: str, word_id: int) -> None:
+    try:
+        conn = sqlite3.connect(db_path)
+        try:
+            conn.execute(
+                "UPDATE words SET difficult=1 WHERE id=? AND user_id=?",
+                (word_id, str(user_id))
+            )
+            conn.execute(
+                """INSERT INTO user_word_flags (user_id, word_id, difficult)
+                   VALUES (?, ?, 1)
+                   ON CONFLICT(user_id, word_id) DO UPDATE SET difficult=1""",
+                (str(user_id), word_id)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception:
+        pass
+
+
+async def on_single_word(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Обрабатывает одиночные слова: дубль → в сложные; нет в базе → предлагает веб-страницу."""
+    user = update.effective_user
+    text = (update.message.text or "").strip()
+
+    if not text or len(text) > 100:
+        return
+    if not is_user_registered(Config.DB_PATH, user.id):
+        return
+
+    await _delete_user_trigger(update, context)
+
+    word_id = _find_word_in_db(Config.DB_PATH, str(user.id), text)
+
+    if word_id is not None:
+        _mark_difficult_by_id(Config.DB_PATH, str(user.id), word_id)
+        m = await update.effective_chat.send_message(
+            f"⭐ <b>«{text}»</b> уже есть в базе — добавлено в список сложных слов.",
+            parse_mode="HTML"
+        )
+    else:
+        upload_url = f"{Config.PUBLIC_BASE_URL}/upload?uid={user.id}"
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+        keyboard = InlineKeyboardMarkup([[
+            InlineKeyboardButton("📤 Открыть страницу загрузки", url=upload_url)
+        ]])
+        m = await update.effective_chat.send_message(
+            f"❓ <b>«{text}»</b> не найдено в базе.\n\n"
+            "Для добавления новых слов с переводами и примерами — используйте веб-страницу:",
+            parse_mode="HTML",
+            reply_markup=keyboard
+        )
+
+    asyncio.create_task(_delete_later(context, m.chat_id, m.message_id, delay=30.0))
+
+
 def register_upload_handlers(application: Application) -> None:
     application.add_handler(CommandHandler("upload_words", cmd_upload_words))
     application.add_handler(MessageHandler(filters.Regex(r"^(Загрузить слова)$"), cmd_upload_words))
@@ -372,3 +451,11 @@ def register_upload_handlers(application: Application) -> None:
     application.add_handler(MessageHandler(filters.Document.ALL & (~filters.COMMAND), on_csv_document))
     application.add_handler(MessageHandler(filters.Regex(r"(?i)^(импортировать как есть)$"), on_confirm_import_all))
     application.add_handler(MessageHandler(filters.Regex(r"(?i)^(отменить импорт)$"), on_cancel_import))
+    # Одиночное слово — последним, чтобы не перехватывать команды и кнопки
+    application.add_handler(MessageHandler(
+        filters.TEXT & (~filters.COMMAND) & (~filters.Regex(
+            r"(?i)^(загрузить слова|добавить слова|импортировать слова|импортировать как есть|отменить импорт|меню|начать|помощь|старт)$"
+        )),
+        on_single_word,
+        block=False
+    ))

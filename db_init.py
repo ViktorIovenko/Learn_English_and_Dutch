@@ -1,6 +1,7 @@
 # [ИЗМЕНЕНО v6.4] Приведён к актуальной схеме words (id INTEGER, lesson TEXT, number TEXT, ...)
 
 import sqlite3
+import time
 from config import Config
 from pathlib import Path
 
@@ -20,6 +21,8 @@ DEMO = [
 SCHEMA_ACTUAL = """
 CREATE TABLE IF NOT EXISTS words (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id   TEXT NOT NULL DEFAULT '',
+    status    TEXT NOT NULL DEFAULT 'user',
     lesson     TEXT,
     number     TEXT,
     nl         TEXT,
@@ -30,7 +33,8 @@ CREATE TABLE IF NOT EXISTS words (
     ex_ru      TEXT,
     audio_nl   TEXT,
     audio_en   TEXT,
-    audio_ru   TEXT
+    audio_ru   TEXT,
+    updated_at INTEGER
 );
 """
 
@@ -44,22 +48,41 @@ def _ensure_words_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_ACTUAL)
 
     # Индексы
+    cols = [r["name"] for r in conn.execute("PRAGMA table_info(words)")]
+    if "user_id" not in cols:
+        conn.execute("ALTER TABLE words ADD COLUMN user_id TEXT;")
+        conn.execute("UPDATE words SET user_id = '' WHERE user_id IS NULL;")
+    if "status" not in cols:
+        conn.execute("ALTER TABLE words ADD COLUMN status TEXT NOT NULL DEFAULT 'user';")
+    conn.execute("""
+        UPDATE words
+        SET status = 'user'
+        WHERE COALESCE(status, '') = ''
+    """)
+    conn.execute("DROP INDEX IF EXISTS u_words_number;")
+    conn.execute("DROP INDEX IF EXISTS idx_words_lesson_number;")
+    conn.execute("DROP INDEX IF EXISTS idx_words_user_lesson_number;")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_words_lesson ON words(lesson);")
-    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS u_words_number ON words(number);")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_words_user_lesson ON words(user_id, lesson);")
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS u_words_user_lesson_number ON words(user_id, lesson, number);")
 
     # Колонка difficult (если отсутствует) — как в приложении
     cols = [r["name"] for r in conn.execute("PRAGMA table_info(words)")]
     if "difficult" not in cols:
         conn.execute("ALTER TABLE words ADD COLUMN difficult INTEGER NOT NULL DEFAULT 0;")
+    if "updated_at" not in cols:
+        conn.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER;")
+        conn.execute("UPDATE words SET updated_at = (strftime('%s','now') * 1000) WHERE updated_at IS NULL;")
 
 def _insert_demo(conn: sqlite3.Connection) -> None:
     # Идемпотентная вставка/обновление демо-записей по UNIQUE(number)
+    now_ms = int(time.time() * 1000)
     conn.executemany(
         """
         INSERT INTO words (
-            lesson, number, nl, en, ru, ex_nl, ex_en, ex_ru, audio_nl, audio_en, audio_ru, difficult
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(number) DO UPDATE SET
+            user_id, status, lesson, number, nl, en, ru, ex_nl, ex_en, ex_ru, audio_nl, audio_en, audio_ru, difficult, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id, lesson, number) DO UPDATE SET
             lesson=excluded.lesson,
             nl=excluded.nl,
             en=excluded.en,
@@ -70,9 +93,10 @@ def _insert_demo(conn: sqlite3.Connection) -> None:
             audio_nl=excluded.audio_nl,
             audio_en=excluded.audio_en,
             audio_ru=excluded.audio_ru,
-            difficult=excluded.difficult
+            difficult=excluded.difficult,
+            updated_at=excluded.updated_at
         """,
-        [(row[1], row[0], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11]) for row in DEMO]
+        [("", "test", row[1], row[0], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], now_ms) for row in DEMO]
     )
 
 def main():

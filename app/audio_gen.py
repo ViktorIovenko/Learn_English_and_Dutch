@@ -9,16 +9,35 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, List, Any, Iterable
 from gtts import gTTS  # pip install gTTS==2.5.1
+import time
 from config import Config
 import traceback
 import sys
+import warnings
+import shutil
 
 # pydub для пост-обработки (и ffmpeg в PATH)
+warnings.filterwarnings(
+    "ignore",
+    message=r"Couldn't find ffmpeg or avconv.*",
+    category=RuntimeWarning,
+    module=r"pydub\.utils",
+)
+warnings.filterwarnings(
+    "ignore",
+    message=r"Couldn't find ffprobe or avprobe.*",
+    category=RuntimeWarning,
+    module=r"pydub\.utils",
+)
 try:
     from pydub import AudioSegment, effects  # pip install pydub==0.25.1
     _HAS_PYDUB = True
+    _HAS_FFMPEG = bool(shutil.which("ffmpeg") or shutil.which("avconv"))
+    _HAS_FFPROBE = bool(shutil.which("ffprobe") or shutil.which("avprobe"))
 except Exception:
     _HAS_PYDUB = False
+    _HAS_FFMPEG = False
+    _HAS_FFPROBE = False
 
 APP_DIR = Path(__file__).resolve().parent
 AUDIO_ROOT = APP_DIR / "static" / "audio"
@@ -76,7 +95,7 @@ def _maximize_loudness(mp3_path: Path) -> None:
     Максимально громко: компрессия динамического диапазона + пиковая нормализация.
     Экспорт с высоким битрейтом.
     """
-    if not _HAS_PYDUB or not Config.AUDIO_MAXIMIZE:
+    if not _HAS_PYDUB or not _HAS_FFMPEG or not _HAS_FFPROBE or not Config.AUDIO_MAXIMIZE:
         return
     if not mp3_path.exists() or mp3_path.stat().st_size == 0:
         return
@@ -117,7 +136,7 @@ def _audio_url(lang: str, lesson_slug: str, fname: str) -> str:
     return f"/static/audio/{lang}/{lesson_slug}/{fname}"
 
 
-def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str]) -> Dict[str, Any]:
+def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str], user_id: str | None = None) -> Dict[str, Any]:
     """
     Создаёт MP3 только для указанных id и языков.
     Возвращает { ok: true, items: [ {id, nl, en, ru, ok}, ... ] }
@@ -129,8 +148,19 @@ def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str])
 
     items: List[Dict[str, Any]] = []
 
+    now_ms = int(time.time() * 1000)
     with _connect(db_path) as c:
+        cols = [r["name"] for r in c.execute("PRAGMA table_info(words)")]
+        if "updated_at" not in cols:
+            c.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER;")
+            c.execute("UPDATE words SET updated_at = (strftime('%s','now') * 1000) WHERE updated_at IS NULL;")
         qmarks = ",".join("?" * len(ids))
+        if user_id:
+            where = f"(user_id = ? OR status = 'test') AND id IN ({qmarks})"
+            params = [str(user_id)] + ids
+        else:
+            where = f"id IN ({qmarks})"
+            params = ids
         rows = c.execute(
             f"""
             SELECT id, lesson,
@@ -138,9 +168,9 @@ def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str])
                    COALESCE(audio_nl,'') AS audio_nl,
                    COALESCE(audio_en,'') AS audio_en,
                    COALESCE(audio_ru,'') AS audio_ru
-            FROM words WHERE id IN ({qmarks})
+            FROM words WHERE {where}
             """,
-            ids,
+            params,
         ).fetchall()
 
         for r in rows:
@@ -179,10 +209,16 @@ def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str])
                     traceback.print_exc()
                     out_per_lang[lang] = ""
 
-            c.execute(
-                "UPDATE words SET audio_nl=?, audio_en=?, audio_ru=? WHERE id=?",
-                (out_per_lang["nl"], out_per_lang["en"], out_per_lang["ru"], wid),
-            )
+            if user_id:
+                c.execute(
+                    "UPDATE words SET audio_nl=?, audio_en=?, audio_ru=?, updated_at=? WHERE id=? AND (user_id=? OR status='test')",
+                    (out_per_lang["nl"], out_per_lang["en"], out_per_lang["ru"], now_ms, wid, str(user_id)),
+                )
+            else:
+                c.execute(
+                    "UPDATE words SET audio_nl=?, audio_en=?, audio_ru=?, updated_at=? WHERE id=?",
+                    (out_per_lang["nl"], out_per_lang["en"], out_per_lang["ru"], now_ms, wid),
+                )
 
             items.append(
                 {"id": wid, "nl": out_per_lang["nl"], "en": out_per_lang["en"], "ru": out_per_lang["ru"], "ok": True}

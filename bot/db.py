@@ -166,15 +166,15 @@ def _ensure_words_unique_pair(conn: sqlite3.Connection) -> None:
     """
     # Проверим, существует ли индекс
     idx = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_words_lesson_number'"
+        "SELECT name FROM sqlite_master WHERE type='index' AND name='u_words_user_lesson_number'"
     ).fetchone()
     if idx:
         return
     # Попытка создать индекс — может упасть, если есть дубли
     try:
         conn.execute("""
-            CREATE UNIQUE INDEX idx_words_lesson_number
-            ON words(lesson, number);
+            CREATE UNIQUE INDEX u_words_user_lesson_number
+            ON words(user_id, lesson, number);
         """)
         conn.commit()
         return
@@ -186,7 +186,7 @@ def _ensure_words_unique_pair(conn: sqlite3.Connection) -> None:
                 WHERE rowid NOT IN (
                     SELECT MIN(rowid)
                     FROM words
-                    GROUP BY lesson, number
+                    GROUP BY user_id, lesson, number
                 )
             """)
             conn.commit()
@@ -195,21 +195,57 @@ def _ensure_words_unique_pair(conn: sqlite3.Connection) -> None:
             pass
         # Повторная попытка создать индекс
         conn.execute("""
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_words_lesson_number
-            ON words(lesson, number);
+            CREATE UNIQUE INDEX IF NOT EXISTS u_words_user_lesson_number
+            ON words(user_id, lesson, number);
         """)
         conn.commit()
 
-def bulk_upsert_words(db_path: str, rows: Iterable[Dict[str, Any]]) -> int:
+
+def _ensure_words_user_id(conn: sqlite3.Connection) -> None:
+    cols = [r["name"] for r in conn.execute("PRAGMA table_info(words)")]
+    if "user_id" not in cols:
+        conn.execute("ALTER TABLE words ADD COLUMN user_id TEXT;")
+        conn.execute("UPDATE words SET user_id = '' WHERE user_id IS NULL;")
+    if "status" not in cols:
+        conn.execute("ALTER TABLE words ADD COLUMN status TEXT NOT NULL DEFAULT 'user';")
+    conn.execute("""
+        UPDATE words
+        SET status = 'user'
+        WHERE COALESCE(status, '') = ''
+    """)
+    conn.execute("DROP INDEX IF EXISTS u_words_number;")
+    conn.execute("DROP INDEX IF EXISTS idx_words_lesson_number;")
+    conn.execute("DROP INDEX IF EXISTS idx_words_user_lesson_number;")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_words_user_lesson ON words(user_id, lesson);")
+    conn.commit()
+
+
+def _ensure_words_updated_at(conn: sqlite3.Connection) -> None:
+    cols = [r["name"] for r in conn.execute("PRAGMA table_info(words)")]
+    if "updated_at" in cols:
+        return
+    conn.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER;")
+    conn.execute("UPDATE words SET updated_at = (strftime('%s','now') * 1000) WHERE updated_at IS NULL;")
+    conn.commit()
+
+def bulk_upsert_words(db_path: str, user_id: str, rows: Iterable[Dict[str, Any]]) -> int:
     """
     Массовая вставка/обновление слов.
     Ожидаются ключи:
       lesson, number, nl, en, ru, ex_nl, ex_en, ex_ru, audio_nl, audio_en, audio_ru
     """
     rows = list(rows)
+    user_id = str(user_id or "")
+    if not user_id:
+        return 0
     if not rows:
         return 0
     with _conn(db_path) as conn:
+        try:
+            _ensure_words_user_id(conn)
+            _ensure_words_updated_at(conn)
+        except Exception:
+            pass
         # [ДОБАВЛЕНО v4.15] гарантируем UNIQUE(lesson, number) перед upsert
         try:
             _ensure_words_unique_pair(conn)
@@ -219,11 +255,20 @@ def bulk_upsert_words(db_path: str, rows: Iterable[Dict[str, Any]]) -> int:
             pass
 
         # [ИЗМЕНЕНО v4.15] upsert по паре (lesson, number)
+        now_ms = int(datetime.utcnow().timestamp() * 1000)
+        prepared = []
+        for r in rows:
+            row = dict(r)
+            row["user_id"] = user_id
+            row["status"] = "user"
+            row["updated_at"] = now_ms
+            prepared.append(row)
+
         conn.executemany(
             """
-            INSERT INTO words (lesson, number, nl, en, ru, ex_nl, ex_en, ex_ru, audio_nl, audio_en, audio_ru)
-            VALUES (:lesson, :number, :nl, :en, :ru, :ex_nl, :ex_en, :ex_ru, :audio_nl, :audio_en, :audio_ru)
-            ON CONFLICT(lesson, number) DO UPDATE SET
+            INSERT INTO words (user_id, status, lesson, number, nl, en, ru, ex_nl, ex_en, ex_ru, audio_nl, audio_en, audio_ru, updated_at)
+            VALUES (:user_id, :status, :lesson, :number, :nl, :en, :ru, :ex_nl, :ex_en, :ex_ru, :audio_nl, :audio_en, :audio_ru, :updated_at)
+            ON CONFLICT(user_id, lesson, number) DO UPDATE SET
                 nl=excluded.nl,
                 en=excluded.en,
                 ru=excluded.ru,
@@ -232,9 +277,11 @@ def bulk_upsert_words(db_path: str, rows: Iterable[Dict[str, Any]]) -> int:
                 ex_ru=excluded.ex_ru,
                 audio_nl=excluded.audio_nl,
                 audio_en=excluded.audio_en,
-                audio_ru=excluded.audio_ru
+                audio_ru=excluded.audio_ru,
+                status=excluded.status,
+                updated_at=excluded.updated_at
             """,
-            rows,
+            prepared,
         )
         conn.commit()
         return len(rows)

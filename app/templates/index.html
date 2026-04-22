@@ -10,6 +10,58 @@
   </div>
 </section>
 
+<div class="row">
+  <a href="/upload" class="pill-btn" style="text-decoration:none">📤 Загрузить слова</a>
+  <button id="clear-cache-btn" type="button">Очистить кэш</button>
+  <button id="delete-user-lessons-btn" type="button" class="danger-btn">Удалить слова пользователя</button>
+</div>
+
+<div id="cacheModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cacheModalTitle">
+    <div class="modal-head">
+      <div class="modal-title" id="cacheModalTitle">Очистка кэша</div>
+      <button type="button" class="modal-close" data-action="close" aria-label="Закрыть">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="cacheModalText">Точно удалить кэш и локальные данные?</p>
+      <div id="cacheModalStatus" class="modal-status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="status-text">Очистка...</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="ghost-btn" data-action="cancel">Отмена</button>
+      <button id="cacheConfirmBtn" type="button" class="danger-btn">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<div id="deleteLessonsModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteLessonsTitle">
+    <div class="modal-head">
+      <div class="modal-title" id="deleteLessonsTitle">Удаление уроков пользователя</div>
+      <button type="button" class="modal-close" data-action="close" aria-label="Закрыть">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Выберите уроки пользователя, которые нужно удалить. Удаляются слова и аудио.</p>
+      <div class="toolbar">
+        <button id="select-all-lessons-btn" type="button" class="ghost-btn">Выбрать все</button>
+      </div>
+      <div id="deleteLessonsList" class="lesson-list" role="listbox" aria-label="Список уроков"></div>
+      <div id="deleteLessonsEmpty" class="modal-empty" aria-live="polite"></div>
+      <div id="deleteLessonsStatus" class="modal-status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="status-text"></span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <div class="modal-note" id="deleteLessonsCount"></div>
+      <button type="button" class="ghost-btn" data-action="cancel">Отмена</button>
+      <button id="deleteLessonsConfirmBtn" type="button" class="danger-btn" disabled>Удалить выбранные</button>
+    </div>
+  </div>
+</div>
+
 <div class="subbar">
   <div class="sub-title">Список уроков</div>
   <div class="subtabs">
@@ -30,6 +82,57 @@
 
 {% block scripts %}
 <script type="module">
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
+
+  const apiFetch = window.apiFetch || fetch;
+  const IDB = window.LocalDB || null;
+  const IDB_PREFIX = window.IDB_KEY_PREFIX || (window.USER_ID ? `uid:${window.USER_ID}:` : "uid:anon:");
+  const LESSONS_KEY = IDB_PREFIX + "list";
+  const WORDS_KEY_PREFIX = IDB_PREFIX + "lesson:";
+  let LESSONS_CACHE = null;
+
+  function isNonEmptyArray(val){
+    return Array.isArray(val) && val.length > 0;
+  }
+  async function idbGet(store, key){
+    if (!IDB) return null;
+    try { return await IDB.get(store, key); } catch (_) { return null; }
+  }
+  async function idbSet(store, key, value){
+    if (!IDB) return false;
+    try { await IDB.set(store, value, key); return true; } catch (_) { return false; }
+  }
+  async function idbDel(store, key){
+    if (!IDB) return false;
+    try { await IDB.del(store, key); return true; } catch (_) { return false; }
+  }
+  async function readLessonsFromIdb(){
+    if (Array.isArray(LESSONS_CACHE)) return LESSONS_CACHE;
+    const cached = await idbGet("lessons", LESSONS_KEY);
+    if (Array.isArray(cached)) { LESSONS_CACHE = cached; return cached; }
+    return null;
+  }
+  async function writeLessonsToIdb(lessons){
+    if (!Array.isArray(lessons)) return;
+    LESSONS_CACHE = lessons;
+    await idbSet("lessons", LESSONS_KEY, lessons);
+  }
+  async function readLessonWordsFromIdb(lessonTitle){
+    if (!lessonTitle) return null;
+    const key = WORDS_KEY_PREFIX + lessonTitle;
+    const cached = await idbGet("words", key);
+    return Array.isArray(cached) ? cached : null;
+  }
+  async function writeLessonWordsToIdb(lessonTitle, items){
+    if (!lessonTitle || !Array.isArray(items)) return;
+    const key = WORDS_KEY_PREFIX + lessonTitle;
+    await idbSet("words", key, items);
+  }
+
   const helloEl = document.getElementById("helloLine");
   function setHello(name){
     const n = (name || "").trim();
@@ -40,6 +143,375 @@
 
   const WORDS_CACHE = new Map();
   const root = document.getElementById("lessons");
+  const clearCacheBtn = document.getElementById("clear-cache-btn");
+  const cacheModal = document.getElementById("cacheModal");
+  const cacheConfirmBtn = document.getElementById("cacheConfirmBtn");
+  const cacheStatus = document.getElementById("cacheModalStatus");
+  const cacheStatusText = cacheStatus ? cacheStatus.querySelector(".status-text") : null;
+  const cacheModalText = document.getElementById("cacheModalText");
+  let cacheBusy = false;
+  const deleteLessonsBtn = document.getElementById("delete-user-lessons-btn");
+  const deleteLessonsModal = document.getElementById("deleteLessonsModal");
+  const deleteLessonsConfirmBtn = document.getElementById("deleteLessonsConfirmBtn");
+  const deleteLessonsStatus = document.getElementById("deleteLessonsStatus");
+  const deleteLessonsStatusText = deleteLessonsStatus ? deleteLessonsStatus.querySelector(".status-text") : null;
+  const deleteLessonsList = document.getElementById("deleteLessonsList");
+  const deleteLessonsEmpty = document.getElementById("deleteLessonsEmpty");
+  const deleteLessonsCount = document.getElementById("deleteLessonsCount");
+  const selectAllLessonsBtn = document.getElementById("select-all-lessons-btn");
+  let deleteLessonsBusy = false;
+  let deleteLessonsCache = null;
+
+  function setCacheStatus(kind, text) {
+    if (!cacheStatus) return;
+    cacheStatus.classList.add("is-visible");
+    cacheStatus.classList.toggle("success", kind === "success");
+    cacheStatus.classList.toggle("error", kind === "error");
+    if (cacheStatusText) cacheStatusText.textContent = text || "";
+  }
+
+  function setCacheBusy(busy) {
+    cacheBusy = busy;
+    if (!cacheModal) return;
+    const buttons = cacheModal.querySelectorAll("button");
+    buttons.forEach((btn) => { btn.disabled = busy; });
+  }
+
+  async function deleteIndexedDbDatabases() {
+    if (!("indexedDB" in window)) return;
+    const names = new Set(["learn_words_db", "learn_en_nl_db"]);
+    try {
+      if (typeof indexedDB.databases === "function") {
+        const dbs = await indexedDB.databases();
+        if (Array.isArray(dbs)) {
+          dbs.forEach((db) => {
+            if (db && db.name) names.add(db.name);
+          });
+        }
+      }
+    } catch (_) {}
+
+    await Promise.all(Array.from(names).map((name) => new Promise((resolve) => {
+      try {
+        const req = indexedDB.deleteDatabase(name);
+        req.onsuccess = () => resolve();
+        req.onerror = () => resolve();
+        req.onblocked = () => resolve();
+      } catch (_) {
+        resolve();
+      }
+    })));
+  }
+
+  function openCacheModal() {
+    if (!cacheModal) return;
+    cacheModal.classList.add("is-open");
+    cacheModal.classList.remove("is-closing");
+    cacheModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    cacheBusy = false;
+    if (cacheModalText) cacheModalText.textContent = "Точно удалить кэш и локальные данные?";
+    if (cacheStatus) cacheStatus.classList.remove("is-visible", "success", "error");
+    if (cacheStatusText) cacheStatusText.textContent = "Очистка...";
+    cacheModal.querySelectorAll("button").forEach((btn) => { btn.disabled = false; });
+    if (cacheConfirmBtn) cacheConfirmBtn.focus();
+  }
+
+  function closeCacheModal() {
+    if (!cacheModal) return;
+    cacheModal.classList.add("is-closing");
+    cacheModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    setTimeout(() => {
+      cacheModal.classList.remove("is-open");
+      cacheModal.classList.remove("is-closing");
+    }, 200);
+  }
+
+  if (clearCacheBtn && cacheModal) {
+    clearCacheBtn.addEventListener("click", () => {
+      openCacheModal();
+    });
+  }
+
+  if (cacheModal) {
+    cacheModal.addEventListener("click", (e) => {
+      if (e.target === cacheModal && !cacheBusy) closeCacheModal();
+    });
+    cacheModal.querySelectorAll("[data-action='cancel'], [data-action='close']").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!cacheBusy) closeCacheModal();
+      });
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (deleteLessonsModal && deleteLessonsModal.classList.contains("is-open")) {
+      if (deleteLessonsBusy) return;
+      closeDeleteLessonsModal();
+      return;
+    }
+    if (!cacheModal || !cacheModal.classList.contains("is-open")) return;
+    if (cacheBusy) return;
+    closeCacheModal();
+  });
+
+  if (cacheConfirmBtn) {
+    cacheConfirmBtn.addEventListener("click", async () => {
+      if (cacheBusy) return;
+      setCacheBusy(true);
+      setCacheStatus("loading", "Удаляем кэш и данные...");
+      try {
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
+        const db = window.LocalDB || IDB;
+        if (db && Array.isArray(db.stores)) {
+          await Promise.all(db.stores.map((name) => db.clear(name)));
+        }
+        await deleteIndexedDbDatabases();
+        try { localStorage.clear(); } catch (_) {}
+        try { sessionStorage.clear(); } catch (_) {}
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((reg) => reg.unregister()));
+        }
+        LESSONS_CACHE = null;
+        WORDS_CACHE.clear();
+        setCacheStatus("success", "Готово, обновляю страницу...");
+        setTimeout(() => { closeCacheModal(); }, 400);
+        setTimeout(() => { location.reload(); }, 900);
+      } catch (_) {
+        setCacheStatus("error", "Не удалось удалить кэш");
+        setCacheBusy(false);
+      }
+    });
+  }
+
+  function setDeleteLessonsStatus(kind, text) {
+    if (!deleteLessonsStatus) return;
+    if (!kind) {
+      deleteLessonsStatus.classList.remove("is-visible", "success", "error");
+      if (deleteLessonsStatusText) deleteLessonsStatusText.textContent = "";
+      return;
+    }
+    deleteLessonsStatus.classList.add("is-visible");
+    deleteLessonsStatus.classList.toggle("success", kind === "success");
+    deleteLessonsStatus.classList.toggle("error", kind === "error");
+    if (deleteLessonsStatusText) deleteLessonsStatusText.textContent = text || "";
+  }
+
+  function setDeleteLessonsBusy(busy) {
+    deleteLessonsBusy = busy;
+    if (!deleteLessonsModal) return;
+    deleteLessonsModal.querySelectorAll("button").forEach((btn) => { btn.disabled = busy; });
+    if (!busy) updateDeleteLessonsSelection();
+  }
+
+  function getSelectedDeleteLessons() {
+    if (!deleteLessonsList) return [];
+    return Array.from(deleteLessonsList.querySelectorAll("input[type=checkbox]:checked"))
+      .map((el) => (el.value || "").trim())
+      .filter(Boolean);
+  }
+
+  function getDeleteLessonsCheckboxes() {
+    if (!deleteLessonsList) return [];
+    return Array.from(deleteLessonsList.querySelectorAll("input[type=checkbox]"));
+  }
+
+  function updateSelectAllButton() {
+    if (!selectAllLessonsBtn) return;
+    const boxes = getDeleteLessonsCheckboxes();
+    const total = boxes.length;
+    const selected = boxes.filter((box) => box.checked).length;
+    selectAllLessonsBtn.disabled = deleteLessonsBusy || total === 0;
+    selectAllLessonsBtn.textContent = (total > 0 && selected === total) ? "Снять все" : "Выбрать все";
+  }
+
+  function updateDeleteLessonsSelection() {
+    if (!deleteLessonsConfirmBtn) return;
+    const selected = getSelectedDeleteLessons();
+    if (deleteLessonsCount) {
+      if (deleteLessonsList && deleteLessonsList.children.length) {
+        deleteLessonsCount.textContent = `Выбрано: ${selected.length}`;
+      } else {
+        deleteLessonsCount.textContent = "";
+      }
+    }
+    deleteLessonsConfirmBtn.disabled = deleteLessonsBusy || selected.length === 0;
+    updateSelectAllButton();
+  }
+
+  function renderDeleteLessonsList(lessons) {
+    if (!deleteLessonsList || !deleteLessonsEmpty) return;
+    deleteLessonsList.innerHTML = "";
+    if (!Array.isArray(lessons) || lessons.length === 0) {
+      deleteLessonsList.style.display = "none";
+      deleteLessonsEmpty.textContent = "Нет загруженных уроков.";
+      deleteLessonsEmpty.style.display = "block";
+      updateDeleteLessonsSelection();
+      return;
+    }
+    deleteLessonsEmpty.style.display = "none";
+    deleteLessonsList.style.display = "";
+    lessons.forEach((ls) => {
+      const titleRaw = (ls.lesson_title && ls.lesson_title.trim())
+        ? ls.lesson_title.trim()
+        : (ls.lesson || "Без названия");
+      const idx = Number(ls.lesson_index || 0);
+      const title = idx > 0 ? `${idx}. ${titleRaw}` : titleRaw;
+      const count = Number(ls.words_count || 0);
+
+      const item = document.createElement("div");
+      item.className = "lesson-item";
+
+      const label = document.createElement("label");
+      label.className = "lesson-check";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = ls.lesson || titleRaw;
+      checkbox.addEventListener("change", updateDeleteLessonsSelection);
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "lesson-title";
+      nameEl.textContent = title;
+
+      const meta = document.createElement("span");
+      meta.className = "lesson-meta";
+      meta.textContent = `Слов: ${count}`;
+
+      label.appendChild(checkbox);
+      label.appendChild(nameEl);
+      item.appendChild(label);
+      item.appendChild(meta);
+      deleteLessonsList.appendChild(item);
+    });
+    updateDeleteLessonsSelection();
+  }
+
+  async function loadDeleteLessonsList() {
+    if (!deleteLessonsList || !deleteLessonsEmpty) return;
+    if (Array.isArray(deleteLessonsCache)) {
+      setDeleteLessonsStatus(null, "");
+      renderDeleteLessonsList(deleteLessonsCache);
+      return;
+    }
+    deleteLessonsList.innerHTML = "";
+    deleteLessonsList.style.display = "none";
+    deleteLessonsEmpty.textContent = "Загружаю список уроков...";
+    deleteLessonsEmpty.style.display = "block";
+    setDeleteLessonsStatus("loading", "Загружаю уроки...");
+    updateDeleteLessonsSelection();
+    try {
+      const r = await apiFetch("/api/user_lessons");
+      const js = await r.json();
+      deleteLessonsCache = Array.isArray(js) ? js : [];
+      setDeleteLessonsStatus(null, "");
+      renderDeleteLessonsList(deleteLessonsCache);
+    } catch (_) {
+      deleteLessonsCache = null;
+      setDeleteLessonsStatus("error", "Не удалось загрузить список");
+      deleteLessonsEmpty.textContent = "Не удалось загрузить уроки.";
+      deleteLessonsEmpty.style.display = "block";
+      deleteLessonsList.innerHTML = "";
+      deleteLessonsList.style.display = "none";
+      updateDeleteLessonsSelection();
+    }
+  }
+
+  function openDeleteLessonsModal() {
+    if (!deleteLessonsModal) return;
+    deleteLessonsModal.classList.add("is-open");
+    deleteLessonsModal.classList.remove("is-closing");
+    deleteLessonsModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    deleteLessonsBusy = false;
+    setDeleteLessonsStatus(null, "");
+    if (deleteLessonsModal) {
+      deleteLessonsModal.querySelectorAll("button").forEach((btn) => { btn.disabled = false; });
+    }
+    if (deleteLessonsConfirmBtn) deleteLessonsConfirmBtn.disabled = true;
+    loadDeleteLessonsList();
+  }
+
+  function closeDeleteLessonsModal() {
+    if (!deleteLessonsModal) return;
+    deleteLessonsModal.classList.add("is-closing");
+    deleteLessonsModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    setTimeout(() => {
+      deleteLessonsModal.classList.remove("is-open");
+      deleteLessonsModal.classList.remove("is-closing");
+    }, 200);
+  }
+
+  if (deleteLessonsBtn && deleteLessonsModal) {
+    deleteLessonsBtn.addEventListener("click", () => {
+      openDeleteLessonsModal();
+    });
+  }
+
+  if (deleteLessonsModal) {
+    deleteLessonsModal.addEventListener("click", (e) => {
+      if (e.target === deleteLessonsModal && !deleteLessonsBusy) closeDeleteLessonsModal();
+    });
+    deleteLessonsModal.querySelectorAll("[data-action='cancel'], [data-action='close']").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!deleteLessonsBusy) closeDeleteLessonsModal();
+      });
+    });
+  }
+
+  if (selectAllLessonsBtn) {
+    selectAllLessonsBtn.addEventListener("click", () => {
+      if (deleteLessonsBusy) return;
+      const boxes = getDeleteLessonsCheckboxes();
+      if (!boxes.length) return;
+      const allSelected = boxes.every((box) => box.checked);
+      boxes.forEach((box) => { box.checked = !allSelected; });
+      updateDeleteLessonsSelection();
+    });
+  }
+
+  if (deleteLessonsConfirmBtn) {
+    deleteLessonsConfirmBtn.addEventListener("click", async () => {
+      if (deleteLessonsBusy) return;
+      const selected = getSelectedDeleteLessons();
+      if (!selected.length) {
+        setDeleteLessonsStatus("error", "Выберите уроки для удаления");
+        return;
+      }
+      setDeleteLessonsBusy(true);
+      setDeleteLessonsStatus("loading", "Удаляю выбранные уроки...");
+      try {
+        const resp = await apiFetch("/api/user_lessons/delete", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ lessons: selected })
+        });
+        const js = await resp.json();
+        if (!resp.ok || !js || !js.ok) throw new Error("server error");
+        const deletedCount = Number(js.deleted_lessons || selected.length);
+        setDeleteLessonsStatus("success", `Удалено уроков: ${deletedCount}`);
+        deleteLessonsCache = null;
+        await Promise.all(selected.map(async (lesson) => {
+          WORDS_CACHE.delete(lesson);
+          await idbDel("words", WORDS_KEY_PREFIX + lesson);
+        }));
+        await idbDel("lessons", LESSONS_KEY);
+        LESSONS_CACHE = null;
+        setTimeout(() => { closeDeleteLessonsModal(); }, 400);
+        setTimeout(() => { loadLessons(); }, 450);
+      } catch (_) {
+        setDeleteLessonsStatus("error", "Не удалось удалить уроки");
+        setDeleteLessonsBusy(false);
+      }
+    });
+  }
 
   function ensureWordList(container){
     let wrap = container.querySelector(".word-list");
@@ -63,23 +535,32 @@
     `).join("");
   }
 
-  function toggleLessonWords(container, lessonTitle){
+  async function toggleLessonWords(container, lessonTitle){
     const wrap = ensureWordList(container);
     if (wrap.classList.contains("visible")) { wrap.classList.remove("visible"); return; }
-    wrap.innerHTML = "<div class='card-sub'>Загрузка...</div>";
     wrap.classList.add("visible");
 
     const cached = WORDS_CACHE.get(lessonTitle);
     if (cached) { renderSingleLine(wrap, cached); return; }
 
-    apiFetch(`/api/lesson_words?lesson=${encodeURIComponent(lessonTitle)}`)
-      .then(r => r.json())
-      .then(js => {
-        const items = (js && js.items) ? js.items : [];
-        WORDS_CACHE.set(lessonTitle, items);
-        renderSingleLine(wrap, items);
-      })
-      .catch(() => { wrap.innerHTML = "<div class='card-sub'>Ошибка загрузки</div>"; });
+    const cachedIdb = await readLessonWordsFromIdb(lessonTitle);
+    if (cachedIdb) {
+      WORDS_CACHE.set(lessonTitle, cachedIdb);
+      renderSingleLine(wrap, cachedIdb);
+      return;
+    }
+
+    wrap.innerHTML = "<div class='card-sub'>Загрузка...</div>";
+    try{
+      const r = await apiFetch(`/api/lesson_words?lesson=${encodeURIComponent(lessonTitle)}`);
+      const js = await r.json();
+      const items = (js && js.items) ? js.items : [];
+      WORDS_CACHE.set(lessonTitle, items);
+      renderSingleLine(wrap, items);
+      await writeLessonWordsToIdb(lessonTitle, items);
+    }catch(_){
+      wrap.innerHTML = "<div class='card-sub'>Ошибка загрузки</div>";
+    }
   }
 
   /** Пересортировка карточек (видимые сверху) */
@@ -95,9 +576,34 @@
     nodes.forEach(n => root.appendChild(n));
   }
 
-  async function loadLessons() {
-    const r = await apiFetch("/api/lessons");
-    const lessons = await r.json();
+  let refreshLessonsInFlight = false;
+  async function refreshLessonsIfNeeded() {
+    if (refreshLessonsInFlight) return;
+    refreshLessonsInFlight = true;
+    try {
+      const r = await apiFetch("/api/lessons");
+      const fresh = await r.json();
+      if (!Array.isArray(fresh)) return;
+      const cached = await readLessonsFromIdb();
+      const same = Array.isArray(cached) && JSON.stringify(cached) === JSON.stringify(fresh);
+      if (!same) {
+        await writeLessonsToIdb(fresh);
+        await loadLessons(true);
+      }
+    } catch (_) {
+    } finally {
+      refreshLessonsInFlight = false;
+    }
+  }
+
+  async function loadLessons(skipRefresh) {
+    let lessons = await readLessonsFromIdb();
+    if (!lessons) {
+      const r = await apiFetch("/api/lessons");
+      lessons = await r.json();
+      if (Array.isArray(lessons)) await writeLessonsToIdb(lessons);
+    }
+    if (!Array.isArray(lessons)) return;
     root.innerHTML = "";
 
     lessons.forEach(ls => {
@@ -160,6 +666,11 @@
             body: JSON.stringify({lesson, hidden: newHidden})
           });
           if (!resp.ok) throw new Error("server error");
+          if (isNonEmptyArray(LESSONS_CACHE)) {
+            const found = LESSONS_CACHE.find((x)=> String(x.lesson || "") === String(lesson || ""));
+            if (found) found.hidden = newHidden;
+            await writeLessonsToIdb(LESSONS_CACHE);
+          }
         } catch(err) {
           const prev = newHidden ? 0 : 1;
           card.dataset.hidden = String(prev);
@@ -173,6 +684,7 @@
     });
 
     resortLessons();
+    if (!skipRefresh) refreshLessonsIfNeeded();
   }
 
   loadLessons();

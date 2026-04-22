@@ -175,8 +175,8 @@ async def _ephemeral_send(update: Update, context: ContextTypes.DEFAULT_TYPE, te
 # ---------- НОВОЕ: единый показ «Меню» ----------
 async def show_menu_with_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
     """
-    Удаляет предыдущее 'меню-сообщение', шлёт новое с клавиатурой
-    и планирует его удаление через EPHEMERAL_SECONDS.
+    Удаляет предыдущее 'меню-сообщение', шлёт новое с клавиатурой.
+    Сообщение НЕ удаляется — иначе Telegram убирает клавиатуру вместе с ним.
     """
     anchor_key = "kb_anchor_msg_id"
     old_id = context.user_data.get(anchor_key)
@@ -184,7 +184,6 @@ async def show_menu_with_keyboard(update: Update, context: ContextTypes.DEFAULT_
         asyncio.create_task(_safe_delete(context, update.effective_chat.id, old_id))
     m = await update.effective_chat.send_message("⬇️ Меню", reply_markup=get_persistent_keyboard(user_id))
     context.user_data[anchor_key] = m.message_id
-    asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
 
 # ---------- handlers ----------
 ASK_PWD = "Введите пароль для регистрации:"
@@ -203,10 +202,11 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     asyncio.create_task(_delete_later(context, ask.chat_id, ask.message_id))
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+
     if context.user_data.get("await_pwd"):
         pwd_message = update.message
         chat_id = pwd_message.chat_id
-        user_id = update.effective_user.id
         await _safe_delete(context, chat_id, pwd_message.message_id)
         pwd = (pwd_message.text or "").strip()
         expected = _get_expected_password()
@@ -216,15 +216,20 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             for mid in context.user_data.get("pwd_bot_msg_ids", []):
                 asyncio.create_task(_delete_later(context, chat_id, mid, 0))
             context.user_data["pwd_bot_msg_ids"] = []
-            await show_menu_with_keyboard(update, context, user_id)  # ← ИЗМЕНЕНО
+            await show_menu_with_keyboard(update, context, user_id)
             await _ephemeral_send(update, context, OK_PWD)
         else:
-            await show_menu_with_keyboard(update, context, user_id)  # ← ИЗМЕНЕНО
+            await show_menu_with_keyboard(update, context, user_id)
             err = await update.effective_chat.send_message("Пароль неверный. Попробуйте снова.")
             context.user_data.setdefault("pwd_bot_msg_ids", []).append(err.message_id)
             asyncio.create_task(_delete_later(context, err.chat_id, err.message_id))
         return
-    return
+
+    # Восстанавливаем клавиатуру для зарегистрированных пользователей
+    # (один раз за сессию — после рестарта бота user_data сбрасывается)
+    if not context.user_data.get("kb_shown") and _is_user_registered(Config.DB_PATH, user_id):
+        context.user_data["kb_shown"] = True
+        await show_menu_with_keyboard(update, context, user_id)
 
 async def open_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await send_open(update, context)

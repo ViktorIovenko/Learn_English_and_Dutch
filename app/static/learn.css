@@ -1,5 +1,6 @@
 /* --- Шапка --- */
-.topbar{ display:flex; align-items:center; gap:10px; margin:6px 0 8px; }
+.topbar{ display:flex; align-items:center; gap:8px; margin:6px 0 8px; }
+.txt-short{ display:none; }
 .pill-btn{
   display:inline-flex; align-items:center; gap:6px;
   padding:10px 14px; border-radius:999px;
@@ -9,6 +10,9 @@
 .pill-btn:hover{ background:#eef2ff; border-color:#bcd; }
 .pill-btn.ghost{ background:#fff; }
 .topbar .spacer{ flex:1; }
+.lesson-pill{ gap:8px; }
+.lesson-pill-title{ white-space:nowrap; }
+.lesson-pill .chk input{ width:16px; height:16px; }
 .center-progress{ text-align:center; font-weight:700; margin-bottom:6px; }
 .lang-switch{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
 .lang-btn{
@@ -143,4 +147,25 @@
     gap:8px;
   }
   .letter-btn, .letter{ width:48px; height:48px; font-size:20px; }
+}
+
+/* ── Galaxy Fold внешний экран и схожие (~260–340px) ── */
+@media (max-width:380px){
+  /* Сокращаем текст кнопок — всё на одной строке */
+  .txt-full{ display:none; }
+  .txt-short{ display:inline; }
+
+  /* Топбар: одна строка, сжатые gap и padding */
+  .topbar{ gap:4px; flex-wrap:nowrap; }
+  .topbar .pill-btn{ padding:8px 8px; font-size:12px; white-space:nowrap; }
+  .lesson-pill{ flex:1; min-width:0; justify-content:center; }
+  .lesson-pill-title{ overflow:hidden; text-overflow:ellipsis; max-width:80px; }
+
+  /* Кнопки навигации внизу */
+  .nav-row{ gap:6px; }
+  .ctrl-btn{ padding:8px 10px; font-size:14px; }
+  .check-btn{ padding:10px 20px; font-size:16px; }
+
+  /* Модалка — полная ширина */
+  .modal-content{ padding:14px 14px 18px; }
 }

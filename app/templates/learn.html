@@ -4,12 +4,23 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='learn.css') }}">
 <div id="learn-root" data-lesson="{{ lesson_title }}" class="learn-page">
   <div class="topbar">
-    <a href="{{ url_for('web.home') }}" class="pill-btn">← Назад к урокам</a>
+    <a href="{{ url_for('web.home') }}" class="pill-btn">
+      <span class="txt-full">← Назад к урокам</span>
+      <span class="txt-short">← Назад</span>
+    </a>
     <!-- [ИЗМЕНЕНО v8.16] Показываем имя текущего урока -->
-    <a href="#" class="pill-btn ghost">{{ lesson_title }}</a>
+    <span class="pill-btn ghost lesson-pill">
+      <span class="lesson-pill-title">{{ lesson_title }}</span>
+      <label class="chk lesson-learned" title="Урок выучен">
+        <input type="checkbox" id="lesson-learned-toggle" data-lesson="{{ lesson_title }}" aria-label="Урок выучен">
+      </label>
+    </span>
     <!-- [ДОБАВЛЕНО v8.17] Раздвижка вправо + кнопка «Следующий урок» -->
     <div class="spacer"></div>
-    <a href="#" id="next-lesson-btn" class="pill-btn" title="Перейти к следующему уроку">Следующий урок →</a>
+    <a href="#" id="next-lesson-btn" class="pill-btn" title="Перейти к следующему уроку">
+      <span class="txt-full">Следующий урок →</span>
+      <span class="txt-short">Далее →</span>
+    </a>
   </div>
   <div id="progress" class="center-progress"></div>
   <div class="lang-switch">
@@ -24,10 +35,10 @@
   <div class="letter-grid" id="letters-pool"></div>
   <div class="builder">
     <div class="builder-controls">
-      <div class="controls-row split">
+      <!-- <div class="controls-row split">
         <button id="clear-btn" class="ctrl-btn">Сброс</button>
         <button id="undo-btn" class="ctrl-btn">↩ Вернуть букву</button>
-      </div>
+      </div> -->
       <div class="controls-row center">
         <button id="check-btn" class="ctrl-btn check-btn">Проверить</button>
       </div>
@@ -82,29 +93,54 @@
     var q = new URLSearchParams(location.search);
     return (root && root.dataset.lesson) || window.LESSON_TITLE || q.get('lesson') || '';
   }
+  function idbPrefix(){
+    return window.IDB_KEY_PREFIX || (window.USER_ID ? "uid:" + window.USER_ID + ":" : "uid:anon:");
+  }
+  function idbKey(key){
+    return idbPrefix() + key;
+  }
   function bootFallback(){
     if (window.__LEARN_BOOTED__) return;
     var lesson = pickLessonTitle();
     var box = document.getElementById('word-view');
     if (!lesson){ if(box) box.textContent='Урок не выбран.'; return; }
-    if (box) box.textContent = 'Загрузка...';
-    fetch('/api/lesson_words?lesson=' + encodeURIComponent(lesson))
-      .then(r=>r.json())
-      .then(js=>{
-        if (window.__LEARN_BOOTED__) return;
-        if(!js || js.ok===false){ if(box) box.textContent='Ошибка загрузки слов.'; return; }
-        var items = js.items||[];
-        if(!items.length){ if(box) box.textContent='В этом уроке пока нет слов.'; return; }
-        var w = items[0];
-        box.innerHTML =
-          '<div><b>(nl)</b> ' + (w.translation_nl||'') + '</div>' +
-          '<div style="margin-bottom:4px">' + (w.sentence_nl||'') + '</div>' +
-          '<div><b>(en)</b> ' + (w.word_en||'') + '</div>' +
-          '<div style="margin-bottom:4px">' + (w.sentence_en||'') + '</div>' +
-          '<div><b>(ru)</b> ' + (w.translation_ru||'') + '</div>' +
-          '<div style="margin-bottom:8px">' + (w.sentence_ru||'') + '</div>';
-      })
-      .catch(()=>{ if(!window.__LEARN_BOOTED__ && box) box.textContent='Сеть недоступна.'; });
+    function renderItems(items){
+      if (window.__LEARN_BOOTED__) return;
+      if(!items || !items.length){ if(box) box.textContent='В этом уроке пока нет слов.'; return; }
+      var w = items[0];
+      box.innerHTML =
+        '<div><b>(nl)</b> ' + (w.translation_nl||'') + '</div>' +
+        '<div style="margin-bottom:4px">' + (w.sentence_nl||'') + '</div>' +
+        '<div><b>(en)</b> ' + (w.word_en||'') + '</div>' +
+        '<div style="margin-bottom:4px">' + (w.sentence_en||'') + '</div>' +
+        '<div><b>(ru)</b> ' + (w.translation_ru||'') + '</div>' +
+        '<div style="margin-bottom:8px">' + (w.sentence_ru||'') + '</div>';
+    }
+    function loadFromServer(){
+      if (box) box.textContent = 'Загрузка...';
+      fetch('/api/lesson_words?lesson=' + encodeURIComponent(lesson))
+        .then(r=>r.json())
+        .then(js=>{
+          if (window.__LEARN_BOOTED__) return;
+          if(!js || js.ok===false){ if(box) box.textContent='Ошибка загрузки слов.'; return; }
+          var items = js.items||[];
+          if (window.LocalDB && items && items.length){
+            window.LocalDB.set('words', items, idbKey('lesson:' + lesson)).catch(()=>{});
+          }
+          renderItems(items);
+        })
+        .catch(()=>{ if(!window.__LEARN_BOOTED__ && box) box.textContent='Сеть недоступна.'; });
+    }
+    if (window.LocalDB){
+      window.LocalDB.get('words', idbKey('lesson:' + lesson))
+        .then(function(cached){
+          if (cached && cached.length) renderItems(cached);
+          else loadFromServer();
+        })
+        .catch(loadFromServer);
+    } else {
+      loadFromServer();
+    }
   }
   setTimeout(bootFallback, 600);
 })();

@@ -1,7 +1,129 @@
-C:\Program Files\WindowsApps\ngrok.ngrok_3.24.0.0_x64__1g87z0zv29zzc\ngrok.exe
+# ================================================================
+#  Learn English & Dutch — Команды управления
+# ================================================================
 
-Заупустить & "C:\Program Files\WindowsApps\ngrok.ngrok_3.24.0.0_x64__1g87z0zv29zzc\ngrok.exe" http 5000
+## Сервер
+  EU:  root@204.168.186.69   ключ: $HOME\Desktop\id_ed25519
 
+## Сайт
+  https://learn.iovenko.eu
 
-АКтивация виртуального окружения   CD C:\Users\ioven\Documents\Visual studio\Python\Learn_English_and_Dutch> 
-.\venv\Scripts\Activate.ps1
+================================================================
+  ДЕПЛОЙ (обновить приложение на EU сервере)
+================================================================
+
+## Стандартный деплой — загрузить код и пересобрать контейнер
+
+  cd "C:\Users\ioven\Documents\Visual studio\Python\Learn_English_and_Dutch"
+  .\deploy.ps1
+
+## Пропустить пересборку контейнера (например, обновили только nginx)
+
+  cd "C:\Users\ioven\Documents\Visual studio\Python\Learn_English_and_Dutch"
+  .\deploy.ps1 -SkipBuild
+
+## Пропустить обновление nginx (код изменился, nginx — нет)
+
+  cd "C:\Users\ioven\Documents\Visual studio\Python\Learn_English_and_Dutch"
+  .\deploy.ps1 -SkipNginx
+
+================================================================
+  СТАТУС И ЛОГИ (EU сервер)
+================================================================
+
+  # Подключиться к серверу
+  ssh -i "$HOME\Desktop\id_ed25519" root@204.168.186.69
+
+  # Статус контейнера
+  cd /opt/learn-words
+  docker compose ps
+
+  # Логи (последние 50 строк)
+  docker compose logs --tail=50
+
+  # Логи в реальном времени
+  docker compose logs -f
+
+================================================================
+  ПЕРЕЗАПУСК
+================================================================
+
+  # Перезапустить контейнер (без пересборки)
+  ssh -i "$HOME\Desktop\id_ed25519" root@204.168.186.69 "cd /opt/learn-words && docker compose restart"
+
+  # Пересобрать и перезапустить (после изменений кода)
+  ssh -i "$HOME\Desktop\id_ed25519" root@204.168.186.69 "cd /opt/learn-words && docker compose up --build -d"
+
+  # Остановить
+  ssh -i "$HOME\Desktop\id_ed25519" root@204.168.186.69 "cd /opt/learn-words && docker compose down"
+
+================================================================
+  NGINX (EU сервер)
+================================================================
+
+  # Задеплоить nginx конфиг для learn.iovenko.eu
+  scp -i "$HOME\Desktop\id_ed25519" nginx\learn.conf root@204.168.186.69:/opt/family-call/nginx/conf.d/learn.conf
+  ssh -i "$HOME\Desktop\id_ed25519" root@204.168.186.69 "cd /opt/family-call && docker compose exec -T nginx nginx -t && docker compose restart nginx"
+
+  # Проверить nginx конфиг
+  ssh -i "$HOME\Desktop\id_ed25519" root@204.168.186.69 "cd /opt/family-call && docker compose exec -T nginx nginx -t"
+
+================================================================
+  SSL СЕРТИФИКАТ
+================================================================
+
+  # Выпустить сертификат (если истёк или впервые)
+  ssh -i "$HOME\Desktop\id_ed25519" root@204.168.186.69 "docker run --rm -v family-call_certbot_certs:/etc/letsencrypt -v family-call_certbot_www:/var/www/certbot certbot/certbot certonly --webroot -w /var/www/certbot -d learn.iovenko.eu --email iovenkovn@gmail.com --agree-tos --non-interactive"
+
+  # Проверить срок действия сертификата
+  ssh -i "$HOME\Desktop\id_ed25519" root@204.168.186.69 "openssl x509 -enddate -noout -in /var/lib/docker/volumes/family-call_certbot_certs/_data/live/learn.iovenko.eu/fullchain.pem"
+
+================================================================
+  БАЗА ДАННЫХ
+================================================================
+
+  # Скачать актуальную БД с сервера на локальный компьютер (бэкап)
+  scp -i "$HOME\Desktop\id_ed25519" root@204.168.186.69:/opt/learn-words/data/words.db "%USERPROFILE%\Desktop\words_backup.db"
+
+  # Загрузить БД на сервер (восстановление из бэкапа)
+  scp -i "$HOME\Desktop\id_ed25519" "%USERPROFILE%\Desktop\words_backup.db" root@204.168.186.69:/opt/learn-words/data/words.db
+  ssh -i "$HOME\Desktop\id_ed25519" root@204.168.186.69 "cd /opt/learn-words && docker compose restart"
+
+================================================================
+  ЛОКАЛЬНАЯ РАЗРАБОТКА
+================================================================
+
+  # Активация виртуального окружения
+  cd "C:\Users\ioven\Documents\Visual studio\Python\Learn_English_and_Dutch"
+  .\venv\Scripts\Activate.ps1
+
+  # Запустить локально
+  python run.py
+
+  # Туннель ngrok для теста Telegram Web App
+  & "C:\Program Files\WindowsApps\ngrok.ngrok_3.24.0.0_x64__1g87z0zv29zzc\ngrok.exe" http 7001
+
+================================================================
+  OLLAMA (локально на компьютере)
+================================================================
+
+  # Запустить Ollama (если не запущена или после перезагрузки)
+  & "C:\Users\ioven\AppData\Local\Programs\Ollama\ollama app.exe"
+
+  # Проверить что Ollama работает и CORS настроен правильно
+  $r = Invoke-WebRequest -Uri "http://localhost:11434/api/tags" -Headers @{Origin="https://learn.iovenko.eu"} -UseBasicParsing
+  Write-Host "Status: $($r.StatusCode)  CORS: $($r.Headers['Access-Control-Allow-Origin'])"
+  ($r.Content | ConvertFrom-Json).models | ForEach-Object { Write-Host "  Model: $($_.name)" }
+
+  # Если CORS не работает (нет заголовка) — перезапустить с правильной переменной:
+  Get-WmiObject Win32_Process | Where-Object { $_.ExecutablePath -like "*ollama*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -EA SilentlyContinue }
+  Start-Sleep 2
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = "C:\Users\ioven\AppData\Local\Programs\Ollama\ollama.exe"
+  $psi.Arguments = "serve"
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow = $true
+  $psi.EnvironmentVariables["OLLAMA_ORIGINS"] = "*"
+  [System.Diagnostics.Process]::Start($psi) | Out-Null
+  Start-Sleep 5
+  Write-Host "Ollama restarted with OLLAMA_ORIGINS=*"

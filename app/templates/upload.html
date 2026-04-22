@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+/* ── Tabs ─────────────────────────────────────────────────────── */
+.up-tabs { display: flex; gap: 0; border-bottom: 2px solid #e2e8f0; margin-bottom: 18px; }
+.up-tab {
+  padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+  border: none; background: none; color: #64748b; border-bottom: 2px solid transparent;
+  margin-bottom: -2px; transition: color .15s;
+}
+.up-tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+.up-tab:hover:not(.active) { color: #0f172a; }
+.up-panel { display: none; }
+.up-panel.active { display: block; }
+
+/* ── Ollama bar ───────────────────────────────────────────────── */
+.ollama-bar {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 14px; font-size: 13px;
+}
+.ollama-bar label { display: flex; align-items: center; gap: 6px; }
+.ollama-bar input {
+  border: 1px solid #d0d7e2; border-radius: 7px; padding: 4px 8px;
+  font-size: 13px; color: #0f172a; background: #fff; width: 200px;
+}
+.ollama-status { font-size: 12px; color: #64748b; }
+.ollama-status.ok  { color: #16a34a; }
+.ollama-status.err { color: #dc2626; }
+
+/* ── Lesson blocks ────────────────────────────────────────────── */
+.lesson-block { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 10px; background: #fff; }
+.lesson-head  { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.lesson-num   { font-weight: 700; font-size: 15px; flex: 1; }
+.lesson-fields { display: flex; flex-direction: column; gap: 8px; }
+.lesson-row   { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lesson-row label { font-size: 13px; color: #64748b; white-space: nowrap; }
+.lesson-row input, .lesson-row select {
+  border: 1px solid #d0d7e2; border-radius: 8px; padding: 6px 10px;
+  font-size: 14px; color: #0f172a; background: #fff; flex: 1; min-width: 120px;
+}
+.lesson-row input:focus, .lesson-row select:focus { outline: none; border-color: #2563eb; }
+.words-ta {
+  width: 100%; border: 1px solid #d0d7e2; border-radius: 8px;
+  padding: 8px 10px; font-size: 14px; font-family: inherit;
+  resize: vertical; min-height: 110px; color: #0f172a; background: #fff; box-sizing: border-box;
+}
+.words-ta:focus { outline: none; border-color: #2563eb; }
+.lesson-hint { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.lesson-gen-status { font-size: 13px; margin-top: 6px; min-height: 18px; }
+
+/* ── Action rows ──────────────────────────────────────────────── */
+.actions-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.gen-status  { font-size: 13px; color: #475569; }
+
+/* ── Preview table (import) ───────────────────────────────────── */
+#preview-section { margin-top: 20px; }
+.table-wrap { overflow-x: auto; margin-bottom: 12px; }
+table.preview-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 640px; }
+.preview-tbl th {
+  background: #f1f5f9; padding: 7px 10px; text-align: left;
+  border: 1px solid #e2e8f0; white-space: nowrap; font-weight: 600;
+}
+.preview-tbl td {
+  padding: 5px 8px; border: 1px solid #e2e8f0; vertical-align: top;
+  min-width: 60px; max-width: 200px;
+}
+.preview-tbl td[contenteditable=true] { cursor: text; outline: none; }
+.preview-tbl td[contenteditable=true]:focus { background: #eff6ff; outline: 2px solid #93c5fd; outline-offset: -1px; }
+.preview-tbl td.cell-lesson { color: #64748b; font-size: 12px; }
+#upload-status { font-size: 14px; margin-top: 8px; min-height: 20px; }
+#upload-status a { color: #2563eb; text-decoration: underline; }
+
+/* ── Word database tab ────────────────────────────────────────── */
+.db-toolbar {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;
+}
+.db-search {
+  flex: 1; min-width: 160px; border: 1px solid #d0d7e2; border-radius: 8px;
+  padding: 7px 12px; font-size: 14px; color: #0f172a; background: #fff;
+}
+.db-search:focus { outline: none; border-color: #2563eb; }
+.db-count { font-size: 13px; color: #64748b; white-space: nowrap; }
+
+table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 700px; }
+.db-tbl th {
+  background: #f1f5f9; padding: 7px 10px; text-align: left;
+  border: 1px solid #e2e8f0; white-space: nowrap; font-weight: 600; position: sticky; top: 0;
+}
+.db-tbl td {
+  padding: 5px 8px; border: 1px solid #e2e8f0; vertical-align: top;
+}
+.db-tbl td.editable {
+  cursor: text; min-width: 70px; max-width: 180px;
+}
+.db-tbl td.editable:focus {
+  outline: 2px solid #93c5fd; outline-offset: -1px; background: #eff6ff;
+}
+.db-tbl tr.saving td { opacity: .6; }
+.db-tbl tr.saved td  { background: #f0fdf4; transition: background .8s; }
+.db-tbl .cell-with-ex { vertical-align: top; padding: 5px 8px; }
+.cell-word { font-size: 14px; color: #0f172a; min-width: 70px; border-radius: 3px; padding: 1px 3px; }
+.cell-word:focus { outline: 2px solid #93c5fd; outline-offset: 1px; background: #eff6ff; }
+.cell-ex { font-size: 11px; color: #94a3b8; margin-top: 4px; font-style: italic; min-width: 70px; border-radius: 3px; padding: 1px 3px; }
+.cell-ex:focus { outline: 2px solid #bfdbfe; outline-offset: 1px; background: #f0f9ff; }
+.cell-ex:empty { min-height: 14px; }
+
+.db-tbl td.cell-lesson { color: #64748b; font-size: 12px; white-space: nowrap; }
+.db-tbl td.cell-diff { text-align: center; }
+
+/* audio + action buttons */
+.audio-cell { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.audio-btn {
+  background: none; border: 1px solid #d0d7e2; border-radius: 5px;
+  padding: 1px 6px; font-size: 11px; cursor: pointer; color: #475569;
+  white-space: nowrap; line-height: 1.6; min-width: 34px; text-align: center;
+}
+.audio-btn:hover { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; }
+.audio-btn.playing { background: #dcfce7; border-color: #86efac; color: #15803d; }
+
+.del-row-btn {
+  background: none; border: none; color: #94a3b8;
+  cursor: pointer; padding: 2px 7px; font-size: 15px; border-radius: 5px;
+}
+.del-row-btn:hover { background: #fee2e2; color: #dc2626; }
+.refresh-row-btn {
+  background: none; border: none; color: #94a3b8;
+  cursor: pointer; padding: 2px 6px; font-size: 13px; border-radius: 5px;
+}
+.refresh-row-btn:hover { background: #e0f2fe; color: #0369a1; }
+
+.diff-badge {
+  display: inline-block; background: #fef9c3; color: #854d0e;
+  border-radius: 4px; font-size: 11px; padding: 1px 5px;
+}
+
+/* pagination */
+.db-pager {
+  display: flex; gap: 6px; align-items: center; justify-content: center;
+  margin-top: 12px; flex-wrap: wrap;
+}
+.db-pager button {
+  border: 1px solid #d0d7e2; background: #fff; border-radius: 7px;
+  padding: 5px 12px; font-size: 13px; cursor: pointer; color: #0f172a;
+}
+.db-pager button:hover:not(:disabled) { background: #eff6ff; border-color: #93c5fd; }
+.db-pager button:disabled { opacity: .4; cursor: default; }
+.db-pager button.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+.db-pager .pager-info { font-size: 13px; color: #64748b; padding: 0 4px; }
+
+#db-loading { text-align: center; padding: 30px; color: #64748b; font-size: 14px; }
+
+/* ── File drop zone ───────────────────────────────────────────── */
+.file-drop-zone {
+  border: 2px dashed #cbd5e1; border-radius: 14px; padding: 36px 20px;
+  text-align: center; cursor: pointer; background: #f8fafc;
+  transition: border-color .15s, background .15s;
+}
+.file-drop-zone:hover, .file-drop-zone.drag-over {
+  border-color: #2563eb; background: #eff6ff;
+}
+.file-drop-icon { font-size: 40px; margin-bottom: 10px; line-height: 1; }
+.file-drop-text { font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+.file-drop-sub  { font-size: 13px; color: #64748b; }
+
+@media (max-width: 380px) {
+  .ollama-bar input { width: 130px; }
+  .lesson-row input, .lesson-row select { min-width: 80px; }
+  .up-tab { padding: 8px 12px; font-size: 13px; }
+}
+</style>
+
+<div class="upload-page">
+
+  <!-- Tab bar -->
+  <div class="up-tabs">
+    <button class="up-tab active" onclick="switchTab('add')"  id="tab-add">Добавить слова</button>
+    <button class="up-tab"        onclick="switchTab('file')" id="tab-file">CSV / Excel</button>
+    <button class="up-tab"        onclick="switchTab('db')"   id="tab-db">База слов</button>
+  </div>
+
+  <!-- ── Panel 1: Add words ────────────────────────────────────── -->
+  <div class="up-panel active" id="panel-add">
+
+    <div class="ollama-bar">
+      <label>Ollama: <input id="ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434"></label>
+      <label>Модель: <input id="ollama-model" value="llama3.1:8b" placeholder="llama3.1:8b"></label>
+      <label>Уровень:
+        <select id="cefr-level" style="border:1px solid #d0d7e2;border-radius:7px;padding:4px 8px;font-size:13px;color:#0f172a;background:#fff">
+          <option value="A1">A1</option>
+          <option value="A2" selected>A2</option>
+          <option value="B1">B1</option>
+          <option value="B2">B2</option>
+          <option value="C1">C1</option>
+          <option value="C2">C2</option>
+        </select>
+      </label>
+      <button type="button" class="ghost-btn" style="padding:4px 10px;font-size:12px" onclick="checkOllama()">Проверить</button>
+      <span id="ollama-status" class="ollama-status">—</span>
+    </div>
+
+    <div id="lessons-container"></div>
+
+    <div class="actions-row">
+      <button type="button" class="ghost-btn" onclick="addLesson()">+ Добавить урок</button>
+      <button type="button" id="generate-btn" onclick="generateWords()">Сгенерировать переводы</button>
+      <span id="gen-status" class="gen-status"></span>
+    </div>
+
+    <div id="preview-section" style="display:none">
+      <h3>Предпросмотр — проверьте и при необходимости отредактируйте</h3>
+      <div class="table-wrap">
+        <table class="preview-tbl">
+          <thead>
+            <tr>
+              <th>Урок</th><th>NL</th><th>EN</th><th>RU</th>
+              <th>Пример NL</th><th>Пример EN</th><th>Пример RU</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+      <div class="actions-row">
+        <button type="button" id="upload-btn" onclick="importWords()">Загрузить в базу данных</button>
+        <button type="button" class="ghost-btn" onclick="document.getElementById('preview-section').style.display='none'">Скрыть таблицу</button>
+      </div>
+      <div id="upload-status"></div>
+    </div>
+
+  </div><!-- /panel-add -->
+
+  <!-- ── Panel 2: CSV / Excel upload ──────────────────────────────── -->
+  <div class="up-panel" id="panel-file">
+
+    <!-- Drop zone -->
+    <div id="file-drop-zone" class="file-drop-zone" onclick="document.getElementById('file-input').click()"
+         ondragover="fileDragOver(event)" ondragleave="fileDragLeave(event)" ondrop="fileDrop(event)">
+      <div class="file-drop-icon">📂</div>
+      <div class="file-drop-text">Перетащите CSV или Excel файл сюда</div>
+      <div class="file-drop-sub">или нажмите для выбора файла</div>
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="fileSelected(this)">
+    </div>
+
+    <div id="file-parse-status" class="gen-status" style="margin:10px 0;min-height:18px"></div>
+
+    <!-- Preview same table structure as panel 1 -->
+    <div id="file-preview-section" style="display:none">
+      <h3>Предпросмотр — проверьте и при необходимости отредактируйте</h3>
+      <div class="table-wrap">
+        <table class="preview-tbl">
+          <thead>
+            <tr>
+              <th>Урок</th><th>#</th><th>NL</th><th>EN</th><th>RU</th>
+              <th>Пример NL</th><th>Пример EN</th><th>Пример RU</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="file-preview-body"></tbody>
+        </table>
+      </div>
+      <div class="actions-row">
+        <button type="button" id="file-upload-btn" onclick="fileImportWords()">Загрузить в базу данных</button>
+        <button type="button" class="ghost-btn" onclick="document.getElementById('file-preview-section').style.display='none'">Скрыть</button>
+      </div>
+      <div id="file-upload-status" style="font-size:14px;margin-top:8px;min-height:20px"></div>
+    </div>
+
+  </div><!-- /panel-file -->
+
+  <!-- ── Panel 3: Word database ─────────────────────────────────── -->
+  <div class="up-panel" id="panel-db">
+
+    <div class="db-toolbar">
+      <input type="search" class="db-search" id="db-search" placeholder="Поиск по NL, EN, RU, уроку…" oninput="dbSearchDebounced()">
+      <span class="db-count" id="db-count"></span>
+    </div>
+
+    <div class="table-wrap">
+      <div id="db-loading" style="display:none">⏳ Загрузка…</div>
+      <table class="db-tbl" id="db-table" style="display:none">
+        <thead>
+          <tr>
+            <th>Урок</th>
+            <th>NL</th>
+            <th>EN</th>
+            <th>RU</th>
+            <th>Аудио</th>
+            <th>⭐</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="db-body"></tbody>
+      </table>
+    </div>
+
+    <div class="db-pager" id="db-pager"></div>
+
+  </div><!-- /panel-db -->
+
+</div><!-- /upload-page -->
+
+{% endblock %}
+{% block scripts %}
+<script>
+  window.PUBLIC_BASE_URL = {{ public_url | tojson }};
+</script>
+<script defer src="{{ url_for('static', filename='upload.js') }}"></script>
+{% endblock %}

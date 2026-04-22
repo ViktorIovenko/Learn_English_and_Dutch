@@ -17,6 +17,128 @@
     const r = await window.apiFetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})});
     return r.json();
   }
+  const IDB = window.LocalDB || null;
+  const IDB_PREFIX = window.IDB_KEY_PREFIX || (window.USER_ID ? `uid:${window.USER_ID}:` : "uid:anon:");
+  const LESSONS_KEY = IDB_PREFIX + "list";
+  const WORDS_KEY_PREFIX = IDB_PREFIX + "lesson:";
+  let lessonsCache = null;
+
+  function isNonEmptyArray(val){
+    return Array.isArray(val) && val.length > 0;
+  }
+  function itemsSig(items){
+    if (!Array.isArray(items) || !items.length) return "";
+    return items.map((i) => [
+      i.id ?? "",
+      i.number ?? "",
+      i.nl_word ?? i.translation_nl ?? "",
+      i.en_word ?? i.word_en ?? "",
+      i.ru_word ?? i.translation_ru ?? "",
+      i.nl_sentence ?? i.sentence_nl ?? "",
+      i.en_sentence ?? i.sentence_en ?? "",
+      i.ru_sentence ?? i.sentence_ru ?? ""
+    ].join("|")).join("||");
+  }
+  async function idbGet(store, key){
+    if (!IDB) return null;
+    try { return await IDB.get(store, key); } catch (_) { return null; }
+  }
+  async function idbSet(store, key, value){
+    if (!IDB) return false;
+    try { await IDB.set(store, value, key); return true; } catch (_) { return false; }
+  }
+  async function readLessonWordsFromIdb(lesson){
+    if (!lesson) return null;
+    const key = WORDS_KEY_PREFIX + lesson;
+    const cached = await idbGet("words", key);
+    return Array.isArray(cached) ? cached : null;
+  }
+  async function writeLessonWordsToIdb(lesson, items){
+    if (!lesson || !Array.isArray(items)) return;
+    const key = WORDS_KEY_PREFIX + lesson;
+    await idbSet("words", key, items);
+  }
+  async function readLessonsFromIdb(){
+    if (Array.isArray(lessonsCache)) return lessonsCache;
+    const cached = await idbGet("lessons", LESSONS_KEY);
+    if (Array.isArray(cached)) { lessonsCache = cached; return cached; }
+    return null;
+  }
+  async function writeLessonsToIdb(lessons){
+    if (!Array.isArray(lessons)) return;
+    lessonsCache = lessons;
+    await idbSet("lessons", LESSONS_KEY, lessons);
+  }
+  async function updateLessonHiddenCache(lesson, hidden){
+    if (!lesson) return;
+    const lessons = await readLessonsFromIdb();
+    if (!isNonEmptyArray(lessons)) return;
+    const needle = String(lesson || "");
+    const found = lessons.find((x)=> String(x.lesson || x.lesson_title || "") === needle);
+    if (found) found.hidden = hidden;
+    await writeLessonsToIdb(lessons);
+  }
+  const PROGRESS_KEY_PREFIX = IDB_PREFIX + "lesson:";
+  let lastProgressSig = null;
+  let progressSigLoaded = false;
+
+  function countPassed(){
+    let n = 0;
+    for (const w of ITEMS) {
+      if (w && w._passed === true) n += 1;
+    }
+    return n;
+  }
+  function progressSig(p){
+    return [
+      p.kind || "",
+      p.lesson || "",
+      String(p.index ?? ""),
+      String(p.total ?? ""),
+      String(p.word_id ?? ""),
+      String(p.passed ?? "")
+    ].join("|");
+  }
+  function buildProgressPayload(reason){
+    if (!LESSON) return null;
+    const total = Array.isArray(ITEMS) ? ITEMS.length : 0;
+    return {
+      kind: "learn",
+      lesson: LESSON,
+      index: total ? index : 0,
+      total,
+      word_id: current?.id ?? null,
+      passed: total ? countPassed() : 0,
+      lang: currentLang,
+      reason: reason || "",
+      ts: Date.now()
+    };
+  }
+  function makeOutboxKey(ts){
+    return IDB_PREFIX + `progress:${ts}:${Math.random().toString(36).slice(2,8)}`;
+  }
+  async function ensureProgressSig(key){
+    if (progressSigLoaded) return;
+    progressSigLoaded = true;
+    const existing = await idbGet("progress", key);
+    if (existing) lastProgressSig = progressSig(existing);
+  }
+  async function saveProgress(reason){
+    if (!IDB) return;
+    const payload = buildProgressPayload(reason);
+    if (!payload) return;
+    const key = PROGRESS_KEY_PREFIX + LESSON;
+    await ensureProgressSig(key);
+    const sig = progressSig(payload);
+    if (sig === lastProgressSig) return;
+    lastProgressSig = sig;
+    await idbSet("progress", key, payload);
+    const event = { type: "progress", scope: "learn", state: payload, ts: payload.ts };
+    await idbSet("outbox", makeOutboxKey(payload.ts), event);
+  }
+  function queueProgressSave(reason){
+    saveProgress(reason).catch(() => {});
+  }
   function shuffle(a0){ const a=a0.slice(); for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]];} return a; }
 
   let root, wordBox, progress, answerSlots, lettersPool;
@@ -27,6 +149,7 @@
   let modalAudioBtn = null;        // [ОБНОВЛЕНО v8.24]
   let langButtons;
   let starBtn;
+  let lessonLearnedToggle;
   let nextLessonBtn, nextLessonModalBtn;
 
   let LESSON=""; let ITEMS=[]; let index=0; let current=null;
@@ -46,15 +169,15 @@
 
   function pickAudioSrc(obj, lang){
     if (!obj) return "";
-    if (lang==="nl") return obj.audio_nl||"";
-    if (lang==="en") return obj.audio_en||"";
-    if (lang==="ru") return obj.audio_ru||"";
+    if (lang==="nl") return obj.audio_nl||obj.nl_audio||"";
+    if (lang==="en") return obj.audio_en||obj.en_audio||"";
+    if (lang==="ru") return obj.audio_ru||obj.ru_audio||"";
     return "";
   }
-  async function ensureAudioForCurrent(lang){
+  async function ensureAudioForCurrent(lang, force){
     if (!current || !window.AudioWorker?.ensureForWord) return;
     try{
-      const up = await window.AudioWorker.ensureForWord(current, lang);
+      const up = await window.AudioWorker.ensureForWord(current, lang, { force: !!force });
       if (up && typeof up==="object"){
         const i = ITEMS.findIndex(x=>x.id===current.id);
         if (i>=0) ITEMS[i]=up;
@@ -71,14 +194,28 @@
   }
   async function playAudio(lang, btn){
     if (!current) return;
+    const activeId = current.id;
     let src = pickAudioSrc(current, lang);
     blip(btn);
     if (!src){
-      await ensureAudioForCurrent(lang);
+      await ensureAudioForCurrent(lang, true);
+      if (!current || String(current.id) !== String(activeId)) return;
       src = pickAudioSrc(current, lang);
     }
     if (src){
-      try{ new Audio(src).play().catch(()=>{}); }catch(e){ console.warn("play failed", e); }
+      try{
+        const audio = new Audio(src);
+        audio.addEventListener("error", ()=>{
+          ensureAudioForCurrent(lang, true).then(()=>{
+            if (!current || String(current.id) !== String(activeId)) return;
+            const retrySrc = pickAudioSrc(current, lang);
+            if (retrySrc){
+              new Audio(retrySrc).play().catch(()=>{});
+            }
+          }).catch(()=>{});
+        }, { once: true });
+        audio.play().catch(()=>{});
+      }catch(e){ console.warn("play failed", e); }
     }
   }
 
@@ -105,23 +242,44 @@
     }
   }
 
+  function applyLessonItems(items){
+    if (!items.length){ wordBox.textContent="В этом уроке пока нет слов."; return false; }
+    ITEMS = items; index=0;
+    ITEMS.forEach(x=>{ x._passed = false; });
+    fireworksFired = false;
+    try{ window.AudioWorker?.warmup?.(); }catch(e){}
+    setLanguage(currentLang);
+    renderCurrent();
+    if (currentLang!=="all") ensureAudioForCurrent(currentLang);
+    queueProgressSave("load");
+    return true;
+  }
+
   async function loadLesson(){
-    if (!LESSON){ wordBox.textContent="Урок не выбран."; return; }
-    wordBox.textContent="Загрузка...";
+    if (!LESSON){ wordBox.textContent="???????? ???? ???<?+??????."; return; }
     try{
+      let items = await readLessonWordsFromIdb(LESSON);
+      const cachedSig = itemsSig(items);
+      if (items && items.length){
+        applyLessonItems(items);
+      } else {
+        wordBox.textContent="?-??????????????...";
+      }
       const js = await apiGet("/api/lesson_words?lesson="+encodeURIComponent(LESSON));
-      if (!js || js.ok===false){ wordBox.textContent="Ошибка загрузки слов."; return; }
-      const items = js.items||[];
-      if (!items.length){ wordBox.textContent="В этом уроке пока нет слов."; return; }
-      ITEMS = items; index=0;
-      ITEMS.forEach(x=>{ x._passed = false; });
-      fireworksFired = false;
-      try{ window.AudioWorker?.warmup?.(); }catch(e){}
-      setLanguage(currentLang);
-      renderCurrent();
-      if (currentLang!=="all") ensureAudioForCurrent(currentLang);
+      if (!js || js.ok===false){
+        if (!items || !items.length){
+          wordBox.textContent="???????+???? ???????????????? ???>????.";
+        }
+        return;
+      }
+      const fresh = Array.isArray(js.items) ? js.items : [];
+      await writeLessonWordsToIdb(LESSON, fresh);
+      const cachedEmpty = !Array.isArray(items) || items.length === 0;
+      if (cachedEmpty || itemsSig(fresh) !== cachedSig){
+        applyLessonItems(fresh);
+      }
     }catch(e){
-      console.error(e); wordBox.textContent="Сеть недоступна.";
+      console.error(e); wordBox.textContent="?????'?? ???????????'????????.";
     }
   }
 
@@ -343,6 +501,7 @@
       runFireworks(3000);
     }
     updateDifficultUI();
+    queueProgressSave(ok ? "answer_ok" : "answer_fail");
 
     // обработчик клика по ▶
     if (modalAudioBtn){
@@ -368,8 +527,16 @@
     renderSlots();
     renderPool();
   }
-  function prevWord(){ index = (index - 1 + ITEMS.length) % ITEMS.length; renderCurrent(); }
-  function nextWord(){ index = (index + 1) % ITEMS.length; renderCurrent(); }
+  function prevWord(){
+    index = (index - 1 + ITEMS.length) % ITEMS.length;
+    renderCurrent();
+    queueProgressSave("navigate");
+  }
+  function nextWord(){
+    index = (index + 1) % ITEMS.length;
+    renderCurrent();
+    queueProgressSave("navigate");
+  }
 
   function maybeFireworks(){
     if (fireworksFired) return;
@@ -424,6 +591,41 @@
     }catch(_){ location.href = "/lessons"; }
   }
 
+  async function syncLessonLearnedToggle(){
+    if (!lessonLearnedToggle || !LESSON) return;
+    try{
+      let lessons = await readLessonsFromIdb();
+      if (!lessons) {
+        lessons = await apiGet("/api/lessons");
+        if (Array.isArray(lessons)) await writeLessonsToIdb(lessons);
+      }
+      if (!Array.isArray(lessons)) return;
+      const found = lessons.find((x)=> (x.lesson || x.lesson_title || "") === LESSON);
+      if (!found) return;
+      lessonLearnedToggle.checked = Number(found.hidden || 0) === 1;
+    }catch(e){
+      console.warn("[lesson] failed to load lesson status", e);
+    }
+  }
+
+  async function saveLessonLearnedToggle(checked){
+    if (!lessonLearnedToggle) return;
+    const lesson = lessonLearnedToggle.dataset.lesson || LESSON;
+    if (!lesson) return;
+    const hidden = checked ? 1 : 0;
+    try{
+      const resp = await window.apiFetch("/api/lessons/set_hidden", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ lesson, hidden })
+      });
+      if (!resp.ok) throw new Error("server error");
+      await updateLessonHiddenCache(lesson, hidden);
+    }catch(e){
+      lessonLearnedToggle.checked = !checked;
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", ()=>{
     root   = $("#learn-root");
     wordBox= $("#word-view");
@@ -443,12 +645,23 @@
     modalContent = $("#modal-content");
     diffToggle = $("#difficultToggle");
     starBtn    = $("#difficultStar");
+    lessonLearnedToggle = $("#lesson-learned-toggle");
 
     langButtons = $$(".lang-switch .lang-btn");
     nextLessonBtn = $("#next-lesson-btn");
     nextLessonModalBtn = $("#next-lesson-modal-btn");
 
     LESSON = (root && root.dataset.lesson) || window.LESSON_TITLE || "";
+
+    if (lessonLearnedToggle){
+      if (LESSON){
+        if (!lessonLearnedToggle.dataset.lesson) lessonLearnedToggle.dataset.lesson = LESSON;
+        lessonLearnedToggle.addEventListener("change", (e)=> saveLessonLearnedToggle(!!e.target.checked));
+        syncLessonLearnedToggle();
+      } else {
+        lessonLearnedToggle.disabled = true;
+      }
+    }
 
     btnClear?.addEventListener("click", clearAnswer);
     btnUndo?.addEventListener("click", undo);

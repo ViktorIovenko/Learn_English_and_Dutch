@@ -54,6 +54,8 @@ def init_db(db_path: str) -> None:
         c.execute("""
             CREATE TABLE IF NOT EXISTS words (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id    TEXT NOT NULL DEFAULT '',
+                status     TEXT NOT NULL DEFAULT 'user',
                 lesson     TEXT,
                 number     TEXT,
                 nl         TEXT,
@@ -64,15 +66,32 @@ def init_db(db_path: str) -> None:
                 ex_ru      TEXT,
                 audio_nl   TEXT,
                 audio_en   TEXT,
-                audio_ru   TEXT
+                audio_ru   TEXT,
+                updated_at INTEGER
             );
         """)
-        c.execute("CREATE INDEX IF NOT EXISTS idx_words_lesson ON words(lesson);")
-        c.execute("CREATE UNIQUE INDEX IF NOT EXISTS u_words_number ON words(number);")
-
         cols = [r["name"] for r in c.execute("PRAGMA table_info(words)")]
+        if "user_id" not in cols:
+            c.execute("ALTER TABLE words ADD COLUMN user_id TEXT;")
+            c.execute("UPDATE words SET user_id = '' WHERE user_id IS NULL;")
+        if "status" not in cols:
+            c.execute("ALTER TABLE words ADD COLUMN status TEXT NOT NULL DEFAULT 'user';")
+        c.execute("""
+            UPDATE words
+            SET status = 'user'
+            WHERE COALESCE(status, '') = ''
+        """)
+        c.execute("DROP INDEX IF EXISTS u_words_number;")
+        c.execute("DROP INDEX IF EXISTS idx_words_lesson_number;")
+        c.execute("DROP INDEX IF EXISTS idx_words_user_lesson_number;")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_words_lesson ON words(lesson);")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_words_user_lesson ON words(user_id, lesson);")
+        c.execute("CREATE UNIQUE INDEX IF NOT EXISTS u_words_user_lesson_number ON words(user_id, lesson, number);")
         if "difficult" not in cols:
             c.execute("ALTER TABLE words ADD COLUMN difficult INTEGER NOT NULL DEFAULT 0;")
+        if "updated_at" not in cols:
+            c.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER;")
+            c.execute("UPDATE words SET updated_at = (strftime('%s','now') * 1000) WHERE updated_at IS NULL;")
 
         c.execute("""
             CREATE TABLE IF NOT EXISTS reminder_state (

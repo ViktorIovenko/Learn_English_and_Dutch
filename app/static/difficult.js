@@ -17,6 +17,63 @@
                                  :fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}));
     return r.json();
   }
+  const IDB = window.LocalDB || null;
+  const IDB_PREFIX = window.IDB_KEY_PREFIX || (window.USER_ID ? `uid:${window.USER_ID}:` : "uid:anon:");
+  const PROGRESS_KEY = IDB_PREFIX + "difficult";
+  let lastProgressSig = null;
+  let progressSigLoaded = false;
+
+  async function idbGet(store, key){
+    if (!IDB) return null;
+    try { return await IDB.get(store, key); } catch (_) { return null; }
+  }
+  async function idbSet(store, key, value){
+    if (!IDB) return false;
+    try { await IDB.set(store, value, key); return true; } catch (_) { return false; }
+  }
+  function progressSig(p){
+    return [
+      p.kind || "",
+      String(p.index ?? ""),
+      String(p.total ?? ""),
+      String(p.word_id ?? "")
+    ].join("|");
+  }
+  function buildProgressPayload(reason){
+    const total = Array.isArray(ITEMS) ? ITEMS.length : 0;
+    return {
+      kind: "difficult",
+      index: total ? index : 0,
+      total,
+      word_id: current?.id ?? null,
+      lang: currentLang,
+      reason: reason || "",
+      ts: Date.now()
+    };
+  }
+  function makeOutboxKey(ts){
+    return IDB_PREFIX + `progress:${ts}:${Math.random().toString(36).slice(2,8)}`;
+  }
+  async function ensureProgressSig(){
+    if (progressSigLoaded) return;
+    progressSigLoaded = true;
+    const existing = await idbGet("progress", PROGRESS_KEY);
+    if (existing) lastProgressSig = progressSig(existing);
+  }
+  async function saveProgress(reason){
+    if (!IDB) return;
+    const payload = buildProgressPayload(reason);
+    await ensureProgressSig();
+    const sig = progressSig(payload);
+    if (sig === lastProgressSig) return;
+    lastProgressSig = sig;
+    await idbSet("progress", PROGRESS_KEY, payload);
+    const event = { type: "progress", scope: "difficult", state: payload, ts: payload.ts };
+    await idbSet("outbox", makeOutboxKey(payload.ts), event);
+  }
+  function queueProgressSave(reason){
+    saveProgress(reason).catch(() => {});
+  }
   function shuffle(a0){ const a=a0.slice(); for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]];} return a; }
 
   const wordBox      = $("#word-view");
@@ -72,10 +129,10 @@
     btn.classList.remove("playing"); void btn.offsetWidth;
     btn.classList.add("playing"); setTimeout(()=>btn.classList.remove("playing"),650);
   }
-  async function ensureAudioForCurrent(lang){
+  async function ensureAudioForCurrent(lang, force){
     if (!current || !window.AudioWorker?.ensureForWord) return;
     try{
-      const up = await window.AudioWorker.ensureForWord(current, lang);
+      const up = await window.AudioWorker.ensureForWord(current, lang, { force: !!force });
       if (up && typeof up==="object"){
         const i = ITEMS.findIndex(x=>String(x.id)===String(current.id));
         if (i>=0) ITEMS[i]=up;
@@ -85,10 +142,29 @@
   }
   async function playAudio(lang, btn){
     if (!current) return;
+    const activeId = current.id;
     let src = pickAudioSrc(current, lang);
     blip(btn);
-    if (!src){ await ensureAudioForCurrent(lang); src = pickAudioSrc(current, lang); }
-    if (src){ try{ new Audio(src).play().catch(()=>{}); }catch(e){ console.warn("play failed", e); } }
+    if (!src){
+      await ensureAudioForCurrent(lang, true);
+      if (!current || String(current.id) !== String(activeId)) return;
+      src = pickAudioSrc(current, lang);
+    }
+    if (src){
+      try{
+        const audio = new Audio(src);
+        audio.addEventListener("error", ()=>{
+          ensureAudioForCurrent(lang, true).then(()=>{
+            if (!current || String(current.id) !== String(activeId)) return;
+            const retrySrc = pickAudioSrc(current, lang);
+            if (retrySrc){
+              new Audio(retrySrc).play().catch(()=>{});
+            }
+          }).catch(()=>{});
+        }, { once: true });
+        audio.play().catch(()=>{});
+      }catch(e){ console.warn("play failed", e); }
+    }
   }
 
   function setPracticeVisible(show){
@@ -107,6 +183,7 @@
         wordBox.textContent="У вас пока нет отмеченных сложных слов.";
         progress.textContent="0 / 0";
         setPracticeVisible(false);
+        queueProgressSave("empty");
         return;
       }
       ITEMS = items; index=0; fireworksFired=false;
@@ -197,6 +274,7 @@
       setPracticeVisible(false);
       wordBox.innerHTML = view.rows.map(makeRow).join("");
       progress.textContent = `${index + 1} / ${ITEMS.length}`;
+      queueProgressSave("render");
       current._sent_for_modal = sentForModal;
       $$("#word-view .audio-btn").forEach(btn=> btn.addEventListener("click", ()=> playAudio(btn.dataset.play||"nl", btn)));
       return;
@@ -212,6 +290,7 @@
     renderSlots();
     renderPool();
     progress.textContent = `${index + 1} / ${ITEMS.length}`;
+    queueProgressSave("render");
     current._sent_for_modal = sentForModal;
   }
 
@@ -285,6 +364,7 @@
           answerSlots.innerHTML = "";
           lettersPool.innerHTML = "";
           setPracticeVisible(false);
+          queueProgressSave("empty");
           return;
         }
         index = index % ITEMS.length;

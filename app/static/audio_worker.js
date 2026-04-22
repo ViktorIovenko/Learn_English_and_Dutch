@@ -3,12 +3,18 @@
  * Экспортирует window.AudioWorker: warmup(), ensureForItems(items), ensureForWord(word, lang)
  */
 (function(){
-  function needForWord(word, lang){
+  function hasAudio(value){
+    return typeof value === "string" && value.trim() !== "";
+  }
+  function hasAudioForLang(word, lang){
     if (!word) return false;
-    if (lang === "nl") return !word.audio_nl;
-    if (lang === "en") return !word.audio_en;
-    if (lang === "ru") return !word.audio_ru;
+    if (lang === "nl") return hasAudio(word.audio_nl) || hasAudio(word.nl_audio);
+    if (lang === "en") return hasAudio(word.audio_en) || hasAudio(word.en_audio);
+    if (lang === "ru") return hasAudio(word.audio_ru) || hasAudio(word.ru_audio);
     return false;
+  }
+  function needForWord(word, lang){
+    return !hasAudioForLang(word, lang);
   }
 
   async function callEnsure(ids, langs){
@@ -35,7 +41,7 @@
     // Обрабатывает массив слов; возвращает новый массив с дописанными audio_* где были пустые
     async ensureForItems(items){
       const ids = (items||[])
-        .filter(w => !w.audio_nl || !w.audio_en || !w.audio_ru)
+        .filter(w => ["nl", "en", "ru"].some(lang => needForWord(w, lang)))
         .map(w => w.id);
       if (!ids.length) return items||[];
       const ensured = await callEnsure(ids, ["nl","en","ru"]);
@@ -53,8 +59,9 @@
     },
 
     // Обеспечивает аудио для одного слова и одного языка; возвращает ОБНОВЛЁННОЕ слово
-    async ensureForWord(word, lang){
-      if (!needForWord(word, lang)) return word;
+    async ensureForWord(word, lang, opts){
+      const force = !!(opts && opts.force);
+      if (!force && !needForWord(word, lang)) return word;
       const items = await callEnsure([word.id], [lang]);
       const u = (items && items[0]) ? items[0] : null;
       if (!u) return word;

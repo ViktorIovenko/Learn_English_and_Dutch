@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  learn-words:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data/words.db:/app/words.db
+      - ./data/audio:/app/app/static/audio
+    networks:
+      - family_internal
+
+networks:
+  family_internal:
+    external: true
+    name: family-call_internal

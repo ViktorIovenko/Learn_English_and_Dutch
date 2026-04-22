@@ -24,6 +24,19 @@ def ensure_user_tables(db_path: str) -> None:
             PRIMARY KEY (user_id, lesson)
         );
         """)
+        cols = [r["name"] for r in c.execute("PRAGMA table_info(user_lessons)")]
+        if "updated_at_ts" not in cols:
+            c.execute("ALTER TABLE user_lessons ADD COLUMN updated_at_ts INTEGER;")
+            c.execute("""
+                UPDATE user_lessons
+                SET updated_at_ts = (
+                    COALESCE(
+                        CAST(strftime('%s', replace(substr(updated_at,1,19),'T',' ')) AS INTEGER),
+                        CAST(strftime('%s','now') AS INTEGER)
+                    ) * 1000
+                )
+                WHERE updated_at_ts IS NULL;
+            """)
         c.commit()
 
 
@@ -34,6 +47,8 @@ def get_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
     Сортировка: видимые → скрытые; затем по lesson_index; затем по названию.
     """
     ensure_user_tables(db_path)
+    if not user_id:
+        return []
     with _conn(db_path) as c:
         rows = c.execute("""
             SELECT
@@ -45,8 +60,9 @@ def get_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
                     )
                 ) AS lesson_index
             FROM words w
+            WHERE (w.user_id = ? OR w.status = 'test')
             GROUP BY w.lesson
-        """).fetchall()
+        """, (str(user_id),)).fetchall()
 
         # подтянуть hidden для юзера
         hidden_map = {}
@@ -75,22 +91,59 @@ def get_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
         return lessons
 
 
+def get_user_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
+    """Возвращает список уроков, загруженных текущим пользователем."""
+    if not user_id:
+        return []
+    with _conn(db_path) as c:
+        rows = c.execute("""
+            SELECT
+                w.lesson AS lesson,
+                COUNT(*) AS words_count,
+                MIN(
+                    CAST(
+                        SUBSTR(w.number, 1, INSTR(w.number || '.', '.') - 1) AS INTEGER
+                    )
+                ) AS lesson_index
+            FROM words w
+            WHERE w.user_id = ? AND COALESCE(w.lesson, '') != ''
+            GROUP BY w.lesson
+        """, (str(user_id),)).fetchall()
+
+        lessons: List[Dict[str, Any]] = []
+        for r in rows:
+            lessons.append({
+                "lesson": r["lesson"],
+                "lesson_title": r["lesson"],
+                "words_count": r["words_count"],
+                "lesson_index": int(r["lesson_index"] or 0),
+            })
+
+        lessons.sort(key=lambda item: (item.get("lesson_index", 0), (item.get("lesson") or "")))
+        return lessons
+
+
 def set_lesson_hidden(db_path: str, user_id: str, lesson: str, hidden: int) -> None:
     """Пометить урок скрытым/видимым для пользователя."""
     ensure_user_tables(db_path)
     with _conn(db_path) as c:
+        now_iso = datetime.utcnow().isoformat()
+        now_ts = int(datetime.utcnow().timestamp() * 1000)
         c.execute("""
-            INSERT INTO user_lessons (user_id, lesson, hidden, updated_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO user_lessons (user_id, lesson, hidden, updated_at, updated_at_ts)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(user_id, lesson) DO UPDATE SET
                 hidden=excluded.hidden,
-                updated_at=excluded.updated_at
-        """, (str(user_id), lesson, int(hidden), datetime.utcnow().isoformat()))
+                updated_at=excluded.updated_at,
+                updated_at_ts=excluded.updated_at_ts
+        """, (str(user_id), lesson, int(hidden), now_iso, now_ts))
         c.commit()
 
 
-def get_lesson_words(db_path: str, lesson: str) -> List[Dict[str, Any]]:
+def get_lesson_words(db_path: str, lesson: str, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Все слова конкретного урока (для страницы урока)."""
+    if not user_id:
+        return []
     with _conn(db_path) as c:
         rows = c.execute("""
             SELECT
@@ -107,9 +160,9 @@ def get_lesson_words(db_path: str, lesson: str) -> List[Dict[str, Any]]:
                 audio_en AS en_audio,
                 audio_ru AS ru_audio
             FROM words
-            WHERE lesson = ?
+            WHERE (user_id = ? OR status = 'test') AND lesson = ?
             ORDER BY number
-        """, (lesson,)).fetchall()
+        """, (str(user_id), lesson)).fetchall()
         return [dict(r) for r in rows]
 
 

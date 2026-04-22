@@ -11,7 +11,7 @@
 <body>
   <header class="header">
     <!-- [ДОБАВЛЕНО v5.11] Контейнер с 10-минутным таймером -->
-    <div class="container">
+    {% if not hide_timer %}<div class="container">
       <div id="daily-timer" class="daily-timer" role="group" aria-label="10-minute study timer">
         <span class="dt-label" id="dt_label">Ежедневная цель:</span>
         <span class="dt-time" id="dt_time" aria-live="polite">10:00</span>
@@ -20,9 +20,27 @@
         <button id="dt_restart" class="pill-btn small" type="button" title="Перезапустить таймер">Перезапуск</button>
         <button id="dt_reset" class="pill-btn small ghost" type="button" style="display:none">Сброс</button>
       </div>
-    </div>
+    </div>{% endif %}
     <!-- /[ДОБАВЛЕНО v5.11] -->
   </header>
+  <div id="termsModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+      <div class="modal-head">
+        <div class="modal-title" id="termsTitle">Условия пользования</div>
+      </div>
+      <div class="modal-body">
+        <p>Добро пожаловать в приложение для запоминания слов на трех языках.</p>
+        <p>Для использования приложения необходимо согласиться с условиями пользования.</p>
+        <p>Юридическое предупреждение: мы сохраняем cookies на вашем устройстве (телефоне), вы всегда можете их удалить.</p>
+      </div>
+      <div class="modal-actions">
+        <button id="termsAcceptBtn" type="button" class="pill-btn">Я согласен</button>
+      </div>
+    </div>
+  </div>
+  <div id="floating-timer" class="floating-timer" aria-hidden="true" aria-label="Таймер">
+    <span id="floating-time" aria-live="polite">10:00</span>
+  </div>
   <main class="container">
     {% block content %}{% endblock %}
   </main>
@@ -46,11 +64,64 @@
     const tgUserId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "";
     if (urlUid) localStorage.setItem("uid", urlUid);
     const USER_ID = tgUserId || localStorage.getItem("uid") || "";
+    window.USER_ID = USER_ID;
+    window.IDB_KEY_PREFIX = USER_ID ? ("uid:" + USER_ID + ":") : "uid:anon:";
     window.apiFetch = function(url, opts = {}) {
       const o = Object.assign({}, opts);
       o.headers = Object.assign({}, o.headers || {}, {"X-User-Id": USER_ID});
       return fetch(url, o);
     };
+    const termsModal = document.getElementById("termsModal");
+    const termsAcceptBtn = document.getElementById("termsAcceptBtn");
+    let termsUserId = "";
+    let termsAcceptedKey = "";
+    function termsKeyFor(uid){
+      const id = (uid || "").trim();
+      return id ? ("terms_accepted:" + id) : "";
+    }
+    function hasAcceptedTerms(uid){
+      const key = termsKeyFor(uid);
+      if (!key) return true;
+      if (termsAcceptedKey === key) return true;
+      try { return localStorage.getItem(key) === "1"; } catch(e){ return false; }
+    }
+    function setAcceptedTerms(uid){
+      const key = termsKeyFor(uid);
+      if (!key) return;
+      termsAcceptedKey = key;
+      try { localStorage.setItem(key, "1"); } catch(e){}
+    }
+    function showTermsModal(){
+      if (!termsModal) return;
+      termsModal.classList.add("is-open");
+      termsModal.classList.remove("is-closing");
+      termsModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+    }
+    function hideTermsModal(){
+      if (!termsModal) return;
+      termsModal.classList.add("is-closing");
+      termsModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+      setTimeout(() => {
+        termsModal.classList.remove("is-open");
+        termsModal.classList.remove("is-closing");
+      }, 200);
+    }
+    function maybeShowTerms(uid){
+      if (!termsModal || !termsAcceptBtn) return;
+      const id = String(uid || "").trim();
+      if (!id) return;
+      termsUserId = id;
+      if (!hasAcceptedTerms(id)) showTermsModal();
+    }
+    if (termsModal && termsAcceptBtn) {
+      termsAcceptBtn.addEventListener("click", () => {
+        if (!termsUserId) return;
+        setAcceptedTerms(termsUserId);
+        hideTermsModal();
+      });
+    }
     function _setText(id, val){ try{ document.getElementById(id).textContent = val || "—"; }catch(e){} }
     function _setAuth(val){
       try{
@@ -100,6 +171,7 @@
             window._HELLO_NAME_ = name;
             document.dispatchEvent(new CustomEvent("hello-name-ready", {detail: name}));
           }
+          maybeShowTerms(me.user_id || USER_ID);
         } else {
           _setAuth(false);
         }
@@ -116,9 +188,14 @@
       const pause   = document.getElementById('dt_pause');
       const restart = document.getElementById('dt_restart'); // [ДОБАВЛЕНО v5.13]
       const reset   = document.getElementById('dt_reset');
+      const floating = document.getElementById('floating-timer');
+      const floatingTime = document.getElementById('floating-time');
       if (!wrap || !timeEl || !pause || !reset || !restart) return;
 
       const TOTAL = 10 * 60; // 10 минут
+      const FLOAT_POS_KEY = 'dt_floating_pos';
+      const FLOAT_HOLD_MS = 180;
+      const FLOAT_SCROLL_THRESHOLD = 20;
 
       function readState(){
         let remaining = Number(sessionStorage.getItem('dt_remaining'));
@@ -150,8 +227,83 @@
         const s = sec % 60;
         return String(m) + ':' + String(s).padStart(2,'0');
       }
+      function readFloatPos(){
+        try{
+          const raw = localStorage.getItem(FLOAT_POS_KEY);
+          if (!raw) return null;
+          const pos = JSON.parse(raw);
+          if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number') return null;
+          return pos;
+        }catch(e){ return null; }
+      }
+
+      function clampFloatPos(x, y){
+        if (!floating) return {x, y};
+        const rect = floating.getBoundingClientRect();
+        const width = rect.width || floating.offsetWidth || 0;
+        const height = rect.height || floating.offsetHeight || 0;
+        if (!width || !height) return {x, y};
+        const maxX = Math.max(0, window.innerWidth - width);
+        const maxY = Math.max(0, window.innerHeight - height);
+        return {
+          x: Math.min(Math.max(0, x), maxX),
+          y: Math.min(Math.max(0, y), maxY)
+        };
+      }
+
+      function saveFloatPos(x, y){
+        if (!floating) return;
+        const pos = clampFloatPos(x, y);
+        try{ localStorage.setItem(FLOAT_POS_KEY, JSON.stringify(pos)); }catch(e){}
+        floating.dataset.positioned = "1";
+      }
+
+      function applyFloatPos(pos){
+        if (!floating) return;
+        if (!pos){
+          floating.style.left = "";
+          floating.style.top = "";
+          floating.style.right = "";
+          floating.style.bottom = "";
+          floating.dataset.positioned = "";
+          return;
+        }
+        const clamped = clampFloatPos(pos.x, pos.y);
+        floating.style.left = clamped.x + "px";
+        floating.style.top = clamped.y + "px";
+        floating.style.right = "auto";
+        floating.style.bottom = "auto";
+        floating.dataset.positioned = "1";
+      }
+
+      function setFloatingVisible(show){
+        if (!floating) return;
+        if (show){
+          floating.classList.add("is-visible");
+          floating.setAttribute("aria-hidden", "false");
+          requestAnimationFrame(() => {
+            const pos = readFloatPos();
+            if (pos) applyFloatPos(pos);
+          });
+        } else {
+          floating.classList.remove("is-visible");
+          floating.setAttribute("aria-hidden", "true");
+        }
+      }
+
+      function setupFloatingVisibility(){
+        if (!floating) return;
+        const updateVisibility = () => {
+          const scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+          setFloatingVisible(scrolled > FLOAT_SCROLL_THRESHOLD);
+        };
+        window.addEventListener("scroll", updateVisibility, {passive:true});
+        window.addEventListener("resize", updateVisibility);
+        updateVisibility();
+      }
       function render(){
         timeEl.textContent = fmt(state.remaining);
+        if (floatingTime) floatingTime.textContent = fmt(state.remaining);
         wrap.classList.toggle('done', state.remaining <= 0);
         pause.style.display  = state.remaining <= 0 ? 'none' : '';
         reset.style.display  = state.remaining <= 0 ? '' : 'none';
@@ -205,6 +357,63 @@
         startTick();
       });
 
+      let floatDragging = false;
+      let floatPointerId = null;
+      let floatOffsetX = 0;
+      let floatOffsetY = 0;
+      let floatHoldTimer = null;
+
+      function stopFloatDrag(e){
+        if (!floating || e.pointerId !== floatPointerId) return;
+        if (floatHoldTimer) { clearTimeout(floatHoldTimer); floatHoldTimer = null; }
+        if (floatDragging){
+          floatDragging = false;
+          floating.classList.remove("dragging");
+          const rect = floating.getBoundingClientRect();
+          saveFloatPos(rect.left, rect.top);
+        }
+        try{ floating.releasePointerCapture(e.pointerId); }catch(err){}
+        floatPointerId = null;
+      }
+
+      if (floating){
+        floating.addEventListener("pointerdown", (e) => {
+          if (e.button !== undefined && e.button !== 0) return;
+          floatPointerId = e.pointerId;
+          const rect = floating.getBoundingClientRect();
+          floatOffsetX = e.clientX - rect.left;
+          floatOffsetY = e.clientY - rect.top;
+          if (floatHoldTimer) clearTimeout(floatHoldTimer);
+          floatHoldTimer = setTimeout(() => {
+            floatDragging = true;
+            floating.classList.add("dragging");
+          }, FLOAT_HOLD_MS);
+          try{ floating.setPointerCapture(e.pointerId); }catch(err){}
+        });
+
+        floating.addEventListener("pointermove", (e) => {
+          if (e.pointerId !== floatPointerId) return;
+          if (!floatDragging) return;
+          const pos = clampFloatPos(e.clientX - floatOffsetX, e.clientY - floatOffsetY);
+          floating.style.left = pos.x + "px";
+          floating.style.top = pos.y + "px";
+          floating.style.right = "auto";
+          floating.style.bottom = "auto";
+          floating.dataset.positioned = "1";
+        });
+
+        floating.addEventListener("pointerup", stopFloatDrag);
+        floating.addEventListener("pointercancel", stopFloatDrag);
+
+        window.addEventListener("resize", () => {
+          if (!floating.dataset.positioned) return;
+          const pos = readFloatPos();
+          if (pos) applyFloatPos(pos);
+        });
+      }
+
+      setupFloatingVisibility();
+
       window.addEventListener('beforeunload', ()=>{
         if (state.running){
           const now = Date.now();
@@ -223,6 +432,8 @@
     })();
     /* ===== /Сеансовый таймер ===== */
   </script>
+  <script defer src="{{ url_for('static', filename='idb.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='sync.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
