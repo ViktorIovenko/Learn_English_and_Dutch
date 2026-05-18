@@ -16,7 +16,7 @@ from config import Config
 from app.routes import init_app as init_web
 
 from telegram import Update
-from telegram.ext import ApplicationBuilder, Defaults, JobQueue
+from telegram.ext import ApplicationBuilder, Defaults, JobQueue, PicklePersistence
 
 from bot.auth import register_auth_handlers
 from bot.upload import register_upload_handlers
@@ -100,6 +100,16 @@ def init_db(db_path: str) -> None:
                 last_sent_date TEXT
             );
         """)
+        # Google auth columns
+        user_cols = [r["name"] for r in c.execute("PRAGMA table_info(users)")]
+        if "auth_provider" not in user_cols:
+            c.execute("ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'telegram';")
+        if "google_id" not in user_cols:
+            c.execute("ALTER TABLE users ADD COLUMN google_id TEXT;")
+            c.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS u_users_google_id "
+                "ON users(google_id) WHERE google_id IS NOT NULL;"
+            )
         c.commit()
 
 
@@ -146,13 +156,45 @@ async def on_error(update: object, context) -> None:
         log.exception("Error inside error handler")
 
 
+def _ensure_valid_persistence_file(path: Path) -> None:
+    import pickle as _pickle
+    _VALID = {"user_data": {}, "chat_data": {}, "bot_data": {}, "callback_data": None, "conversations": {}}
+    needs_write = False
+    if not path.exists():
+        needs_write = True
+    else:
+        try:
+            with open(path, "rb") as f:
+                data = _pickle.load(f)
+            if not isinstance(data, dict) or "user_data" not in data:
+                needs_write = True
+        except Exception:
+            needs_write = True
+    if needs_write:
+        log.info("Recreating bot_persistence.pkl (missing or invalid format)")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "wb") as f:
+            _pickle.dump(_VALID, f, protocol=2)
+
+
 def build_bot_application():
     if not Config.BOT_TOKEN:
         log.error("TELEGRAM_BOT_TOKEN пуст. Укажи токен в .env")
         return None
 
     defaults = Defaults(parse_mode="HTML")
-    application = ApplicationBuilder().token(Config.BOT_TOKEN).defaults(defaults).build()
+    # PicklePersistence сохраняет user_data между рестартами бота.
+    # Без него kb_anchor_msg_id теряется и старые "Меню" не удаляются.
+    persistence_path = Path(Config.DB_PATH).parent / "bot_persistence.pkl"
+    _ensure_valid_persistence_file(persistence_path)
+    persistence = PicklePersistence(filepath=str(persistence_path))
+    application = (
+        ApplicationBuilder()
+        .token(Config.BOT_TOKEN)
+        .defaults(defaults)
+        .persistence(persistence)
+        .build()
+    )
 
     # === ФОЛБЭК ДЛЯ JobQueue ===
     if application.job_queue is None:

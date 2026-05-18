@@ -8,13 +8,15 @@
 import os
 import sqlite3
 import asyncio
-from urllib.parse import urlparse
+import html
+from urllib.parse import urlencode, urlparse
 from telegram import (
     InlineKeyboardButton, InlineKeyboardMarkup, Update,
     WebAppInfo, KeyboardButton, ReplyKeyboardMarkup
 )
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from config import Config
+from app.auth_links import create_auth_token
 
 EPHEMERAL_SECONDS = 20.0  # время жизни всех служебных сообщений
 
@@ -92,10 +94,22 @@ def _is_user_registered(db_path: str, user_id: int) -> bool:
     with _conn(db_path) as c:
         return bool(c.execute("SELECT 1 FROM users WHERE user_id=?", (str(user_id),)).fetchone())
 
+
+def _has_telegram_identity(user: "telegram.User") -> bool:
+    return bool(
+        (user.username or "").strip()
+        or (user.first_name or "").strip()
+        or (user.last_name or "").strip()
+    )
+
+
 # [БЕЗ ИЗМЕНЕНИЙ] — сама запись уже включает username/first_name/last_name
-def _register_user(db_path: str, user: "telegram.User") -> None:
+def _register_user(db_path: str, user: "telegram.User") -> bool:
     _ensure_users_schema(db_path)
+    if not _has_telegram_identity(user):
+        return False
     with _conn(db_path) as c:
+        existed = bool(c.execute("SELECT 1 FROM users WHERE user_id=?", (str(user.id),)).fetchone())
         c.execute("""
             INSERT INTO users (user_id, username, first_name, last_name, is_active)
             VALUES (?, ?, ?, ?, 1)
@@ -106,6 +120,40 @@ def _register_user(db_path: str, user: "telegram.User") -> None:
                 is_active=1
         """, (str(user.id), user.username or "", user.first_name or "", user.last_name or ""))
         c.commit()
+    return not existed
+
+
+def _admin_ids() -> tuple[int, ...]:
+    raw = getattr(Config, "ADMIN_IDS", ()) or ()
+    result: list[int] = []
+    for item in raw:
+        try:
+            result.append(int(item))
+        except Exception:
+            pass
+    return tuple(dict.fromkeys(result))
+
+
+def _format_new_user_notice(user: "telegram.User") -> str:
+    username = f"@{user.username}" if user.username else "без username"
+    full_name = " ".join(part for part in [user.first_name or "", user.last_name or ""] if part).strip()
+    if not full_name:
+        full_name = "без имени"
+    return (
+        "👤 Новый пользователь\n"
+        f"ID: <code>{html.escape(str(user.id))}</code>\n"
+        f"Имя: {html.escape(full_name)}\n"
+        f"Username: {html.escape(username)}"
+    )
+
+
+async def _notify_admins_new_user(context: ContextTypes.DEFAULT_TYPE, user: "telegram.User") -> None:
+    text = _format_new_user_notice(user)
+    for admin_id in _admin_ids():
+        try:
+            await context.bot.send_message(chat_id=admin_id, text=text, parse_mode="HTML")
+        except Exception:
+            pass
 
 # ---------- helpers ----------
 def _get_expected_password() -> str:
@@ -136,9 +184,17 @@ def _is_local_address(url: str) -> bool:
 
 def _build_app_url(user_id: int) -> tuple[str, bool, bool]:
     base = f"{Config.PUBLIC_BASE_URL}".rstrip("/")
-    uid_suffix = f"/?uid={user_id}"
+    uid_suffix = "/?" + urlencode({"auth": create_auth_token(user_id)})
     if _is_https(base): return (base + uid_suffix, True, True)
     url = base + uid_suffix; return (url, False, not _is_local_address(url))
+
+def _build_android_app_url(user_id: int) -> str:
+    base = f"{Config.PUBLIC_BASE_URL}".rstrip("/")
+    return base + "/android-auth?" + urlencode({"token": create_auth_token(user_id)})
+
+def _build_android_download_url() -> str:
+    base = f"{Config.PUBLIC_BASE_URL}".rstrip("/")
+    return base + "/static/downloads/learnwords.apk"
 
 def get_persistent_keyboard(user_id: int) -> ReplyKeyboardMarkup:
     url, use_webapp, _ = _build_app_url(user_id)
@@ -186,43 +242,75 @@ async def show_menu_with_keyboard(update: Update, context: ContextTypes.DEFAULT_
     context.user_data[anchor_key] = m.message_id
 
 # ---------- handlers ----------
-ASK_PWD = "Введите пароль для регистрации:"
-OK_PWD  = "✅ Готово! Вы зарегистрированы."
+OK_PWD  = "✅ Готово! Вам доступно 14 дней бесплатного пользования."
+
+async def _ensure_open_registration(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    user = update.effective_user if update else None
+    if not user:
+        return False
+    if not _has_telegram_identity(user):
+        await _ephemeral_send(
+            update,
+            context,
+            "Для регистрации укажите имя или username в Telegram и нажмите /start снова.",
+        )
+        return False
+    is_new = _register_user(Config.DB_PATH, user)
+    if is_new:
+        await _notify_admins_new_user(context, user)
+    return is_new
+
+
+async def _send_fresh_app_link(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int, text: str = "") -> None:
+    old_id = context.user_data.get("open_link_msg_id")
+    if old_id:
+        asyncio.create_task(_safe_delete(context, update.effective_chat.id, old_id))
+
+    url, use_webapp, use_inline = _build_app_url(user_id)
+    buttons = []
+    if use_webapp:
+        buttons.append([InlineKeyboardButton(text="Открыть мини-приложение", web_app=WebAppInfo(url=url))])
+        buttons.append([InlineKeyboardButton(text="Открыть в браузере", url=url)])
+    elif use_inline:
+        buttons.append([InlineKeyboardButton(text="Открыть приложение", url=url)])
+    buttons.append([InlineKeyboardButton(text="Скачать Android-приложение", url=_build_android_download_url())])
+    buttons.append([InlineKeyboardButton(text="Войти в Android-приложение", url=_build_android_app_url(user_id))])
+
+    if buttons:
+        m = await update.effective_chat.send_message(
+            text or "Свежая ссылка для входа:",
+            reply_markup=InlineKeyboardMarkup(buttons),
+        )
+        context.user_data["open_link_msg_id"] = m.message_id
+    else:
+        await update.effective_chat.send_message(text or f"Свежая ссылка для входа:\n{url}")
+
 
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     await _delete_user_trigger(update, context)
-    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
-    if _is_user_registered(Config.DB_PATH, user.id):
-        await _ephemeral_send(update, context, "С возвращением!")
+    context.user_data.pop("await_pwd", None)
+    is_new = await _ensure_open_registration(update, context)
+    if not _is_user_registered(Config.DB_PATH, user.id):
         return
-    ask = await update.effective_chat.send_message(ASK_PWD)
-    context.user_data.setdefault("pwd_bot_msg_ids", []).append(ask.message_id)
-    context.user_data["await_pwd"] = True
-    asyncio.create_task(_delete_later(context, ask.chat_id, ask.message_id))
+    await show_menu_with_keyboard(update, context, user.id)
+    await _send_fresh_app_link(update, context, user.id)
+    if is_new:
+        await _ephemeral_send(update, context, OK_PWD)
+    else:
+        await _ephemeral_send(update, context, "С возвращением!")
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
 
     if context.user_data.get("await_pwd"):
-        pwd_message = update.message
-        chat_id = pwd_message.chat_id
-        await _safe_delete(context, chat_id, pwd_message.message_id)
-        pwd = (pwd_message.text or "").strip()
-        expected = _get_expected_password()
-        if pwd == expected:
-            _register_user(Config.DB_PATH, update.effective_user)
-            context.user_data.pop("await_pwd", None)
-            for mid in context.user_data.get("pwd_bot_msg_ids", []):
-                asyncio.create_task(_delete_later(context, chat_id, mid, 0))
-            context.user_data["pwd_bot_msg_ids"] = []
-            await show_menu_with_keyboard(update, context, user_id)
-            await _ephemeral_send(update, context, OK_PWD)
-        else:
-            await show_menu_with_keyboard(update, context, user_id)
-            err = await update.effective_chat.send_message("Пароль неверный. Попробуйте снова.")
-            context.user_data.setdefault("pwd_bot_msg_ids", []).append(err.message_id)
-            asyncio.create_task(_delete_later(context, err.chat_id, err.message_id))
+        context.user_data.pop("await_pwd", None)
+        for mid in context.user_data.get("pwd_bot_msg_ids", []):
+            asyncio.create_task(_delete_later(context, update.effective_chat.id, mid, 0))
+        context.user_data["pwd_bot_msg_ids"] = []
+        is_new = await _ensure_open_registration(update, context)
+        await show_menu_with_keyboard(update, context, user_id)
+        await _ephemeral_send(update, context, OK_PWD if is_new else "Пароль больше не нужен. Можно пользоваться приложением.")
         return
 
     # Восстанавливаем клавиатуру для зарегистрированных пользователей
@@ -236,18 +324,12 @@ async def open_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def send_open(update: Update, context: ContextTypes.DEFAULT_TYPE, hello: str = "") -> None:
     user_id = update.effective_user.id if (update and update.effective_user) else 0
+    if update and update.effective_user:
+        await _ensure_open_registration(update, context)
+        if not _is_user_registered(Config.DB_PATH, user_id):
+            return
     await _delete_user_trigger(update, context)
-    url, use_webapp, use_inline = _build_app_url(user_id)
-    if use_webapp:
-        kb_inline = InlineKeyboardMarkup([[InlineKeyboardButton(text="Открыть мини-приложение", web_app=WebAppInfo(url=url))]])
-        m = await update.effective_chat.send_message(hello or "Откройте мини-приложение:", reply_markup=kb_inline)
-        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
-    elif use_inline:
-        kb_inline = InlineKeyboardMarkup([[InlineKeyboardButton(text="Открыть приложение в браузере", url=url)]])
-        m = await update.effective_chat.send_message(hello or f"Откройте приложение:\n{url}", reply_markup=kb_inline)
-        asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
-    else:
-        await _ephemeral_send(update, context, hello or f"Откройте приложение в браузере:\n{url}")
+    await _send_fresh_app_link(update, context, user_id, hello or "Свежая ссылка для входа:")
     await show_menu_with_keyboard(update, context, user_id)  # ← ИЗМЕНЕНО
 
 def register_auth_handlers(application: Application) -> None:

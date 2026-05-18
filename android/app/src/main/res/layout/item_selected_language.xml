@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="3dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp">
+
+        <TextView android:id="@+id/tv_priority" android:layout_width="24dp"
+            android:layout_height="wrap_content" android:textSize="14sp"
+            android:textStyle="bold" android:textColor="@color/colorPrimary" />
+
+        <TextView android:id="@+id/tv_flag" android:layout_width="30dp"
+            android:layout_height="wrap_content" android:textSize="20sp"
+            android:gravity="center" />
+
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:orientation="vertical"
+            android:layout_marginStart="4dp">
+            <TextView android:id="@+id/tv_name" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_code" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="12sp"
+                android:textColor="@color/colorTextSecondary" />
+        </LinearLayout>
+
+        <ImageButton android:id="@+id/btn_up" android:layout_width="36dp" android:layout_height="36dp"
+            android:src="@android:drawable/arrow_up_float"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Вверх" />
+
+        <ImageButton android:id="@+id/btn_down" android:layout_width="36dp" android:layout_height="36dp"
+            android:src="@android:drawable/arrow_down_float"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Вниз" />
+
+        <ImageButton android:id="@+id/btn_remove" android:layout_width="36dp" android:layout_height="36dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Удалить" />
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+
+            <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+                android:layout_height="wrap_content" android:orientation="vertical">
+
+                <TextView android:id="@+id/tv_nl" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="17sp" android:textStyle="bold" />
+                <TextView android:id="@+id/tv_en" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="14sp"
+                    android:textColor="@color/colorTextSecondary" android:layout_marginTop="2dp" />
+                <TextView android:id="@+id/tv_ru" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="14sp"
+                    android:textColor="@color/colorTextSecondary" android:layout_marginTop="2dp" />
+                <TextView android:id="@+id/tv_lesson" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="11sp"
+                    android:textColor="#AAAAAA" android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_unmark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="★"
+                android:textColor="@color/colorAccent"
+                style="@style/Widget.MaterialComponents.Button.TextButton" />
+        </LinearLayout>
+
+        <TextView android:id="@+id/tv_ex_nl" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textSize="13sp"
+            android:textStyle="italic" android:textColor="#888888"
+            android:layout_marginTop="6dp" />
+        <TextView android:id="@+id/tv_ex_en" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textSize="13sp"
+            android:textStyle="italic" android:textColor="#888888"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

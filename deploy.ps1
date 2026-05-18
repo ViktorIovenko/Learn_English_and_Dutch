@@ -40,7 +40,7 @@ foreach ($item in @("bot", "config.py", "db_init.py", "requirements.txt", "run.p
 # Upload app/ but skip static/audio (lives in a Docker volume on the server)
 Write-Host "   -> app/ (excluding static/audio)"
 & ssh @SSH $EU "mkdir -p ${Dest}/app"
-foreach ($sub in @("templates", "static", "__init__.py", "audio_gen.py", "models.py", "routes.py")) {
+foreach ($sub in @("templates", "static", "__init__.py", "audio_gen.py", "auth_links.py", "google_auth.py", "models.py", "routes.py")) {
     $local = "$Src\app\$sub"
     if (Test-Path $local) {
         if ($sub -eq "static") {
@@ -58,6 +58,23 @@ foreach ($sub in @("templates", "static", "__init__.py", "audio_gen.py", "models
 
 & scp @SSH "$Src\docker-compose.eu.yml" "${EU}:${Dest}/docker-compose.yml"
 & scp @SSH "$Src\.env.eu"               "${EU}:${Dest}/.env"
+
+# Upload Android APK if it was built locally.
+$ApkCandidates = @(
+    "$Src\android\app\build\outputs\apk\debug\app-debug.apk",
+    "$Src\android\app\build\outputs\apk\release\app-release.apk"
+)
+$Apk = $ApkCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($Apk) {
+    Write-Host "   -> Android APK /static/downloads/learnwords.apk"
+    & ssh @SSH $EU "mkdir -p ${Dest}/app/static/downloads"
+    & scp @SSH $Apk "${EU}:${Dest}/app/static/downloads/learnwords.apk"
+} else {
+    Write-Host "   WARN: Android APK not found. Build APK first to publish /static/downloads/learnwords.apk" -ForegroundColor Yellow
+}
+
+# Создаём файл persistence если ещё не существует или повреждён (нужен для Docker volume)
+& ssh @SSH $EU "[ -s ${Dest}/data/bot_persistence.pkl ] || (rm -rf ${Dest}/data/bot_persistence.pkl && echo gAJ9cQAu | base64 -d > ${Dest}/data/bot_persistence.pkl)"
 Write-Host "   OK" -ForegroundColor Green
 
 # ── 3: Deploy nginx config ────────────────────────────────────────

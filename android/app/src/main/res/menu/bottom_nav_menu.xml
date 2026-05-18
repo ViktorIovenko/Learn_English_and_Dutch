@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/lessonsFragment"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="@string/nav_lessons" />
+
+    <item
+        android:id="@+id/difficultFragment"
+        android:icon="@android:drawable/btn_star"
+        android:title="@string/nav_difficult" />
+
+    <item
+        android:id="@+id/uploadFragment"
+        android:icon="@android:drawable/ic_menu_add"
+        android:title="@string/nav_upload" />
+
+    <item
+        android:id="@+id/languageSettingsFragment"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="@string/nav_settings" />
+
+</menu>

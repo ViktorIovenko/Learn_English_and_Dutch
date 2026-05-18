@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+main.container {
+  width: 100vw !important; max-width: none !important;
+  margin: 0 !important; padding: 0 12px !important;
+  box-sizing: border-box;
+}
+.admin-page { width: 100%; max-width: none; margin: 22px 0; padding: 0; color: #0f172a; }
+.admin-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.admin-title { margin: 0; font-size: 24px; }
+.admin-card {
+  border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, .05); overflow: hidden;
+}
+.admin-note { padding: 18px; color: #64748b; }
+.admin-table-wrap { overflow: visible; }
+.admin-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; font-size: 11px; }
+.admin-table th {
+  background: #f8fafc; color: #334155; text-align: left; font-weight: 700;
+  padding: 8px 6px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;
+}
+.admin-table td {
+  padding: 8px 6px; border-bottom: 1px solid #eef2f7; vertical-align: middle;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.admin-table th:nth-child(1) { width: 17%; }
+.admin-table th:nth-child(2) { width: 7%; }
+.admin-table th:nth-child(3) { width: 10%; }
+.admin-table th:nth-child(4) { width: 4%; }
+.admin-table th:nth-child(5) { width: 4%; }
+.admin-table th:nth-child(6) { width: 7%; }
+.admin-table th:nth-child(7) { width: 6%; }
+.admin-table th:nth-child(8) { width: 7%; }
+.admin-table th:nth-child(9) { width: 7%; }
+.admin-table th:nth-child(10) { width: 5%; }
+.admin-table th:nth-child(11) { width: 8%; }
+.admin-table th:nth-child(12) { width: 9%; }
+.admin-table th:nth-child(13) { width: 9%; }
+.admin-table tr:hover td { background: #f8fbff; }
+.user-name { display: inline; font-weight: 700; color: #0f172a; }
+.user-sub { display: inline; color: #64748b; font-size: 11px; margin-left: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-pill {
+  display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px;
+  font-size: 12px; font-weight: 700; background: #f1f5f9; color: #475569;
+}
+.status-pill.ok { background: #dcfce7; color: #166534; }
+.status-pill.unlimited { background: #dbeafe; color: #1d4ed8; }
+.status-pill.off { background: #fee2e2; color: #991b1b; }
+.num-cell { font-variant-numeric: tabular-nums; }
+.admin-actions { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+.small-btn {
+  border: 1px solid #d0d7e2; border-radius: 8px; background: #fff; color: #0f172a;
+  padding: 5px 7px; font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.small-btn:hover { border-color: #93c5fd; color: #2563eb; background: #f8fbff; }
+.small-btn.primary { border-color: #2563eb; background: #2563eb; color: #fff; }
+.small-btn.primary:hover { border-color: #1d4ed8; background: #1d4ed8; color: #fff; }
+.small-btn.danger { border-color: #fca5a5; color: #dc2626; }
+.small-btn.danger:hover { background: #fef2f2; border-color: #ef4444; }
+.small-btn:disabled { opacity: .6; cursor: default; }
+.admin-flash { margin-bottom: 10px; min-height: 20px; font-size: 13px; color: #64748b; }
+.admin-flash.ok { color: #16a34a; }
+.admin-flash.err { color: #dc2626; }
+.back-link {
+  display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 9px;
+  border: 1px solid #d0d7e2; color: #0f172a; text-decoration: none; background: #fff;
+}
+.back-link:hover { border-color: #93c5fd; color: #2563eb; }
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 1000; display: none;
+  align-items: center; justify-content: center; padding: 18px;
+  background: rgba(15, 23, 42, .45);
+}
+.modal-backdrop.is-open { display: flex; }
+.confirm-modal {
+  width: min(460px, 100%); border-radius: 14px; background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .25); overflow: hidden;
+}
+.confirm-modal-head { padding: 16px 18px 10px; border-bottom: 1px solid #e2e8f0; }
+.confirm-modal-title { margin: 0; font-size: 17px; color: #0f172a; }
+.confirm-modal-body { padding: 14px 18px; color: #475569; font-size: 14px; line-height: 1.45; }
+.confirm-user-card {
+  margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 10px;
+  background: #f8fafc; padding: 10px; color: #0f172a;
+}
+.confirm-user-main { font-weight: 700; margin-bottom: 4px; overflow-wrap: anywhere; }
+.confirm-user-line { color: #64748b; font-size: 13px; overflow-wrap: anywhere; }
+.confirm-modal-actions {
+  display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px;
+  border-top: 1px solid #e2e8f0;
+}
+.confirm-danger {
+  border: 1px solid #dc2626; background: #dc2626; color: #fff;
+  border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer;
+}
+.confirm-primary {
+  border: 1px solid #2563eb; background: #2563eb; color: #fff;
+  border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer;
+}
+.confirm-danger:disabled, .confirm-primary:disabled { opacity: .65; cursor: default; }
+@media (max-width: 900px) {
+  .admin-table { font-size: 11px; }
+  .admin-table th, .admin-table td { padding: 7px 5px; }
+  .small-btn { padding: 5px 6px; font-size: 11px; }
+}
+</style>
+
+<div class="admin-page">
+  <div class="admin-top">
+    <h1 class="admin-title">Пользователи</h1>
+    <a class="back-link" href="{{ url_for('web.home') }}">К урокам</a>
+  </div>
+
+  {% if access_pending or access_denied %}
+    <div class="admin-card">
+      <div class="admin-note" id="admin-access-message">
+        {% if access_pending %}
+          Проверяю доступ администратора...
+        {% else %}
+          Доступ пока не подтвержден. Проверяю Telegram-сессию...
+        {% endif %}
+      </div>
+    </div>
+    <script>
+    (function(){
+      let tries = 0;
+      const msg = document.getElementById("admin-access-message");
+      async function checkAdminAccess(){
+        tries += 1;
+        try {
+          const resp = await fetch("/api/me", {credentials: "same-origin"});
+          const data = await resp.json();
+          if (data && data.ok && data.is_admin) {
+            window.location.reload();
+            return;
+          }
+          if (data && data.ok && data.auth && !data.is_admin) {
+            if (tries > 6) {
+              if (msg) msg.textContent = "Доступ запрещен. Эта страница открыта только для Telegram ID админов.";
+              return;
+            }
+          }
+        } catch(e) {}
+        if (tries < 30) {
+          setTimeout(checkAdminAccess, 500);
+        } else if (msg) {
+          msg.textContent = "Доступ запрещен. Откройте страницу из Telegram под администратором.";
+        }
+      }
+      window.addEventListener("load", function(){ setTimeout(checkAdminAccess, 700); });
+    })();
+    </script>
+  {% else %}
+    <div id="admin-flash" class="admin-flash"></div>
+    <div class="admin-card">
+      {% if users %}
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Пользователь</th>
+                <th>Telegram ID</th>
+                <th>Присоединился</th>
+                <th>Уроки</th>
+                <th>Слова</th>
+                <th>Подписка</th>
+                <th>Provider</th>
+                <th>Trial до</th>
+                <th>Period до</th>
+                <th>Отмена</th>
+                <th>Доступ до</th>
+                <th>Последняя активность</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users %}
+                <tr>
+                  <td>
+                    <div class="user-name">{{ u.display_name }}</div>
+                    <div class="user-sub">{% if u.username %}@{{ u.username }}{% else %}без username{% endif %}</div>
+                  </td>
+                  <td class="num-cell">{{ u.user_id }}</td>
+                  <td>{{ u.created_at or "—" }}</td>
+                  <td class="num-cell">{{ u.lessons_count }}</td>
+                  <td class="num-cell">{{ u.words_count }}</td>
+                  <td>
+                    <span class="status-pill {% if u.is_unlimited %}unlimited{% elif u.subscription_active %}ok{% else %}off{% endif %}">
+                      {{ u.subscription_status }}
+                    </span>
+                  </td>
+                  <td>{{ u.subscription_provider or "—" }}</td>
+                  <td class="num-cell" data-ms-inline="{{ u.trial_ends_at or '' }}">—</td>
+                  <td class="num-cell" data-ms-inline="{{ u.current_period_ends_at or '' }}">—</td>
+                  <td>{% if u.cancel_at_period_end %}Да{% else %}Нет{% endif %}</td>
+                  <td class="num-cell" {% if u.is_unlimited %}data-unlimited="1"{% else %}data-ms="{{ u.access_until or '' }}"{% endif %}>
+                    {% if u.is_unlimited %}Безлимит{% else %}—{% endif %}
+                  </td>
+                  <td class="num-cell" data-ms="{{ u.last_event_ts or '' }}">—</td>
+                  <td>
+                    <div class="admin-actions">
+                      {% if u.is_admin %}
+                        <button type="button" class="small-btn" disabled>Админ</button>
+                      {% elif u.is_unlimited %}
+                        <button type="button" class="small-btn danger" data-action="revoke" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Отозвать</button>
+                      {% else %}
+                        <button type="button" class="small-btn primary" data-action="grant" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Безлимит</button>
+                      {% endif %}
+                      {% if not u.is_admin %}
+                        <button type="button" class="small-btn danger" data-action="delete" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Удалить</button>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="admin-note">Пользователей пока нет.</div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<div id="admin-confirm-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title">
+    <div class="confirm-modal-head">
+      <h3 id="admin-confirm-title" class="confirm-modal-title">Подтвердите действие</h3>
+    </div>
+    <div class="confirm-modal-body">
+      <div id="admin-confirm-text"></div>
+      <div class="confirm-user-card">
+        <div id="admin-confirm-user" class="confirm-user-main"></div>
+        <div id="admin-confirm-meta" class="confirm-user-line"></div>
+      </div>
+    </div>
+    <div class="confirm-modal-actions">
+      <button type="button" class="small-btn" onclick="closeAdminConfirmModal()">Отмена</button>
+      <button type="button" id="admin-confirm-btn" class="confirm-primary" onclick="runAdminConfirmAction()">Подтвердить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll("[data-ms]").forEach((el) => {
+  const ms = Number(el.dataset.ms || 0);
+  if (!ms) return;
+  el.textContent = new Date(ms).toLocaleString("ru-RU", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit"
+  });
+});
+document.querySelectorAll("[data-ms-inline]").forEach((el) => {
+  const ms = Number(el.dataset.msInline || 0);
+  if (!ms) return;
+  el.textContent = new Date(ms).toLocaleDateString("ru-RU");
+});
+
+const adminUid = {{ (admin_user_id or "")|tojson }};
+const flash = document.getElementById("admin-flash");
+let pendingAdminAction = null;
+
+function setFlash(text, kind) {
+  if (!flash) return;
+  flash.textContent = text || "";
+  flash.classList.toggle("ok", kind === "ok");
+  flash.classList.toggle("err", kind === "err");
+}
+
+async function adminPost(url, payload) {
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload || {})
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data.ok) throw new Error(data.error || "Ошибка запроса");
+  return data;
+}
+
+function openAdminConfirmModal(btn) {
+  const action = btn.dataset.action || "";
+  const userId = btn.dataset.userId || "";
+  const userName = btn.dataset.userName || "Без имени";
+  const username = btn.dataset.userUsername ? ("@" + btn.dataset.userUsername) : "без username";
+
+  const titleEl = document.getElementById("admin-confirm-title");
+  const textEl = document.getElementById("admin-confirm-text");
+  const userEl = document.getElementById("admin-confirm-user");
+  const metaEl = document.getElementById("admin-confirm-meta");
+  const modal = document.getElementById("admin-confirm-modal");
+  const confirmBtn = document.getElementById("admin-confirm-btn");
+  if (!titleEl || !textEl || !userEl || !metaEl || !modal || !confirmBtn) return;
+
+  const config = {
+    grant: {
+      title: "Выдать безлимит?",
+      text: "Пользователь получит бессрочный доступ к приложению.",
+      btn: "Выдать безлимит",
+      cls: "confirm-primary"
+    },
+    revoke: {
+      title: "Отозвать безлимит?",
+      text: "Ручной безлимит будет снят. Дальше доступ будет зависеть от trial или подписки.",
+      btn: "Отозвать",
+      cls: "confirm-danger"
+    },
+    delete: {
+      title: "Удалить пользователя?",
+      text: "Пользователь и все его данные будут удалены. При следующем входе он зарегистрируется заново.",
+      btn: "Удалить пользователя",
+      cls: "confirm-danger"
+    }
+  }[action];
+  if (!config) return;
+
+  pendingAdminAction = { action, userId, btn };
+  titleEl.textContent = config.title;
+  textEl.textContent = config.text;
+  userEl.textContent = userName;
+  metaEl.textContent = `ID: ${userId} · ${username}`;
+  confirmBtn.textContent = config.btn;
+  confirmBtn.className = config.cls;
+  confirmBtn.disabled = false;
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden", "false");
+  confirmBtn.focus();
+}
+
+function closeAdminConfirmModal() {
+  const modal = document.getElementById("admin-confirm-modal");
+  if (modal) {
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+  }
+  pendingAdminAction = null;
+}
+
+async function runAdminConfirmAction() {
+  if (!pendingAdminAction) return;
+  const { action, userId, btn } = pendingAdminAction;
+  const confirmBtn = document.getElementById("admin-confirm-btn");
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Сохраняю...";
+  }
+  if (btn) btn.disabled = true;
+  const endpoints = {
+    grant: "/api/admin/grant_access",
+    revoke: "/api/admin/revoke_access",
+    delete: "/api/admin/delete_user"
+  };
+  try {
+    await adminPost(endpoints[action], { user_id: userId });
+    const messages = {
+      grant: "Безлимитный доступ выдан.",
+      revoke: "Безлимитный доступ отозван.",
+      delete: "Пользователь удален."
+    };
+    setFlash(messages[action] || "Готово.", "ok");
+    window.location.reload();
+  } catch(e) {
+    setFlash("Ошибка: " + e.message, "err");
+    if (btn) btn.disabled = false;
+    if (confirmBtn) confirmBtn.disabled = false;
+  }
+}
+
+document.querySelectorAll("[data-action][data-user-id]").forEach((btn) => {
+  btn.addEventListener("click", () => openAdminConfirmModal(btn));
+});
+</script>
+{% endblock %}

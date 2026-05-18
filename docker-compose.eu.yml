@@ -8,6 +8,7 @@ services:
     volumes:
       - ./data/words.db:/app/words.db
       - ./data/audio:/app/app/static/audio
+      - ./data/bot_persistence.pkl:/app/bot_persistence.pkl
     networks:
       - family_internal
 

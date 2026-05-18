@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.settings-page{max-width:760px;margin:0 auto;}
+.settings-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+.settings-title{margin:0;font-size:22px;line-height:1.25;}
+.settings-note{color:#64748b;font-size:14px;margin:4px 0 0;}
+.settings-panel{border:1px solid #e2e8f0;border-radius:12px;background:#fff;padding:14px;margin-bottom:14px;}
+.language-list{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
+.language-row{display:grid;grid-template-columns:34px minmax(160px,1fr) auto;gap:8px;align-items:center;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;padding:8px;}
+.language-priority{font-weight:800;color:#2563eb;text-align:center;}
+.language-row select{width:100%;border:1px solid #d0d7e2;border-radius:8px;background:#fff;color:#0f172a;padding:8px 10px;font-size:14px;}
+.language-actions{display:flex;gap:5px;align-items:center;}
+.icon-btn{background:#fff;color:#0f172a;border:1px solid #d0d7e2;border-radius:8px;padding:7px 9px;line-height:1;}
+.icon-btn:hover{background:#f1f5f9;}
+.settings-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.settings-status{font-size:14px;color:#64748b;min-height:20px;}
+.settings-status.ok{color:#16a34a;}
+.settings-status.err{color:#dc2626;}
+@media (max-width:520px){
+  .settings-head{flex-direction:column;align-items:flex-start;}
+  .language-row{grid-template-columns:30px minmax(0,1fr); }
+  .language-actions{grid-column:2;justify-content:flex-start;}
+}
+</style>
+
+<div class="settings-page">
+  <div class="settings-head">
+    <div>
+      <h2 class="settings-title">Настройки языков</h2>
+      <p class="settings-note">Выберите 3 или 4 языка. Первый язык имеет самый высокий приоритет.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="/subscription" class="ghost-btn" style="display:inline-flex;text-decoration:none">Подписка</a>
+      <a href="/" class="ghost-btn" style="display:inline-flex;text-decoration:none">К урокам</a>
+    </div>
+  </div>
+
+  <div class="settings-panel">
+    <div id="language-list" class="language-list"></div>
+    <div class="settings-actions">
+      <button type="button" class="ghost-btn" id="add-language-btn">Добавить язык</button>
+      <button type="button" id="save-languages-btn">Сохранить</button>
+      <span id="settings-status" class="settings-status"></span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const OPTIONS = {{ language_options | tojson }};
+  const listEl = document.getElementById("language-list");
+  const addBtn = document.getElementById("add-language-btn");
+  const saveBtn = document.getElementById("save-languages-btn");
+  const statusEl = document.getElementById("settings-status");
+  const params = new URLSearchParams(location.search);
+  const nextUrl = params.get("next") || "/";
+  let selected = ["nl", "en", "ru"];
+
+  function setStatus(text, kind){
+    statusEl.textContent = text || "";
+    statusEl.classList.toggle("ok", kind === "ok");
+    statusEl.classList.toggle("err", kind === "err");
+  }
+
+  function optionLabel(opt){
+    return `${opt.native} (${opt.code.toUpperCase()})`;
+  }
+
+  function render(){
+    listEl.innerHTML = "";
+    selected.forEach((code, index) => {
+      const row = document.createElement("div");
+      row.className = "language-row";
+      row.innerHTML = `
+        <div class="language-priority">${index + 1}</div>
+        <select aria-label="Язык ${index + 1}">
+          ${OPTIONS.map(opt => `<option value="${opt.code}" ${opt.code === code ? "selected" : ""}>${optionLabel(opt)}</option>`).join("")}
+        </select>
+        <div class="language-actions">
+          <button type="button" class="icon-btn" data-action="up" title="Выше">↑</button>
+          <button type="button" class="icon-btn" data-action="down" title="Ниже">↓</button>
+          <button type="button" class="icon-btn" data-action="remove" title="Удалить">×</button>
+        </div>
+      `;
+      const select = row.querySelector("select");
+      select.addEventListener("change", () => {
+        selected[index] = select.value;
+        validate();
+      });
+      row.querySelector("[data-action='up']").addEventListener("click", () => move(index, -1));
+      row.querySelector("[data-action='down']").addEventListener("click", () => move(index, 1));
+      row.querySelector("[data-action='remove']").addEventListener("click", () => removeAt(index));
+      listEl.appendChild(row);
+    });
+    addBtn.disabled = selected.length >= 4;
+    validate();
+  }
+
+  function move(index, delta){
+    const next = index + delta;
+    if (next < 0 || next >= selected.length) return;
+    [selected[index], selected[next]] = [selected[next], selected[index]];
+    render();
+  }
+
+  function removeAt(index){
+    if (selected.length <= 3) {
+      setStatus("Нужно выбрать минимум 3 языка.", "err");
+      return;
+    }
+    selected.splice(index, 1);
+    render();
+  }
+
+  function addLanguage(){
+    if (selected.length >= 4) return;
+    const used = new Set(selected);
+    const next = OPTIONS.find(opt => !used.has(opt.code));
+    if (!next) return;
+    selected.push(next.code);
+    render();
+  }
+
+  function validate(){
+    const unique = new Set(selected);
+    const ok = selected.length >= 3 && selected.length <= 4 && unique.size === selected.length;
+    saveBtn.disabled = !ok;
+    if (unique.size !== selected.length) {
+      setStatus("Один язык выбран несколько раз.", "err");
+    } else if (selected.length < 3 || selected.length > 4) {
+      setStatus("Выберите 3 или 4 языка.", "err");
+    } else if (!statusEl.classList.contains("ok")) {
+      setStatus("", "");
+    }
+    return ok;
+  }
+
+  async function load(){
+    setStatus("Загружаю настройки...", "");
+    try{
+      const resp = await apiFetch("/api/user-languages");
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "Ошибка загрузки");
+      if (Array.isArray(data.languages) && data.languages.length) {
+        selected = data.languages.map(item => item.code);
+      }
+      setStatus("", "");
+      render();
+    }catch(e){
+      setStatus("Ошибка: " + e.message, "err");
+      render();
+    }
+  }
+
+  async function save(){
+    if (!validate()) return;
+    saveBtn.disabled = true;
+    setStatus("Сохраняю...", "");
+    try{
+      const resp = await apiFetch("/api/user-languages", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({languages: selected}),
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "Ошибка сохранения");
+      setStatus("Сохранено.", "ok");
+      setTimeout(() => { location.href = nextUrl; }, 500);
+    }catch(e){
+      saveBtn.disabled = false;
+      setStatus("Ошибка: " + e.message, "err");
+    }
+  }
+
+  addBtn.addEventListener("click", addLanguage);
+  saveBtn.addEventListener("click", save);
+  load();
+})();
+</script>
+{% endblock %}

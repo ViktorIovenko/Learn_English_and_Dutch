@@ -7,6 +7,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _parse_admin_ids(raw: str | None) -> tuple[int, ...]:
+    ids: list[int] = []
+    for part in str(raw or "").replace(";", ",").replace(" ", ",").split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            ids.append(int(part))
+        except ValueError:
+            continue
+    return tuple(dict.fromkeys(ids))
+
+
 class Config:
     SECRET_KEY = os.getenv("FLASK_SECRET", "dev-key")
 
@@ -19,6 +32,11 @@ class Config:
 
     # Login (если нужно)
     BOT_PASSWORD = os.getenv("BOT_PASSWORD") or os.getenv("REG_PASSWORD")
+    ADMIN_IDS = _parse_admin_ids(os.getenv("ADMIN_IDS") or os.getenv("ADMIN_TG_IDS"))
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
     # -------------------- AUDIO (громкость) --------------------
     # [ДОБАВЛЕНО v3.5] Максимизация громкости:

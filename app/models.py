@@ -72,12 +72,15 @@ def get_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
 
         lessons: List[Dict[str, Any]] = []
         for r in rows:
+            words_count = int(r["words_count"] or 0)
+            hidden = bool(hidden_map.get(r["lesson"], 0))
             lessons.append({
                 "lesson": r["lesson"],                           # исходное название
                 "lesson_title": r["lesson"],                     # совместимость
-                "words_count": r["words_count"],
+                "word_count": words_count,
+                "words_count": words_count,
                 "lesson_index": int(r["lesson_index"] or 0),     # [ДОБАВЛЕНО]
-                "hidden": hidden_map.get(r["lesson"], 0)
+                "hidden": hidden
             })
 
         # Сортировка: hidden → lesson_index → title
@@ -112,10 +115,12 @@ def get_user_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any
 
         lessons: List[Dict[str, Any]] = []
         for r in rows:
+            words_count = int(r["words_count"] or 0)
             lessons.append({
                 "lesson": r["lesson"],
                 "lesson_title": r["lesson"],
-                "words_count": r["words_count"],
+                "word_count": words_count,
+                "words_count": words_count,
                 "lesson_index": int(r["lesson_index"] or 0),
             })
 

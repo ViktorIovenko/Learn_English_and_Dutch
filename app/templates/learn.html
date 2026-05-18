@@ -45,7 +45,22 @@
     </div>
     <div class="nav-row">
       <button id="prev-btn" class="ctrl-btn">← Предыдущее</button>
+      <button id="delete-word-btn" class="ctrl-btn del-word-btn" style="display:none" title="Удалить слово">🗑</button>
       <button id="next-btn" class="ctrl-btn">Следующее →</button>
+    </div>
+  </div>
+
+  <!-- Подтверждение удаления слова -->
+  <div id="delete-confirm-modal" class="modal" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal-content" style="max-width:320px;text-align:center">
+      <p style="font-size:17px;font-weight:700;margin:0 0 8px">Удалить слово?</p>
+      <p id="del-word-name" style="color:#2563eb;font-weight:600;font-size:15px;margin:0 0 8px;word-break:break-word"></p>
+      <p style="color:#64748b;font-size:13px;margin:0 0 20px">Слово будет удалено навсегда.</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="del-cancel-btn" class="ctrl-btn" style="background:#f1f5f9;color:#0f172a;box-shadow:none">Отмена</button>
+        <button id="del-confirm-btn" class="ctrl-btn" style="background:#ef4444">Удалить</button>
+      </div>
+      <p id="del-error-msg" style="color:#dc2626;font-size:13px;margin:10px 0 0;min-height:18px"></p>
     </div>
   </div>
 

@@ -1,0 +1,5 @@
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.learnwords.app.data.api.** { *; }
+-keep class retrofit2.** { *; }
+-keep class okhttp3.** { *; }

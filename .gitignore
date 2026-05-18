@@ -1,34 +1,74 @@
-# Игнор виртуального окружения и приватных файлов
-venv/
+# Environment and secrets
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+*.keystore
 
-# Кэш и временные файлы
+# Python
+venv/
+.venv/
+env/
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local data
 *.db
+*.sqlite
 *.sqlite3
-
-# Настройки VS Code
-.vscode/
-
-# Логи
-*.log
 instance/
+/data/
+bot_persistence.pkl
+
+# Logs and runtime files
+*.log
 *.pid
+*.tmp
+tmp/
+temp/
 
-# Системные файлы
-.DS_Store
-Thumbs.db
-
-# [ДОБАВЛЕНО] Аудио-генерации (исключаем озвучки из приложения)
-# ВАЖНО: путь относительный к корню репозитория, а не абсолютный Windows-путь.
-# Полностью исключаем папку с аудиофайлами:
+# Generated media
 app/static/audio/
-# На случай, если где-то заведутся аудио вне этой папки:
 *.mp3
 *.wav
 *.ogg
 *.m4a
 *.flac
+
+# Android and Gradle
+android/.gradle/
+android/.idea/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+android/.externalNativeBuild/
+android/.cxx/
+*.apk
+*.ap_
+*.aab
+*.dex
+
+# IDE and OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Codex/local notes
+.knowledge/
+Команды.txt

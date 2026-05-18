@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="2dp"
+    app:cardCornerRadius="6dp" app:cardElevation="1dp">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:padding="8dp" android:gravity="center_vertical">
+
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:orientation="vertical">
+            <TextView android:id="@+id/tv_nl" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_en" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="13sp"
+                android:textColor="@color/colorTextSecondary" />
+            <TextView android:id="@+id/tv_ru" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="13sp"
+                android:textColor="@color/colorTextSecondary" />
+            <TextView android:id="@+id/tv_lesson" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="11sp"
+                android:textColor="#AAAAAA" />
+        </LinearLayout>
+
+        <ImageView android:id="@+id/iv_audio_status" android:layout_width="20dp" android:layout_height="20dp"
+            android:src="@drawable/ic_volume_up_24"
+            android:visibility="invisible" android:contentDescription="Аудио" />
+
+        <ImageButton android:id="@+id/btn_audio" android:layout_width="36dp" android:layout_height="36dp"
+            android:src="@drawable/ic_volume_up_24"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Создать аудио" />
+
+        <ImageButton android:id="@+id/btn_delete" android:layout_width="36dp" android:layout_height="36dp"
+            android:src="@android:drawable/ic_menu_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Удалить" />
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

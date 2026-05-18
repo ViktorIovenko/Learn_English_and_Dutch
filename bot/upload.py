@@ -19,6 +19,7 @@ from config import Config
 from bot.db import is_user_registered, bulk_upsert_words
 from bot.validators import parse_csv_to_rows, validate_example_usage, expected_word_for
 from bot.auth import get_persistent_keyboard, show_menu_with_keyboard  # ← ИЗМЕНЕНО: новый хелпер
+from app.auth_links import create_auth_token
 
 EPHEMERAL_SECONDS = 20.0
 
@@ -221,7 +222,7 @@ async def cmd_upload_words(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
-    upload_url = f"{Config.PUBLIC_BASE_URL}/upload?uid={user.id}"
+    upload_url = f"{Config.PUBLIC_BASE_URL}/upload?auth={create_auth_token(user.id)}"
     keyboard = InlineKeyboardMarkup([[
         InlineKeyboardButton("📤 Открыть страницу загрузки", url=upload_url)
     ]])
@@ -429,7 +430,7 @@ async def on_single_word(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             parse_mode="HTML"
         )
     else:
-        upload_url = f"{Config.PUBLIC_BASE_URL}/upload?uid={user.id}"
+        upload_url = f"{Config.PUBLIC_BASE_URL}/upload?auth={create_auth_token(user.id)}"
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
         keyboard = InlineKeyboardMarkup([[
             InlineKeyboardButton("📤 Открыть страницу загрузки", url=upload_url)

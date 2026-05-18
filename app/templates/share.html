@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.share-page { max-width: 760px; margin: 0 auto; }
+.share-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.share-title { margin: 0; font-size: 22px; line-height: 1.25; }
+.share-meta { color: #64748b; font-size: 14px; margin-top: 6px; }
+.share-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.share-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.share-status { font-size: 14px; color: #475569; min-height: 20px; }
+.share-status.ok { color: #16a34a; }
+.share-status.err { color: #dc2626; }
+.share-preview { width: 100%; border-collapse: collapse; font-size: 13px; }
+.share-preview th,
+.share-preview td { border: 1px solid #e2e8f0; padding: 7px 9px; text-align: left; vertical-align: top; }
+.share-preview th { background: #f8fafc; font-weight: 650; }
+.share-lesson-preview { margin-top: 14px; }
+.share-lesson-preview:first-child { margin-top: 0; }
+.share-lesson-preview h4 { margin: 0 0 8px; font-size: 15px; }
+.share-empty { color: #dc2626; }
+@media (max-width: 520px) {
+  .share-head { flex-direction: column; }
+  .share-preview { min-width: 520px; }
+  .share-table-wrap { overflow-x: auto; }
+}
+</style>
+
+<div class="share-page">
+  {% if error %}
+    <div class="share-panel">
+      <h2 class="share-title">Общий урок недоступен</h2>
+      <p class="share-empty">{{ error }}</p>
+      <a class="ghost-btn" href="/upload" style="display:inline-flex;text-decoration:none">Перейти к словам</a>
+    </div>
+  {% elif share %}
+    <div class="share-head">
+      <div>
+        <h2 class="share-title">{{ share.title }}</h2>
+        <div class="share-meta">
+          {{ share.lessons_count or 1 }} уроков · {{ share.words_count }} слов{% if share.owner_name %} · поделился {{ share.owner_name }}{% endif %}
+        </div>
+      </div>
+      <a class="ghost-btn" href="/" style="display:inline-flex;text-decoration:none">Мои уроки</a>
+    </div>
+
+    <div class="share-panel">
+      <div class="share-actions">
+        <button type="button" id="share-import-btn">Импортировать{% if (share.lessons_count or 1) > 1 %} уроки{% else %} урок{% endif %}</button>
+        <span id="share-status" class="share-status"></span>
+      </div>
+    </div>
+
+    <div class="share-panel">
+      <h3 style="margin-top:0">Предпросмотр</h3>
+      {% for lesson in share.lessons %}
+        <div class="share-lesson-preview">
+          <h4>{{ lesson.lesson }} <span class="share-meta">· {{ lesson.words_count }} слов</span></h4>
+          <div class="share-table-wrap">
+            <table class="share-preview">
+              <thead>
+                <tr>
+                  <th>NL</th>
+                  <th>EN</th>
+                  <th>RU</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for word in lesson.preview %}
+              <tr>
+                <td>{{ word.nl }}</td>
+                <td>{{ word.en }}</td>
+                <td>{{ word.ru }}</td>
+              </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if share %}
+<script>
+(function(){
+  const btn = document.getElementById("share-import-btn");
+  const status = document.getElementById("share-status");
+  const token = {{ share.token | tojson }};
+  if (!btn || !status) return;
+
+  function setStatus(text, kind) {
+    status.textContent = text || "";
+    status.classList.toggle("ok", kind === "ok");
+    status.classList.toggle("err", kind === "err");
+  }
+
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    setStatus("Импортирую урок...", "");
+    try {
+      const resp = await apiFetch("/api/share/" + encodeURIComponent(token) + "/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "Ошибка импорта");
+      setStatus("Готово: импортировано " + data.count + " слов.", "ok");
+      btn.textContent = "Импортировано";
+      setTimeout(() => { window.location.href = "/"; }, 900);
+    } catch (e) {
+      btn.disabled = false;
+      setStatus("Ошибка: " + e.message, "err");
+    }
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

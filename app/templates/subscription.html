@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.subscription-page{max-width:760px;margin:0 auto;}
+.subscription-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+.subscription-title{margin:0;font-size:22px;line-height:1.25;}
+.subscription-note{color:#64748b;font-size:14px;margin:4px 0 0;}
+.subscription-panel{border:1px solid #e2e8f0;border-radius:12px;background:#fff;padding:14px;margin-bottom:14px;}
+.subscription-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+.subscription-metric{border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;padding:12px;}
+.subscription-label{font-size:12px;color:#64748b;margin-bottom:4px;}
+.subscription-value{font-size:18px;font-weight:800;color:#0f172a;}
+.subscription-status{font-size:14px;color:#64748b;min-height:20px;}
+.subscription-status.ok{color:#16a34a;}
+.subscription-status.err{color:#dc2626;}
+.subscription-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+.plan-box{border:1px dashed #cbd5e1;border-radius:10px;padding:12px;background:#f8fafc;color:#334155;}
+</style>
+
+<div class="subscription-page">
+  <div class="subscription-head">
+    <div>
+      <h2 class="subscription-title">Подписка</h2>
+      <p class="subscription-note">Платежный сервис подключим позже. Сейчас здесь отображается trial и будущий статус подписки.</p>
+    </div>
+    <a href="/" class="ghost-btn" style="display:inline-flex;text-decoration:none">К урокам</a>
+  </div>
+
+  <div class="subscription-panel">
+    <div id="subscription-status" class="subscription-status">Загружаю...</div>
+    <div class="subscription-grid" style="margin-top:12px">
+      <div class="subscription-metric">
+        <div class="subscription-label">Статус</div>
+        <div id="sub-status-value" class="subscription-value">—</div>
+      </div>
+      <div class="subscription-metric">
+        <div class="subscription-label">Дней осталось</div>
+        <div id="sub-days-value" class="subscription-value">—</div>
+      </div>
+      <div class="subscription-metric">
+        <div class="subscription-label">Trial до</div>
+        <div id="sub-trial-value" class="subscription-value">—</div>
+      </div>
+    </div>
+    <div class="subscription-actions">
+      <button type="button" id="subscribe-btn" disabled>Оформить подписку</button>
+      <span class="subscription-note">Кнопка станет активной после подключения платежного сервиса.</span>
+    </div>
+  </div>
+
+  <div class="subscription-panel">
+    <div class="plan-box">
+      14 дней бесплатно для каждого пользователя. После окончания trial доступ будет требовать активную подписку.
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const statusEl = document.getElementById("subscription-status");
+  const statusValue = document.getElementById("sub-status-value");
+  const daysValue = document.getElementById("sub-days-value");
+  const trialValue = document.getElementById("sub-trial-value");
+
+  function fmtDate(ms){
+    if (!ms) return "—";
+    try { return new Date(ms).toLocaleDateString("ru-RU"); } catch(e) { return "—"; }
+  }
+  function statusText(status){
+    if (status === "trial") return "Trial";
+    if (status === "active") return "Активна";
+    if (status === "trial_expired") return "Trial закончился";
+    if (status === "expired") return "Истекла";
+    if (status === "canceled") return "Отменена";
+    return status || "—";
+  }
+  function setStatus(text, kind){
+    statusEl.textContent = text || "";
+    statusEl.classList.toggle("ok", kind === "ok");
+    statusEl.classList.toggle("err", kind === "err");
+  }
+
+  async function load(){
+    try {
+      const resp = await apiFetch("/api/subscription");
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "Ошибка загрузки");
+      const sub = data.subscription || {};
+      statusValue.textContent = statusText(sub.status);
+      daysValue.textContent = String(sub.days_left ?? 0);
+      trialValue.textContent = fmtDate(sub.trial_ends_at);
+      setStatus(sub.access ? "Доступ к приложению активен." : "Trial закончился. Подписка будет доступна после подключения платежей.", sub.access ? "ok" : "err");
+    } catch(e) {
+      setStatus("Ошибка: " + e.message, "err");
+    }
+  }
+  load();
+})();
+</script>
+{% endblock %}

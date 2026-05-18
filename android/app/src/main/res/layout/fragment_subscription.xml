@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:title="Подписка" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="16dp">
+
+                <!-- Карточка статуса (сервер) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:padding="20dp" android:gravity="center">
+
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Статус подписки" android:textSize="13sp"
+                            android:textColor="@android:color/white" />
+
+                        <TextView android:id="@+id/tv_status"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:textSize="22sp" android:textStyle="bold"
+                            android:textColor="@android:color/white" android:layout_marginTop="6dp" />
+
+                        <TextView android:id="@+id/tv_expiry"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:textSize="13sp" android:textColor="@android:color/white"
+                            android:layout_marginTop="6dp" android:visibility="gone" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Прогресс пробного периода -->
+                <ProgressBar
+                    android:id="@+id/progress_trial"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="12dp"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone" />
+
+                <TextView android:id="@+id/tv_trial_days"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="13sp" android:textColor="@color/colorTextSecondary"
+                    android:gravity="center" android:layout_marginTop="4dp"
+                    android:visibility="gone" />
+
+                <!-- Верификация -->
+                <TextView android:id="@+id/tv_verifying"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="Активируем подписку…"
+                    android:textSize="14sp" android:textColor="@color/colorPrimary"
+                    android:gravity="center" android:padding="12dp"
+                    android:visibility="gone" />
+
+                <!-- Google Play статус -->
+                <TextView android:id="@+id/tv_billing_status"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="14sp" android:textColor="@color/colorTextSecondary"
+                    android:padding="12dp" android:gravity="center" />
+
+                <!-- Карточка активной подписки Google Play -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_active_play"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:cardCornerRadius="10dp"
+                    app:cardBackgroundColor="#E8F5E9"
+                    android:visibility="gone">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:padding="16dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="✓ Google Play подписка активна"
+                            android:textSize="15sp" android:textStyle="bold"
+                            android:textColor="#1B5E20" />
+                        <TextView android:id="@+id/tv_active_product_id"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:textSize="12sp" android:textColor="#4CAF50"
+                            android:layout_marginTop="4dp" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:text="Управляйте подпиской в Google Play → Подписки"
+                            android:textSize="12sp" android:textColor="#757575"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Блок с планами подписок -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_plans"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardCornerRadius="12dp"
+                    android:visibility="gone">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:padding="16dp">
+
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Выберите план" android:textSize="17sp"
+                            android:textStyle="bold" android:layout_marginBottom="12dp" />
+
+                        <!-- Планы добавляются программно из SubscriptionFragment -->
+                        <LinearLayout
+                            android:id="@+id/plans_container"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="Подписка оформляется через Google Play. Отменить можно в любое время."
+                            android:textSize="11sp" android:textColor="@color/colorTextSecondary"
+                            android:gravity="center" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Заглушка если планы не загружены -->
+                <TextView android:id="@+id/tv_no_plans"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="Планы подписки недоступны.\nУбедитесь, что приложение опубликовано в Google Play\nи продукты настроены в консоли."
+                    android:textSize="13sp" android:textColor="@color/colorTextSecondary"
+                    android:gravity="center" android:padding="16dp"
+                    android:visibility="gone" />
+
+                <!-- Нижний текст -->
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Нет подключения к интернету? Статус обновится при следующем запуске."
+                    android:textSize="12sp" android:textColor="@color/colorTextSecondary"
+                    android:gravity="center" />
+
+            </LinearLayout>
+        </ScrollView>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

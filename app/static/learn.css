@@ -73,6 +73,12 @@
 .controls-row.split{ justify-content:space-between; }
 .controls-row.center{ justify-content:center; margin:0; padding:10px 0; }
 .nav-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; }
+.del-word-btn{
+  background:#fef2f2 !important; color:#dc2626 !important;
+  border:1px solid #fca5a5; box-shadow:none !important;
+  padding:8px 12px; font-size:16px;
+}
+.del-word-btn:hover{ background:#fee2e2 !important; border-color:#f87171; transform:none; }
 
 .answer-field::-webkit-scrollbar{ height:6px; }
 .answer-field::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:6px; }
@@ -121,6 +127,27 @@
 .close:hover{ background:#e2e8f0; }
 .modal-content p{ margin:8px 0; }
 .modal-content strong{ font-weight:700; }
+
+/* Редактируемый текст — нажми чтобы отредактировать на месте */
+.editable-text{
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background .15s;
+}
+.editable-text:hover{ background: #f0f9ff; text-decoration: underline dotted #94a3b8; }
+
+/* Активный contenteditable при инлайн-редактировании */
+.inline-editing{
+  background: #eff6ff !important;
+  border: 1.5px solid #2563eb;
+  border-radius: 6px;
+  padding: 2px 8px;
+  outline: none;
+  cursor: text;
+  text-decoration: none !important;
+  min-width: 60px;
+  white-space: pre-wrap;
+}
 
 /* Фейерверк */
 #fw-canvas{

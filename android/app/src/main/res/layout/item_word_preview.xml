@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="8dp" app:cardElevation="1dp">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="8dp">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:hint="NL" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxStrokeWidth="1dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_nl" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="14sp" android:padding="8dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="4dp" android:hint="EN"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxStrokeWidth="1dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_en" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="14sp" android:padding="8dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="4dp" android:hint="RU"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxStrokeWidth="1dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_ru" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="14sp" android:padding="8dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageButton android:id="@+id/btn_delete" android:layout_width="36dp"
+                android:layout_height="36dp" android:layout_gravity="center_vertical"
+                android:src="@android:drawable/ic_menu_delete"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Удалить" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginTop="4dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:hint="Пример NL" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxStrokeWidth="1dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_ex_nl" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="12sp" android:padding="6dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="4dp" android:hint="Пример EN"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxStrokeWidth="1dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_ex_en" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="12sp" android:padding="6dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="4dp" android:hint="Пример RU"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxStrokeWidth="1dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_ex_ru" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="12sp" android:padding="6dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <View android:layout_width="36dp" android:layout_height="36dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

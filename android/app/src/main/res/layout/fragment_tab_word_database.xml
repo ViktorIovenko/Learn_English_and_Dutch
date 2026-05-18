@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:padding="8dp">
+
+        <SearchView android:id="@+id/search_view" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:queryHint="Поиск слов..." />
+
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_search"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Найти" style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+    </LinearLayout>
+
+    <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/rv_words"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:padding="8dp" android:gravity="center">
+
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_prev_page"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="← Пред." style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:enabled="false" />
+
+        <TextView android:id="@+id/tv_page_info" android:layout_width="0dp"
+            android:layout_weight="1" android:layout_height="wrap_content"
+            android:gravity="center" android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_next_page"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="След. →" style="@style/Widget.MaterialComponents.Button.TextButton" />
+    </LinearLayout>
+
+</LinearLayout>

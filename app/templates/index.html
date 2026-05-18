@@ -1,19 +1,43 @@
 {% extends "base.html" %}
 {% block content %}
-<section id="accountPanel" class="account-panel" aria-live="polite">
-  <div class="acc-row">
-    <div class="acc-item"><b>ID:</b> <span id="acc_id">—</span></div>
-    <div class="acc-item"><b>username:</b> <span id="acc_username">—</span></div>
-    <div class="acc-item"><b>first_name:</b> <span id="acc_first">—</span></div>
-    <div class="acc-item"><b>last_name:</b> <span id="acc_last">—</span></div>
-    <div class="acc-badge" id="acc_auth">auth: false</div>
-  </div>
-</section>
+<style>
+.account-line{
+  display:flex;align-items:center;gap:10px;
+  margin:6px 0 2px;font-size:13px;color:#64748b;min-height:24px;
+}
+.account-line .acc-name{font-weight:600;color:#0f172a;}
+.account-line .acc-badge{
+  font-size:11px;padding:2px 8px;border-radius:999px;
+  border:1px solid #94a3b8;color:#334155;background:#fff;
+}
+.account-line .acc-badge.ok{border-color:#22c55e;color:#065f46;background:#ecfdf5;}
+.action-buttons{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 4px;align-items:center;}
+.action-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 18px;border-radius:12px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  border:1px solid transparent;text-decoration:none;
+  transition:background .2s,transform .15s;
+}
+.action-btn.add-words{
+  background:#2563eb;color:#fff;border-color:#2563eb;
+  box-shadow:0 3px 10px rgba(37,99,235,.28);
+}
+.action-btn.add-words:hover{background:#1d4ed8;transform:translateY(-1px);}
+.action-btn.util-btn{background:#f8fafc;color:#334155;border-color:#d0d7e2;}
+.action-btn.util-btn:hover{background:#f1f5f9;}
+.action-btn.danger-act-btn{background:#fff;color:#dc2626;border-color:#fca5a5;}
+.action-btn.danger-act-btn:hover{background:#fef2f2;}
+</style>
 
-<div class="row">
-  <a href="/upload" class="pill-btn" style="text-decoration:none">📤 Загрузить слова</a>
-  <button id="clear-cache-btn" type="button">Очистить кэш</button>
-  <button id="delete-user-lessons-btn" type="button" class="danger-btn">Удалить слова пользователя</button>
+<!-- Hidden spans kept for base.html account scripts -->
+<span id="acc_id" hidden></span>
+<span id="acc_first" hidden></span>
+<span id="acc_last" hidden></span>
+
+<div id="accountPanel" class="account-line" aria-live="polite">
+  <span id="acc_username" class="acc-name">—</span>
+  <span id="acc_auth" class="acc-badge">auth: false</span>
 </div>
 
 <div id="cacheModal" class="modal-backdrop" aria-hidden="true">
@@ -67,6 +91,11 @@
   <div class="subtabs">
     <a href="{{ url_for('web.home') }}" class="active">Уроки</a>
     <a class="btn" href="{{ url_for('web.difficult_page') }}">Сложные слова</a>
+    <a class="btn" href="{{ url_for('web.settings_page') }}">Настройки</a>
+    <a class="btn" href="{{ url_for('web.subscription_page') }}">Подписка</a>
+    {% if is_admin %}
+      <a class="btn" href="{{ url_for('web.admin_users_page') }}">Админка</a>
+    {% endif %}
   </div>
 </div>
 
@@ -76,18 +105,18 @@
   {% endif %}
 </div>
 
+<div class="action-buttons">
+  <a href="/upload" class="action-btn add-words">＋ Добавить слова</a>
+  <button id="clear-cache-btn" type="button" class="action-btn util-btn">Очистить кэш</button>
+  <button id="delete-user-lessons-btn" type="button" class="action-btn danger-act-btn">Удалить уроки</button>
+</div>
+
 <div id="lessons" class="grid"></div>
 {% endblock %}
 
 
 {% block scripts %}
 <script type="module">
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    });
-  }
-
   const apiFetch = window.apiFetch || fetch;
   const IDB = window.LocalDB || null;
   const IDB_PREFIX = window.IDB_KEY_PREFIX || (window.USER_ID ? `uid:${window.USER_ID}:` : "uid:anon:");
@@ -599,9 +628,14 @@
   async function loadLessons(skipRefresh) {
     let lessons = await readLessonsFromIdb();
     if (!lessons) {
-      const r = await apiFetch("/api/lessons");
-      lessons = await r.json();
-      if (Array.isArray(lessons)) await writeLessonsToIdb(lessons);
+      try {
+        const r = await apiFetch("/api/lessons");
+        lessons = await r.json();
+        if (Array.isArray(lessons)) await writeLessonsToIdb(lessons);
+      } catch(_) {
+        if (root) root.innerHTML = "<p style='text-align:center;color:#64748b;margin-top:32px;font-size:14px'>Нет соединения. Откройте приложение при наличии сети чтобы загрузить уроки.</p>";
+        return;
+      }
     }
     if (!Array.isArray(lessons)) return;
     root.innerHTML = "";
@@ -688,5 +722,7 @@
   }
 
   loadLessons();
+
+
 </script>
 {% endblock %}

@@ -81,6 +81,95 @@ table.preview-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min
 }
 .db-search:focus { outline: none; border-color: #2563eb; }
 .db-count { font-size: 13px; color: #64748b; white-space: nowrap; }
+.dupes-panel {
+  display: none; border: 1px solid #e2e8f0; border-radius: 12px;
+  background: #f8fafc; padding: 12px; margin-bottom: 12px;
+}
+.dupes-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.dupes-title { font-weight: 700; font-size: 14px; color: #0f172a; }
+.dupes-status { font-size: 13px; color: #64748b; }
+.dupe-group { border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; margin-top: 8px; overflow: hidden; }
+.dupe-group-head { padding: 8px 10px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
+.dupe-item {
+  display: grid; grid-template-columns: minmax(120px,1fr) minmax(90px,1fr) minmax(90px,1fr) auto;
+  gap: 8px; align-items: start; padding: 7px 10px; border-top: 1px solid #f1f5f9; font-size: 13px;
+}
+.dupe-item:first-child { border-top: none; }
+.dupe-lesson { color: #64748b; font-size: 12px; margin-top: 2px; }
+.dupe-actions { display: flex; gap: 5px; white-space: nowrap; }
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 1000; display: none;
+  align-items: center; justify-content: center; padding: 18px;
+  background: rgba(15, 23, 42, .45);
+}
+.modal-backdrop.is-open { display: flex; }
+.confirm-modal {
+  width: min(440px, 100%); border-radius: 14px; background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .25); overflow: hidden;
+}
+.confirm-modal-head { padding: 16px 18px 10px; border-bottom: 1px solid #e2e8f0; }
+.confirm-modal-title { margin: 0; font-size: 17px; color: #0f172a; }
+.confirm-modal-body { padding: 14px 18px; color: #475569; font-size: 14px; line-height: 1.45; }
+.confirm-word-card {
+  margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 10px;
+  background: #f8fafc; padding: 10px; color: #0f172a;
+}
+.confirm-word-main { font-weight: 700; margin-bottom: 4px; overflow-wrap: anywhere; }
+.confirm-word-line { color: #475569; font-size: 13px; overflow-wrap: anywhere; }
+.confirm-modal-actions {
+  display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px;
+  border-top: 1px solid #e2e8f0;
+}
+.danger-btn {
+  border: 1px solid #dc2626; background: #dc2626; color: #fff;
+  border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer;
+}
+.danger-btn:hover { background: #b91c1c; border-color: #b91c1c; }
+.danger-btn:disabled { opacity: .65; cursor: default; }
+.share-lessons-panel {
+  border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;
+  padding: 12px; margin-bottom: 12px;
+}
+.share-lessons-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  margin-bottom: 8px; flex-wrap: wrap;
+}
+.share-lessons-title { font-weight: 700; font-size: 14px; color: #0f172a; }
+.share-lessons-list { display: flex; flex-direction: column; gap: 6px; }
+.share-lesson-item {
+  border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; padding: 8px 10px;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+.share-lesson-item:hover {
+  border-color: #bfdbfe; background: #f8fbff; box-shadow: 0 2px 8px rgba(37, 99, 235, .08);
+}
+.share-lesson-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.share-lesson-main { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.share-lesson-main input { width: 18px; height: 18px; flex: 0 0 auto; }
+.share-lesson-name {
+  font-size: 14px; color: #0f172a; overflow-wrap: anywhere;
+  background: transparent; border: 0; border-radius: 7px; padding: 4px 6px;
+  text-align: left; cursor: pointer; line-height: 1.25; transition: color .15s ease, background-color .15s ease;
+}
+.share-lesson-name:hover { color: #2563eb; background: #eff6ff; }
+.share-lesson-name:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.share-lesson-meta { font-size: 12px; color: #64748b; white-space: nowrap; }
+.share-lesson-words {
+  display: none; margin: 8px 0 2px 26px; padding-top: 8px;
+  border-top: 1px dashed #e2e8f0; color: #334155; font-size: 13px;
+}
+.share-lesson-item.is-open .share-lesson-words { display: block; }
+.share-word-line { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(90px, 1fr) minmax(90px, 1fr); gap: 8px; padding: 3px 0; }
+.share-link-box {
+  display: none; gap: 8px; align-items: center; flex-wrap: wrap;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0;
+}
+.share-link-box input {
+  flex: 1; min-width: 180px; border: 1px solid #d0d7e2; border-radius: 8px;
+  padding: 7px 10px; font-size: 13px; color: #0f172a; background: #fff;
+}
+.share-lessons-status { font-size: 13px; color: #64748b; }
+.share-selected-count { font-size: 13px; color: #64748b; }
 
 table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 700px; }
 .db-tbl th {
@@ -150,6 +239,34 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 
 #db-loading { text-align: center; padding: 30px; color: #64748b; font-size: 14px; }
 
+/* ── Topic generator ──────────────────────────────────────────── */
+.topic-form {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+  padding: 16px; margin-bottom: 14px;
+}
+.topic-form h3 { margin: 0 0 12px; font-size: 15px; color: #0f172a; }
+.topic-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.topic-row label { font-size: 13px; color: #475569; white-space: nowrap; }
+.topic-row input[type=text] {
+  flex: 1; min-width: 140px; border: 1px solid #d0d7e2; border-radius: 8px;
+  padding: 7px 10px; font-size: 14px; color: #0f172a; background: #fff;
+}
+.topic-row input[type=text]:focus { outline: none; border-color: #2563eb; }
+.topic-row select {
+  border: 1px solid #d0d7e2; border-radius: 8px; padding: 7px 10px;
+  font-size: 14px; color: #0f172a; background: #fff;
+}
+.topic-row input[type=range] { width: 120px; accent-color: #2563eb; }
+.topic-count-label {
+  min-width: 28px; text-align: center; font-weight: 700;
+  font-size: 14px; color: #2563eb;
+}
+.topic-dedup-info {
+  font-size: 12px; color: #64748b; background: #f1f5f9;
+  border-radius: 7px; padding: 6px 10px; margin-bottom: 10px;
+  display: none;
+}
+
 /* ── File drop zone ───────────────────────────────────────────── */
 .file-drop-zone {
   border: 2px dashed #cbd5e1; border-radius: 14px; padding: 36px 20px;
@@ -171,12 +288,91 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 </style>
 
 <div class="upload-page">
+{% if upload_access_pending %}
+  <div style="border:1px solid #e2e8f0;border-radius:16px;background:#fff;padding:28px 24px;margin-top:28px;max-width:420px;margin-left:auto;margin-right:auto;text-align:center">
+    <div style="font-size:20px;font-weight:700;color:#0f172a;margin-bottom:6px">Вход в приложение</div>
+    <div style="font-size:14px;color:#64748b;margin-bottom:22px">Для загрузки слов необходимо войти</div>
+
+    <a href="/auth/google?next=/upload" style="
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      background:#fff;border:1.5px solid #d0d7e2;border-radius:10px;
+      padding:11px 18px;font-size:15px;font-weight:600;color:#0f172a;
+      text-decoration:none;transition:box-shadow .15s;margin-bottom:14px;
+      box-shadow:0 1px 4px rgba(0,0,0,.07)
+    " onmouseover="this.style.boxShadow='0 3px 12px rgba(0,0,0,.13)'"
+       onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,.07)'">
+      <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M43.6 20.5H42V20H24v8h11.3C33.6 32.8 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z" fill="#FFC107"/>
+        <path d="M6.3 14.7l6.6 4.8C14.5 16.1 18.9 13 24 13c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.5 0-14 4.1-17.7 10.7z" fill="#FF3D00"/>
+        <path d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.3 26.7 36 24 36c-5.2 0-9.5-3.2-11.3-7.7l-6.6 5.1C9.8 40 16.4 44 24 44z" fill="#4CAF50"/>
+        <path d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.6l6.2 5.2C36.9 37.2 44 32 44 24c0-1.2-.1-2.4-.4-3.5z" fill="#1976D2"/>
+      </svg>
+      Войти через Google
+    </a>
+
+    <div style="font-size:12px;color:#94a3b8;margin:10px 0 4px">или</div>
+    <div id="upload-access-message" style="font-size:13px;color:#64748b">Откройте бота в Telegram и нажмите «Загрузить слова»</div>
+  </div>
+  <script>
+  (function(){
+    const params = new URLSearchParams(window.location.search || "");
+    if (params.has("uid") && !params.has("auth")) {
+      const msg = document.getElementById("upload-access-message");
+      if (msg) msg.textContent = 'Эта ссылка устарела. Откройте бота и используйте новую кнопку.';
+      return;
+    }
+    if (params.get("error")) {
+      const msg = document.getElementById("upload-access-message");
+      const errors = {google_auth_failed:"Не удалось войти через Google. Попробуйте ещё раз.", google_auth_disabled:"Google вход временно отключён."};
+      if (msg) msg.textContent = errors[params.get("error")] || "Ошибка входа.";
+    }
+    let tries = 0;
+    async function checkUploadAccess(){
+      tries += 1;
+      try {
+        const resp = await fetch("/api/me", {credentials:"same-origin"});
+        const data = await resp.json();
+        if (data && data.ok && data.auth) { window.location.reload(); return; }
+      } catch(e) {}
+      if (tries < 12) setTimeout(checkUploadAccess, 500);
+    }
+    window.addEventListener("load", function(){ setTimeout(checkUploadAccess, 700); });
+  })();
+  </script>
+{% elif upload_access_denied %}
+  <div style="border:1px solid #e2e8f0;border-radius:12px;background:#fff;padding:18px;margin-top:20px;color:#64748b">
+    Пользователь не зарегистрирован. <a href="/auth/google?next=/upload" style="color:#2563eb">Войти через Google</a>
+  </div>
+{% else %}
+
+  <!-- Навигация назад к урокам -->
+  <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <a id="admin-subscriptions-link" href="{{ url_for('web.admin_users_page') }}" style="
+        display:inline-flex;align-items:center;gap:7px;
+        padding:10px 16px;border-radius:12px;
+        background:#2563eb;color:#fff;
+        font-size:15px;font-weight:600;text-decoration:none;
+        box-shadow:0 3px 10px rgba(37,99,235,.24);
+        transition:background .2s,transform .15s;
+        {% if not is_admin %}display:none;{% endif %}
+      " onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Управление подписками</a>
+    <a href="/" style="
+      display:inline-flex;align-items:center;gap:7px;
+      padding:10px 20px;border-radius:12px;
+      background:#16a34a;color:#fff;
+      font-size:15px;font-weight:600;text-decoration:none;
+      box-shadow:0 3px 10px rgba(22,163,74,.28);
+      transition:background .2s,transform .15s;
+    " onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#16a34a'">▶ Учить слова</a>
+  </div>
 
   <!-- Tab bar -->
   <div class="up-tabs">
-    <button class="up-tab active" onclick="switchTab('add')"  id="tab-add">Добавить слова</button>
-    <button class="up-tab"        onclick="switchTab('file')" id="tab-file">CSV / Excel</button>
-    <button class="up-tab"        onclick="switchTab('db')"   id="tab-db">База слов</button>
+    <button class="up-tab active" onclick="switchTab('add')"   id="tab-add">Добавить слова</button>
+    <button class="up-tab"        onclick="switchTab('topic')" id="tab-topic">По теме</button>
+    <button class="up-tab"        onclick="switchTab('file')"  id="tab-file">CSV / Excel</button>
+    <button class="up-tab"        onclick="switchTab('db')"    id="tab-db">База слов</button>
+    <button class="up-tab"        onclick="switchTab('share')" id="tab-share">Поделиться</button>
   </div>
 
   <!-- ── Panel 1: Add words ────────────────────────────────────── -->
@@ -207,29 +403,58 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
       <span id="gen-status" class="gen-status"></span>
     </div>
 
-    <div id="preview-section" style="display:none">
-      <h3>Предпросмотр — проверьте и при необходимости отредактируйте</h3>
-      <div class="table-wrap">
-        <table class="preview-tbl">
-          <thead>
-            <tr>
-              <th>Урок</th><th>NL</th><th>EN</th><th>RU</th>
-              <th>Пример NL</th><th>Пример EN</th><th>Пример RU</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="preview-body"></tbody>
-        </table>
-      </div>
-      <div class="actions-row">
-        <button type="button" id="upload-btn" onclick="importWords()">Загрузить в базу данных</button>
-        <button type="button" class="ghost-btn" onclick="document.getElementById('preview-section').style.display='none'">Скрыть таблицу</button>
-      </div>
-      <div id="upload-status"></div>
-    </div>
-
   </div><!-- /panel-add -->
 
-  <!-- ── Panel 2: CSV / Excel upload ──────────────────────────────── -->
+  <!-- ── Panel 2: Topic generator ─────────────────────────────────── -->
+  <div class="up-panel" id="panel-topic">
+
+    <div class="ollama-bar">
+      <label>Ollama: <input id="topic-ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434"></label>
+      <label>Модель: <input id="topic-ollama-model" value="llama3.1:8b" placeholder="llama3.1:8b"></label>
+      <button type="button" class="ghost-btn" style="padding:4px 10px;font-size:12px" onclick="checkOllamaTopic()">Проверить</button>
+      <span id="topic-ollama-status" class="ollama-status">—</span>
+    </div>
+
+    <div class="topic-form">
+      <div class="topic-row">
+        <label>Тема:</label>
+        <input type="text" id="topic-input" placeholder="Например: еда, транспорт, семья, работа…" style="flex:2">
+        <label>Название урока:</label>
+        <input type="text" id="topic-lesson-name" placeholder="(по умолчанию — тема)" style="flex:1">
+      </div>
+      <div class="topic-row">
+        <label>Уровень:
+          <select id="topic-level">
+            <option value="A1">A1</option>
+            <option value="A2" selected>A2</option>
+            <option value="B1">B1</option>
+            <option value="B2">B2</option>
+            <option value="C1">C1</option>
+            <option value="C2">C2</option>
+          </select>
+        </label>
+        <label>Язык:
+          <select id="topic-lang">
+            <option value="nl">Нидерландский (NL)</option>
+            <option value="en">Английский (EN)</option>
+          </select>
+        </label>
+        <label>Слов в уроке:
+          <input type="range" id="topic-count" min="5" max="30" value="15"
+            oninput="document.getElementById('topic-count-label').textContent=this.value">
+        </label>
+        <span class="topic-count-label" id="topic-count-label">15</span>
+      </div>
+      <div class="actions-row">
+        <button type="button" id="topic-gen-btn" onclick="generateByTopic()">Сгенерировать слова по теме</button>
+        <span id="topic-status" class="gen-status"></span>
+      </div>
+      <div class="topic-dedup-info" id="topic-dedup-info"></div>
+    </div>
+
+  </div><!-- /panel-topic -->
+
+  <!-- ── Panel 3: CSV / Excel upload ──────────────────────────────── -->
   <div class="up-panel" id="panel-file">
 
     <!-- Drop zone -->
@@ -272,6 +497,29 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
     <div class="db-toolbar">
       <input type="search" class="db-search" id="db-search" placeholder="Поиск по NL, EN, RU, уроку…" oninput="dbSearchDebounced()">
       <span class="db-count" id="db-count"></span>
+      <button type="button" class="ghost-btn" style="padding:6px 10px;font-size:12px" onclick="findDuplicateWords()">Поиск дублей</button>
+      <label style="font-size:13px;color:#64748b;white-space:nowrap;display:flex;align-items:center;gap:5px">
+        Уровень 🔄:
+        <select id="db-regen-level" style="border:1px solid #d0d7e2;border-radius:7px;padding:4px 8px;font-size:13px;color:#0f172a;background:#fff">
+          <option value="A1">A1</option>
+          <option value="A2" selected>A2</option>
+          <option value="B1">B1</option>
+          <option value="B2">B2</option>
+          <option value="C1">C1</option>
+          <option value="C2">C2</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="dupes-panel" class="dupes-panel">
+      <div class="dupes-head">
+        <div>
+          <div class="dupes-title">Дубли слов</div>
+          <div id="dupes-status" class="dupes-status"></div>
+        </div>
+        <button type="button" class="ghost-btn" style="padding:5px 10px;font-size:12px" onclick="closeDuplicateWords()">Скрыть</button>
+      </div>
+      <div id="dupes-list"></div>
     </div>
 
     <div class="table-wrap">
@@ -296,12 +544,79 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 
   </div><!-- /panel-db -->
 
+  <!-- ── Panel 5: Share lessons ─────────────────────────────────── -->
+  <div class="up-panel" id="panel-share">
+    <div class="share-lessons-panel">
+      <div class="share-lessons-head">
+        <div>
+          <div class="share-lessons-title">Поделиться уроками</div>
+          <div class="share-lessons-status">Выберите один или несколько уроков. Нажмите на название, чтобы посмотреть слова.</div>
+        </div>
+        <button type="button" class="ghost-btn" style="padding:5px 10px;font-size:12px" onclick="shareLessonsLoad(true)">Обновить</button>
+      </div>
+      <div id="share-lessons-status" class="share-lessons-status">Список уроков загрузится автоматически.</div>
+      <div id="share-lessons-list" class="share-lessons-list"></div>
+      <div class="actions-row">
+        <button type="button" id="share-create-btn" onclick="createShareLink()">Создать ссылку</button>
+        <span id="share-selected-count" class="share-selected-count"></span>
+      </div>
+      <div id="share-link-box" class="share-link-box">
+        <input id="share-link-input" type="text" readonly>
+        <button type="button" class="ghost-btn" onclick="copyShareLink()">Копировать</button>
+      </div>
+    </div>
+  </div><!-- /panel-share -->
+
+  <!-- ── Shared preview table (used by "Add words" and "By topic" panels) ── -->
+  <div id="preview-section" style="display:none;margin-top:20px">
+    <h3>Предпросмотр — проверьте и при необходимости отредактируйте</h3>
+    <div class="table-wrap">
+      <table class="preview-tbl">
+        <thead>
+          <tr>
+            <th>Урок</th><th>NL</th><th>EN</th><th>RU</th>
+            <th>Пример NL</th><th>Пример EN</th><th>Пример RU</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="preview-body"></tbody>
+      </table>
+    </div>
+    <div class="actions-row">
+      <button type="button" id="upload-btn" onclick="importWords()">Загрузить в базу данных</button>
+      <button type="button" class="ghost-btn" onclick="document.getElementById('preview-section').style.display='none';document.getElementById('preview-body').innerHTML=''">Очистить таблицу</button>
+    </div>
+    <div id="upload-status"></div>
+  </div>
+
+{% endif %}
 </div><!-- /upload-page -->
+
+<div id="dupe-delete-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="dupe-delete-title">
+    <div class="confirm-modal-head">
+      <h3 id="dupe-delete-title" class="confirm-modal-title">Удалить слово?</h3>
+    </div>
+    <div class="confirm-modal-body">
+      Это слово будет удалено из базы. Действие нельзя отменить.
+      <div class="confirm-word-card">
+        <div id="dupe-delete-word" class="confirm-word-main"></div>
+        <div id="dupe-delete-lesson" class="confirm-word-line"></div>
+        <div id="dupe-delete-translations" class="confirm-word-line"></div>
+      </div>
+    </div>
+    <div class="confirm-modal-actions">
+      <button type="button" class="ghost-btn" onclick="closeDuplicateDeleteModal()">Отмена</button>
+      <button type="button" id="dupe-delete-confirm" class="danger-btn" onclick="confirmDuplicateDelete()">Удалить</button>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
 {% block scripts %}
 <script>
   window.PUBLIC_BASE_URL = {{ public_url | tojson }};
 </script>
-<script defer src="{{ url_for('static', filename='upload.js') }}"></script>
+{% if not upload_access_pending and not upload_access_denied %}
+  <script defer src="{{ url_for('static', filename='upload.js') }}"></script>
+{% endif %}
 {% endblock %}

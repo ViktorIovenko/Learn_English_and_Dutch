@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LearnWords</string>
+
+    <!-- Navigation -->
+    <string name="nav_lessons">Уроки</string>
+    <string name="nav_upload">Слова</string>
+    <string name="nav_difficult">Сложные</string>
+    <string name="nav_settings">Настройки</string>
+
+    <!-- Common -->
+    <string name="loading">Загрузка…</string>
+    <string name="error_network">Ошибка сети</string>
+    <string name="cancel">Отмена</string>
+    <string name="save">Сохранить</string>
+    <string name="delete">Удалить</string>
+    <string name="ok">OK</string>
+
+    <!-- Auth -->
+    <string name="login_title">Вход</string>
+    <string name="hint_server_url">URL сервера</string>
+    <string name="hint_user_id">Telegram User ID</string>
+    <string name="hint_password">Пароль</string>
+    <string name="btn_login">Войти</string>
+    <string name="btn_offline">Войти без сервера</string>
+
+    <!-- Lessons -->
+    <string name="lessons_title">Уроки</string>
+    <string name="no_lessons">Уроки не найдены</string>
+    <string name="words_count">%d слов</string>
+
+    <!-- Learn -->
+    <string name="lesson_finished">Урок завершён!</string>
+    <string name="answer_correct">Правильно!</string>
+    <string name="answer_wrong">Неправильно</string>
+    <string name="btn_check">Проверить</string>
+    <string name="btn_next">Далее →</string>
+    <string name="btn_prev">← Назад</string>
+
+    <!-- Languages array -->
+    <string-array name="language_codes">
+        <item>nl</item>
+        <item>en</item>
+        <item>ru</item>
+        <item>de</item>
+        <item>fr</item>
+        <item>es</item>
+    </string-array>
+</resources>

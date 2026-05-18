@@ -29,7 +29,7 @@
         <div class="modal-title" id="termsTitle">Условия пользования</div>
       </div>
       <div class="modal-body">
-        <p>Добро пожаловать в приложение для запоминания слов на трех языках.</p>
+        <p>Добро пожаловать в приложение для запоминания слов на выбранных вами языках.</p>
         <p>Для использования приложения необходимо согласиться с условиями пользования.</p>
         <p>Юридическое предупреждение: мы сохраняем cookies на вашем устройстве (телефоне), вы всегда можете их удалить.</p>
       </div>
@@ -143,8 +143,7 @@
     }
     (async () => {
       try {
-        const already = sessionStorage.getItem("auth_ok");
-        if (!already && tg && tg.initData) {
+        if (tg && tg.initData) {
           const resp = await fetch("/api/auth/login_webapp", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
@@ -172,6 +171,35 @@
             document.dispatchEvent(new CustomEvent("hello-name-ready", {detail: name}));
           }
           maybeShowTerms(me.user_id || USER_ID);
+          try {
+            const path = window.location.pathname || "/";
+            const skipLanguageSetup =
+              path === "/settings" ||
+              path === "/subscription" ||
+              path.startsWith("/admin/") ||
+              path.startsWith("/share/") ||
+              path.startsWith("/api/") ||
+              path.startsWith("/static/") ||
+              path === "/sw.js";
+            if (!me.languages_configured && !skipLanguageSetup) {
+              const next = window.location.pathname + window.location.search;
+              window.location.href = "/settings?next=" + encodeURIComponent(next || "/");
+              return;
+            }
+            const skipSubscription =
+              path === "/subscription" ||
+              path === "/settings" ||
+              path.startsWith("/admin/") ||
+              path.startsWith("/share/") ||
+              path.startsWith("/api/") ||
+              path.startsWith("/static/") ||
+              path === "/sw.js";
+            if (me.subscription && me.subscription.access === false && !skipSubscription) {
+              const next = window.location.pathname + window.location.search;
+              window.location.href = "/subscription?next=" + encodeURIComponent(next || "/");
+              return;
+            }
+          } catch(e) {}
         } else {
           _setAuth(false);
         }
@@ -434,6 +462,13 @@
   </script>
   <script defer src="{{ url_for('static', filename='idb.js') }}"></script>
   <script defer src="{{ url_for('static', filename='sync.js') }}"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function() {
+        navigator.serviceWorker.register("/sw.js").catch(function() {});
+      });
+    }
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

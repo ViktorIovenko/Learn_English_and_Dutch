@@ -1,4 +1,4 @@
-/* app/static/learn.js
+﻿/* app/static/learn.js
  * [v8.24] Кнопка ▶ вставляется прямо в строку «Правильно: …» (без текста-подсказки).
  * [v8.23] Аудио в модалке результата: кнопка ▶ воспроизводит правильное слово на текущем языке.
  * [v8.22] ВОЗВРАТ: setDifficultForCurrent() + синхронизация UI звезды/чекбокса.
@@ -12,6 +12,7 @@
   const $  = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   function escapeHtml(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function renderSentence(s){ return escapeHtml(s).replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>"); }
   async function apiGet(url){ const r = await window.apiFetch(url); return r.json(); }
   async function apiPost(url, body){
     const r = await window.apiFetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})});
@@ -146,11 +147,12 @@
   let btnClear, btnUndo, btnCheck, btnPrev, btnNext;
   let modal, modalClose, line1, line2, line3, btnNextWord, diffToggle;
   let modalContent;
-  let modalAudioBtn = null;        // [ОБНОВЛЕНО v8.24]
+  let modalAudioBtn = null;
   let langButtons;
   let starBtn;
   let lessonLearnedToggle;
   let nextLessonBtn, nextLessonModalBtn;
+  let deleteWordBtn, deleteConfirmModal, delWordName, delConfirmBtn, delCancelBtn, delErrorMsg;
 
   let LESSON=""; let ITEMS=[]; let index=0; let current=null;
   let currentLang="nl";
@@ -279,7 +281,8 @@
         applyLessonItems(fresh);
       }
     }catch(e){
-      console.error(e); wordBox.textContent="?????'?? ???????????'????????.";
+      console.error(e);
+      if (!ITEMS || !ITEMS.length) wordBox.textContent="Нет соединения с сервером.";
     }
   }
 
@@ -323,12 +326,13 @@
   function renderWordCard(){
     if (!current) return;
     const view = pickByLang(current);
+    const editable = !!current.editable;
     const makeRow = (r) => `
       <div class="row" style="align-items:center;gap:8px">
-        <div>${r.head}</div>
+        <div${editable ? ` class="editable-text" data-field="word" data-lang="${r.lang}"` : ''}>${r.head}</div>
         <button type="button" class="audio-btn mini" data-play="${r.lang}" title="▶">▶</button>
       </div>
-      <div style="margin-bottom:8px">${escapeHtml(r.sent||"")}</div>
+      <div${editable ? ` class="editable-text" data-field="sentence" data-lang="${r.lang}"` : ''} style="margin-bottom:8px">${renderSentence(r.sent||"")}</div>
     `;
     const nlS = current.sentence_nl || "";
     const enS = current.sentence_en || "";
@@ -347,6 +351,8 @@
       $$("#word-view .audio-btn").forEach(btn=>{
         btn.addEventListener("click", ()=> playAudio(btn.dataset.play||"nl", btn));
       });
+      if (editable) $$("#word-view .editable-text").forEach(el => el.addEventListener("click", () => startInlineEdit(el)));
+      if (deleteWordBtn) deleteWordBtn.style.display = editable ? "" : "none";
       return;
     }
 
@@ -356,6 +362,7 @@
     $$("#word-view .audio-btn").forEach(btn=>{
       btn.addEventListener("click", ()=> playAudio(btn.dataset.play||"nl", btn));
     });
+    if (editable) $$("#word-view .editable-text").forEach(el => el.addEventListener("click", () => startInlineEdit(el)));
     pool = shuffle(correct.split(""));
     answer = []; usedFrom = [];
     renderSlots();
@@ -363,6 +370,7 @@
     progress.textContent = `${index + 1} / ${ITEMS.length}`;
     current._sent_for_modal = sentForModal;
     updateDifficultUI();
+    if (deleteWordBtn) deleteWordBtn.style.display = editable ? "" : "none";
   }
 
   function renderSlots(){
@@ -462,9 +470,15 @@
     const ok = (user === correct);
 
     line1.textContent = ok ? "Правильно!" : "Неправильно!";
-    line2.innerHTML = `Правильно: <b>${escapeHtml(correct)}</b>`;
 
-    // [ДОБАВЛЕНО v8.24] — вставляем кнопку ▶ прямо в строку рядом со словом
+    const _editable = !!current?.editable;
+    line2.innerHTML = `Правильно: ${
+      _editable
+        ? `<b><span class="editable-text" data-field="word" data-lang="${currentLang}">${escapeHtml(correct)}</span></b>`
+        : `<b>${escapeHtml(correct)}</b>`
+    }`;
+
+    // кнопка ▶ рядом со словом
     modalAudioBtn = document.createElement("button");
     modalAudioBtn.id = "modal-audio-btn";
     modalAudioBtn.type = "button";
@@ -473,7 +487,20 @@
     modalAudioBtn.textContent = "▶";
     line2.appendChild(modalAudioBtn);
 
-    line3.textContent = current._sent_for_modal || "";
+    const _sentText = current._sent_for_modal || "";
+    if (_editable) {
+      line3.innerHTML = `<span class="editable-text" data-field="sentence" data-lang="${currentLang}">${renderSentence(_sentText)}</span>`;
+    } else {
+      line3.innerHTML = renderSentence(_sentText);
+    }
+
+    // Инлайн-редактирование прямо из модалки результата
+    if (_editable) {
+      const _wordSpan = line2.querySelector(".editable-text");
+      const _sentSpan = line3.querySelector(".editable-text");
+      _wordSpan?.addEventListener("click", e => { e.stopPropagation(); startInlineEdit(_wordSpan); });
+      _sentSpan?.addEventListener("click", e => { e.stopPropagation(); startInlineEdit(_sentSpan); });
+    }
 
     // прогрев аудио (не блокирует)
     ensureAudioForCurrent(currentLang).catch(()=>{});
@@ -583,6 +610,117 @@
     requestAnimationFrame(frame);
   }
 
+  // ---- Инлайн-редактирование конкретного поля слова ----
+  function getFieldValue(item, lang, field) {
+    if (field === "word") {
+      if (lang === "nl") return item.nl_word || item.translation_nl || "";
+      if (lang === "en") return item.en_word || item.word_en || "";
+      if (lang === "ru") return item.ru_word || item.translation_ru || "";
+    }
+    if (lang === "nl") return item.nl_sentence || item.sentence_nl || "";
+    if (lang === "en") return item.en_sentence || item.sentence_en || "";
+    if (lang === "ru") return item.ru_sentence || item.sentence_ru || "";
+    return "";
+  }
+
+  function applyWordUpdate(item, w) {
+    if (w.nl_word     !== undefined) { item.nl_word     = w.nl_word;     item.translation_nl = w.nl_word; }
+    if (w.en_word     !== undefined) { item.en_word     = w.en_word;     item.word_en        = w.en_word; }
+    if (w.ru_word     !== undefined) { item.ru_word     = w.ru_word;     item.translation_ru = w.ru_word; }
+    if (w.nl_sentence !== undefined) { item.nl_sentence = w.nl_sentence; item.sentence_nl    = w.nl_sentence; }
+    if (w.en_sentence !== undefined) { item.en_sentence = w.en_sentence; item.sentence_en    = w.en_sentence; }
+    if (w.ru_sentence !== undefined) { item.ru_sentence = w.ru_sentence; item.sentence_ru    = w.ru_sentence; }
+    const aNl = w.nl_audio ?? w.audio_nl; if (aNl !== undefined) { item.audio_nl = aNl; item.nl_audio = aNl; }
+    const aEn = w.en_audio ?? w.audio_en; if (aEn !== undefined) { item.audio_en = aEn; item.en_audio = aEn; }
+    const aRu = w.ru_audio ?? w.audio_ru; if (aRu !== undefined) { item.audio_ru = aRu; item.ru_audio = aRu; }
+  }
+
+  function startInlineEdit(el) {
+    if (!current || !current.id) return;
+    if (el.isContentEditable) return; // уже редактируется
+
+    const field   = el.dataset.field; // "word" | "sentence"
+    const lang    = el.dataset.lang;  // "nl" | "en" | "ru"
+    const dbField = field === "word" ? lang : `ex_${lang}`;
+    const origValue = getFieldValue(current, lang, field);
+    const origHTML  = el.innerHTML;
+
+    // contenteditable надёжно вызывает клавиатуру на мобильных
+    el.contentEditable = "true";
+    el.setAttribute("spellcheck", "false");
+    el.setAttribute("autocorrect", "off");
+    el.setAttribute("autocapitalize", "none");
+    el.setAttribute("autocomplete", "off");
+    el.textContent = origValue;
+    el.classList.add("inline-editing");
+    el.focus();
+
+    // Выделить весь текст
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+    } catch(_) {}
+
+    let done = false;
+
+    function stopEdit() {
+      el.contentEditable = "false";
+      el.classList.remove("inline-editing");
+      el.removeAttribute("spellcheck");
+      el.removeAttribute("autocorrect");
+      el.removeAttribute("autocapitalize");
+      el.removeAttribute("autocomplete");
+    }
+
+    async function commit() {
+      if (done) return;
+      done = true;
+      stopEdit();
+      const newVal = (el.textContent || "").trim();
+      if (newVal === origValue.trim()) { renderCurrent(); return; }
+      el.textContent = newVal; // оптимистичный показ
+      try {
+        const r = await window.apiFetch(`/api/words/${current.id}`, {
+          method: "PUT",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ [dbField]: newVal })
+        });
+        const js = await r.json();
+        if (!js || js.ok !== true) throw new Error(js?.error || "Ошибка");
+        applyWordUpdate(current, js.word || {});
+        const i = ITEMS.findIndex(x => x.id === current.id);
+        if (i >= 0) ITEMS[i] = current;
+        writeLessonWordsToIdb(LESSON, ITEMS).catch(() => {});
+        renderCurrent();
+      } catch(e) {
+        console.error("[inline-edit]", e);
+        el.innerHTML = origHTML; // откат при ошибке
+      }
+    }
+
+    function cancel() {
+      if (done) return;
+      done = true;
+      stopEdit();
+      renderCurrent();
+    }
+
+    function onKeydown(e) {
+      if (e.key === "Enter")  { e.preventDefault(); el.removeEventListener("keydown", onKeydown); commit(); }
+      if (e.key === "Escape") { e.preventDefault(); el.removeEventListener("keydown", onKeydown); cancel(); }
+      e.stopPropagation();
+    }
+
+    el.addEventListener("keydown", onKeydown);
+    el.addEventListener("blur", () => {
+      el.removeEventListener("keydown", onKeydown);
+      commit();
+    }, { once: true });
+  }
+  // ----------------------------------
+
   async function goToNextLesson(){
     try{
       const js = await apiGet("/api/next_lesson?current=" + encodeURIComponent(LESSON));
@@ -651,6 +789,13 @@
     nextLessonBtn = $("#next-lesson-btn");
     nextLessonModalBtn = $("#next-lesson-modal-btn");
 
+    deleteWordBtn      = $("#delete-word-btn");
+    deleteConfirmModal = $("#delete-confirm-modal");
+    delWordName        = $("#del-word-name");
+    delConfirmBtn      = $("#del-confirm-btn");
+    delCancelBtn       = $("#del-cancel-btn");
+    delErrorMsg        = $("#del-error-msg");
+
     LESSON = (root && root.dataset.lesson) || window.LESSON_TITLE || "";
 
     if (lessonLearnedToggle){
@@ -686,14 +831,15 @@
           t.closest?.("#next-lesson-modal-btn") ||
           t.closest?.("#next-word-btn") ||
           t.closest?.(".flag-toggle") ||
+          t.closest?.(".editable-text") ||
           t.closest?.("button")
         ){ return; }
         advanceToNextOnce();
       });
     }
     line1?.addEventListener("click", ()=> advanceToNextOnce());
-    line2?.addEventListener("click", ()=> advanceToNextOnce());
-    line3?.addEventListener("click", ()=> advanceToNextOnce());
+    line2?.addEventListener("click", (e)=> { if (!e.target.closest?.(".editable-text")) advanceToNextOnce(); });
+    line3?.addEventListener("click", (e)=> { if (!e.target.closest?.(".editable-text")) advanceToNextOnce(); });
 
     if (starBtn){
       starBtn.addEventListener("click", ()=>{
@@ -712,6 +858,52 @@
 
     if (nextLessonBtn){ nextLessonBtn.addEventListener("click", (e)=>{ e.preventDefault(); goToNextLesson(); }); }
     if (nextLessonModalBtn){ nextLessonModalBtn.addEventListener("click", (e)=>{ e.stopPropagation(); goToNextLesson(); }); }
+
+    // ── Удаление слова ──────────────────────────────────────────
+    deleteWordBtn?.addEventListener("click", ()=>{
+      if (!current || !current.editable) return;
+      const label = current.translation_nl || current.nl_word || current.word_en || current.en_word || "это слово";
+      if (delWordName) delWordName.textContent = `«${label}»`;
+      if (delErrorMsg) delErrorMsg.textContent = "";
+      if (deleteConfirmModal) deleteConfirmModal.style.display = "";
+    });
+
+    delCancelBtn?.addEventListener("click", ()=>{
+      if (deleteConfirmModal) deleteConfirmModal.style.display = "none";
+    });
+
+    deleteConfirmModal?.addEventListener("click", (e)=>{
+      if (e.target === deleteConfirmModal) deleteConfirmModal.style.display = "none";
+    });
+
+    delConfirmBtn?.addEventListener("click", async ()=>{
+      if (!current || !current.id) { if (deleteConfirmModal) deleteConfirmModal.style.display = "none"; return; }
+      delConfirmBtn.disabled = true;
+      if (delErrorMsg) delErrorMsg.textContent = "";
+      try {
+        const r = await window.apiFetch(`/api/words/${current.id}`, { method: "DELETE" });
+        const js = await r.json();
+        if (!js || !js.ok) throw new Error(js?.error || "Ошибка удаления");
+
+        ITEMS.splice(index, 1);
+        writeLessonWordsToIdb(LESSON, ITEMS).catch(()=>{});
+        if (deleteConfirmModal) deleteConfirmModal.style.display = "none";
+
+        if (!ITEMS.length) {
+          wordBox.textContent = "В этом уроке пока нет слов.";
+          setPracticeVisible(false);
+          if (progress) progress.textContent = "0 / 0";
+          if (deleteWordBtn) deleteWordBtn.style.display = "none";
+          return;
+        }
+        if (index >= ITEMS.length) index = ITEMS.length - 1;
+        renderCurrent();
+      } catch(e) {
+        if (delErrorMsg) delErrorMsg.textContent = "Ошибка: " + (e.message || "не удалось удалить");
+      } finally {
+        delConfirmBtn.disabled = false;
+      }
+    });
 
     loadLesson();
   });
