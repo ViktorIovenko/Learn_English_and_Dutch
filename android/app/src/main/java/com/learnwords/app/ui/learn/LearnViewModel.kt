@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.learnwords.app.LearnWordsApp
+import com.learnwords.app.R
 import com.learnwords.app.data.api.UpdateWordRequest
 import com.learnwords.app.data.api.WordDto
 import com.learnwords.app.utils.NetworkResult
@@ -11,6 +12,8 @@ import com.learnwords.app.utils.getExampleByLang
 import com.learnwords.app.utils.getWordByLang
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.util.TimeZone
 
 enum class CheckResult { CORRECT, WRONG, NONE }
 
@@ -27,17 +30,35 @@ data class LearnUiState(
     val checkResult: CheckResult = CheckResult.NONE,
     val showResultDialog: Boolean = false,
     val error: String? = null,
-    val isFinished: Boolean = false
+    val isFinished: Boolean = false,
+    val isChild: Boolean = false,
+    val todayCount: Int = 0,
+    val dailyGoal: Int = 25,
+    val statusMilestone: Int = 0,
+    val goalType: String = "minutes",
+    val goalValue: Int = 10
 )
 
 class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private val repo = LearnWordsApp.instance.repository
     private val prefs = LearnWordsApp.instance.preferencesManager
+    private val app = LearnWordsApp.instance
     val lesson: String = savedStateHandle.get<String>("lesson") ?: ""
+    private val wordSet: String = savedStateHandle.get<String>("wordSet") ?: "lesson"
+    val isDifficultMode: Boolean = wordSet == "difficult"
+    val lessonTitle: String = if (isDifficultMode) {
+        app.getString(R.string.nav_difficult)
+    } else {
+        lesson
+    }
 
     private val _uiState = MutableStateFlow(LearnUiState())
     val uiState: StateFlow<LearnUiState> = _uiState
+
+    // Одноразовое событие: перейти на другой урок (название урока)
+    private val _navigateToLesson = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val navigateToLesson: SharedFlow<String> = _navigateToLesson
 
     init {
         loadWords()
@@ -46,24 +67,58 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     fun loadWords() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val langsCsv = prefs.selectedLangs.first()
-            val langs = langsCsv.split(",").filter { it.isNotBlank() }
-            val activeLang = langs.firstOrNull() ?: "nl"
+            // Источник истины — сервер (может отличаться от локального кэша,
+            // если языки были изменены с другого устройства/веба). Локальный
+            // кэш используется только как офлайн-резерв.
+            val languagesResult = repo.getUserLanguages()
+            val langs = (languagesResult as? NetworkResult.Success)
+                ?.data?.sortedBy { it.priority }?.map { it.langCode }?.ifEmpty { null }
+                ?: prefs.selectedLangs.first().split(",").filter { it.isNotBlank() }
 
-            val words = repo.getWordsForLesson(lesson)
+            val me = repo.getMe()
+            val isChild = (me as? NetworkResult.Success)?.data?.accountType == "child"
+            val goalResult = repo.getDailyGoal()
+            val goalType = (goalResult as? NetworkResult.Success)?.data?.goalType ?: if (isChild) "words" else "minutes"
+            val goalValue = (goalResult as? NetworkResult.Success)?.data?.goalValue ?: if (isChild) 25 else 10
+            val words = if (isDifficultMode) {
+                val result = repo.refreshDifficultWords()
+                if (result is NetworkResult.Error) {
+                    _uiState.value = _uiState.value.copy(error = result.message)
+                }
+                repo.getDifficultWordsOnce()
+            } else {
+                // Всегда тянем свежие данные с сервера (не только для детских
+                // аккаунтов): иначе после добавления нового языка в настройках
+                // урок, закэшированный до этого момента, вечно показывал бы
+                // старый набор языков.
+                repo.refreshWordsForLesson(lesson)
+            }.filterNot { isChild && it.learned }
             if (words.isEmpty()) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Слова не найдены"
+                    error = app.getString(if (isDifficultMode) R.string.no_difficult_words else R.string.words_not_found)
                 )
                 return@launch
             }
+            // Показываем только языки, у которых в этом уроке переведены ВСЕ
+            // слова (как на вебе, см. lessonHasCompleteLanguage в learn.js) —
+            // а не просто все языки из настроек аккаунта. Частично переведённый
+            // урок (генерация не завершена) кнопку языка не получает.
+            val langsWithContent = langs.filter { lang -> words.all { !it.getWordByLang(lang).isNullOrBlank() } }
+            val effectiveLangs = langsWithContent.ifEmpty { langs }
+            val activeLang = effectiveLangs.firstOrNull() ?: "nl"
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 words = words,
-                availableLangs = langs,
-                activeLang = activeLang
+                // «Все» — первой кнопкой (как на вебе), затем языки с контентом
+                availableLangs = (listOf("all") + effectiveLangs).distinct(),
+                activeLang = activeLang,
+                isChild = isChild,
+                goalType = goalType,
+                goalValue = goalValue,
+                dailyGoal = if (isChild) goalValue else 25
             )
+            refreshLearningStatus()
             showWord(0)
         }
     }
@@ -139,6 +194,7 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     fun checkAnswer() {
         val state = _uiState.value
+        if (state.checkResult != CheckResult.NONE) return
         val word = state.currentWord ?: return
         val answer = state.placedLetters.joinToString("") { it?.toString() ?: "" }
         val target = word.getWordByLang(state.activeLang) ?: ""
@@ -146,24 +202,72 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         val isCorrect = answer.equals(target, ignoreCase = true)
         val result = if (isCorrect) CheckResult.CORRECT else CheckResult.WRONG
 
+        val newPlacedLetters = if (!isCorrect) target.map { it } else state.placedLetters
+        val newUsedSlots = if (!isCorrect) state.scrambledLetters.indices.toList() else state.usedSlots
+
+        val updatedWord = if (isCorrect && state.isChild) word.copy(
+            practiceCount = word.practiceCount + 1,
+            learned = word.practiceCount + 1 >= 10
+        ) else word
+        val updatedWords = state.words.toMutableList().apply {
+            this[state.currentIndex] = updatedWord
+        }
         _uiState.value = state.copy(
+            words = updatedWords,
+            currentWord = updatedWord,
             checkResult = result,
-            showResultDialog = result == CheckResult.WRONG
+            showResultDialog = false,
+            placedLetters = newPlacedLetters,
+            usedSlots = newUsedSlots
         )
 
-        if (isCorrect) {
-            viewModelScope.launch {
-                repo.queueProgress(
-                    scope = "learn",
-                    eventType = "word_correct",
-                    payloadJson = """{"word_id":${word.id},"lesson":"${lesson}"}"""
-                )
+        viewModelScope.launch {
+            val progressState = JSONObject().apply {
+                put("word_id", word.id)
+                put("lesson", lesson)
+                put("index", state.currentIndex)
+                put("total", state.words.size)
+                put("passed", if (isCorrect) state.currentIndex + 1 else state.currentIndex)
+                put("lang", state.activeLang)
+                put("reason", if (isCorrect) "answer_ok" else "answer_fail")
+                put("tz_offset", -(TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000))
             }
+            repo.queueProgress(
+                scope = "learn",
+                eventType = if (isCorrect) "word_correct" else "word_wrong",
+                payloadJson = progressState.toString()
+            )
+            repo.syncPendingProgress()
+            if (isCorrect) refreshLearningStatus()
+        }
+    }
+
+    private suspend fun refreshLearningStatus() {
+        if (!_uiState.value.isChild) return
+        val now = System.currentTimeMillis()
+        val offset = -(TimeZone.getDefault().getOffset(now) / 60000)
+        when (val result = repo.getChildLearningStatus(offset)) {
+            is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
+                todayCount = result.data.todayCount,
+                dailyGoal = result.data.dailyGoal,
+                statusMilestone = result.data.statusMilestone
+            )
+            else -> Unit
         }
     }
 
     fun nextWord() {
         val state = _uiState.value
+        if (state.currentWord?.learned == true) {
+            val remaining = state.words.filterNot { it.id == state.currentWord.id }
+            if (remaining.isEmpty()) {
+                _uiState.value = state.copy(words = emptyList(), currentWord = null, isFinished = true)
+            } else {
+                _uiState.value = state.copy(words = remaining)
+                showWord(state.currentIndex.coerceAtMost(remaining.lastIndex))
+            }
+            return
+        }
         val nextIndex = state.currentIndex + 1
         if (nextIndex >= state.words.size) {
             _uiState.value = state.copy(isFinished = true, showResultDialog = false)
@@ -178,6 +282,32 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         if (prevIndex >= 0) showWord(prevIndex)
     }
 
+    /** Перейти на следующий видимый урок (в режиме «сложные слова» недоступно). */
+    fun goToNextLesson() {
+        if (isDifficultMode) return
+        viewModelScope.launch {
+            val next = repo.getNextLessonTitle(lesson)
+            if (next.isNullOrBlank() || next == lesson) {
+                _uiState.value = _uiState.value.copy(error = app.getString(R.string.no_more_lessons))
+            } else {
+                _navigateToLesson.emit(next)
+            }
+        }
+    }
+
+    /** Перейти на предыдущий видимый урок (в режиме «сложные слова» недоступно). */
+    fun goToPrevLesson() {
+        if (isDifficultMode) return
+        viewModelScope.launch {
+            val prev = repo.getPrevLessonTitle(lesson)
+            if (prev.isNullOrBlank() || prev == lesson) {
+                _uiState.value = _uiState.value.copy(error = app.getString(R.string.no_prev_lessons))
+            } else {
+                _navigateToLesson.emit(prev)
+            }
+        }
+    }
+
     fun dismissResult() {
         _uiState.value = _uiState.value.copy(showResultDialog = false)
     }
@@ -188,7 +318,11 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         viewModelScope.launch {
             when (repo.ensureAudio(listOf(word.id), listOf(lang))) {
                 is NetworkResult.Success -> {
-                    val refreshed = repo.refreshWordsForLesson(lesson)
+                    val refreshed = if (isDifficultMode) {
+                        repo.getDifficultWordsOnce()
+                    } else {
+                        repo.getCachedWordsForLesson(lesson)
+                    }
                     if (refreshed.isNotEmpty()) {
                         val index = state.currentIndex.coerceAtMost(refreshed.lastIndex)
                         _uiState.value = state.copy(
@@ -199,7 +333,7 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                     }
                 }
                 is NetworkResult.Error -> {
-                    _uiState.value = state.copy(error = "Не удалось подготовить аудио")
+                    _uiState.value = state.copy(error = app.getString(R.string.audio_prepare_failed))
                 }
                 else -> Unit
             }
@@ -210,16 +344,27 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         val word = _uiState.value.currentWord ?: return
         val newDifficult = !word.difficult
         viewModelScope.launch {
-            repo.setDifficult(word.id, newDifficult)
-            // Update local state
-            val words = _uiState.value.words.toMutableList()
-            val idx = words.indexOfFirst { it.id == word.id }
-            if (idx != -1) {
-                words[idx] = word.copy(difficult = newDifficult)
-                _uiState.value = _uiState.value.copy(
-                    words = words,
-                    currentWord = words[idx]
-                )
+            when (val result = repo.setDifficult(word.id, newDifficult)) {
+                is NetworkResult.Success -> {
+                    if (isDifficultMode && !newDifficult) {
+                        removeCurrentWordFromSession(word.id)
+                        return@launch
+                    }
+
+                    val words = _uiState.value.words.toMutableList()
+                    val idx = words.indexOfFirst { it.id == word.id }
+                    if (idx != -1) {
+                        words[idx] = word.copy(difficult = newDifficult)
+                        _uiState.value = _uiState.value.copy(
+                            words = words,
+                            currentWord = words[idx]
+                        )
+                    }
+                }
+                is NetworkResult.Error -> {
+                    _uiState.value = _uiState.value.copy(error = result.message)
+                }
+                else -> Unit
             }
         }
     }
@@ -234,17 +379,31 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                     if (words.isEmpty()) {
                         _uiState.value = state.copy(words = emptyList(), isFinished = true)
                     } else {
-                        _uiState.value = state.copy(words = words)
-                        val newIndex = minOf(state.currentIndex, words.size - 1)
-                        showWord(newIndex)
+                        showWordsAfterRemoval(state, words)
                     }
                 }
                 is NetworkResult.Error -> {
-                    _uiState.value = _uiState.value.copy(error = "Не удалось удалить слово")
+                    _uiState.value = _uiState.value.copy(error = app.getString(R.string.word_delete_failed))
                 }
                 else -> {}
             }
         }
+    }
+
+    private fun removeCurrentWordFromSession(wordId: Int) {
+        val state = _uiState.value
+        val words = state.words.filter { it.id != wordId }
+        if (words.isEmpty()) {
+            _uiState.value = state.copy(words = emptyList(), isFinished = true)
+            return
+        }
+        showWordsAfterRemoval(state, words)
+    }
+
+    private fun showWordsAfterRemoval(previousState: LearnUiState, words: List<WordDto>) {
+        _uiState.value = previousState.copy(words = words)
+        val newIndex = minOf(previousState.currentIndex, words.size - 1)
+        showWord(newIndex)
     }
 
     fun updateCurrentText(lang: String, isExample: Boolean, value: String) {
@@ -289,7 +448,7 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                     )
                 }
                 is NetworkResult.Error -> {
-                    _uiState.value = state.copy(error = "Не удалось сохранить изменения")
+                    _uiState.value = state.copy(error = app.getString(R.string.changes_save_failed))
                 }
                 else -> Unit
             }

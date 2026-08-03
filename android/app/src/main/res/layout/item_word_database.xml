@@ -23,22 +23,22 @@
                 android:textColor="@color/colorTextSecondary" />
             <TextView android:id="@+id/tv_lesson" android:layout_width="wrap_content"
                 android:layout_height="wrap_content" android:textSize="11sp"
-                android:textColor="#AAAAAA" />
+                android:textColor="@color/colorTextHint" />
         </LinearLayout>
 
         <ImageView android:id="@+id/iv_audio_status" android:layout_width="20dp" android:layout_height="20dp"
             android:src="@drawable/ic_volume_up_24"
-            android:visibility="invisible" android:contentDescription="Аудио" />
+            android:visibility="invisible" android:contentDescription="@string/audio" />
 
         <ImageButton android:id="@+id/btn_audio" android:layout_width="36dp" android:layout_height="36dp"
             android:src="@drawable/ic_volume_up_24"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Создать аудио" />
+            android:contentDescription="@string/create_audio" />
 
         <ImageButton android:id="@+id/btn_delete" android:layout_width="36dp" android:layout_height="36dp"
             android:src="@android:drawable/ic_menu_delete"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Удалить" />
+            android:contentDescription="@string/delete" />
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen/surface base colors -->
+    <color name="colorBackground">#121212</color>
+    <color name="colorSurface">#1E1E1E</color>
+    <color name="colorOnBackground">#EDEDED</color>
+    <color name="colorError">#CF6679</color>
+    <color name="colorCorrect">#66BB6A</color>
+    <color name="colorWrong">#E57373</color>
+
+    <!-- Text shades -->
+    <color name="colorTextSecondary">#B0B0B0</color>
+    <color name="colorTextTertiary">#9E9E9E</color>
+    <color name="colorTextHint">#8A8A8A</color>
+    <color name="colorTextMedium">#C7C7C7</color>
+
+    <!-- Surfaces / dividers -->
+    <color name="colorDivider">#2C2C2C</color>
+    <color name="colorPanelBackground">#1C1C1C</color>
+    <color name="colorSlotEmpty">#333333</color>
+
+    <!-- Info banner -->
+    <color name="colorInfoBackground">#1E2A47</color>
+    <color name="colorInfoText">#B3C7FF</color>
+
+    <!-- Success / subscription card -->
+    <color name="colorSuccessBackground">#173620</color>
+    <color name="colorSuccessDark">#81C784</color>
+
+    <!-- Account type screen -->
+    <color name="colorAccountTitle">#C7D2FE</color>
+
+    <!-- Learn screen: language chip selector -->
+    <color name="colorChipActive">#5A5A5A</color>
+    <color name="colorChipInactive">#333333</color>
+
+    <!-- Parent dashboard chart -->
+    <color name="colorChartAxis">#475569</color>
+    <color name="colorChartAxisText">#94A3B8</color>
+</resources>

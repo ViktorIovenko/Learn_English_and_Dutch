@@ -2,11 +2,19 @@ package com.learnwords.app.ui.lessons
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.view.Gravity
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.learnwords.app.data.db.LessonCacheEntity
 import com.learnwords.app.databinding.ItemLessonBinding
+import com.learnwords.app.R
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.learnwords.app.data.api.LessonLanguageProgressDto
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -18,6 +26,7 @@ class LessonAdapter(
 ) : ListAdapter<LessonAdapter.LessonItem, LessonAdapter.LessonViewHolder>(DiffCallback()) {
 
     private val lastOpenedFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+    private val gson = Gson()
 
     data class LessonItem(
         val entity: LessonCacheEntity,
@@ -30,13 +39,43 @@ class LessonAdapter(
 
         fun bind(item: LessonItem) {
             val lesson = item.entity
-            binding.tvLessonTitle.text = lesson.lesson
-            binding.tvWordCount.text = "${lesson.wordCount} слов"
+            val context = binding.root.context
+            binding.tvLessonTitle.text = if (lesson.isPriority) "⭐ ${lesson.lesson}" else lesson.lesson
+            binding.tvWordCount.text = lesson.wordCount.toString()
             binding.tvNumber.text = lesson.number ?: ""
             binding.tvLastOpened.text = if (lesson.lastOpenedAt > 0L) {
-                "Последний раз: ${lastOpenedFormat.format(Date(lesson.lastOpenedAt))}"
+                context.getString(R.string.last_opened, lastOpenedFormat.format(Date(lesson.lastOpenedAt)))
             } else {
-                "Последний раз: не открывался"
+                context.getString(R.string.last_opened_never)
+            }
+            binding.languageProgressContainer.removeAllViews()
+            val progress: List<LessonLanguageProgressDto> = runCatching {
+                gson.fromJson<List<LessonLanguageProgressDto>>(
+                    lesson.languageProgressJson,
+                    object : TypeToken<List<LessonLanguageProgressDto>>() {}.type
+                )
+            }.getOrDefault(emptyList())
+            progress.forEach { language ->
+                val row = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL or Gravity.END
+                }
+                row.addView(ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal).apply {
+                    max = 100
+                    this.progress = language.percent.coerceIn(0, 100)
+                    layoutParams = LinearLayout.LayoutParams(context.resources.displayMetrics.density.times(54).toInt(),
+                        context.resources.displayMetrics.density.times(10).toInt())
+                })
+                row.addView(TextView(context).apply {
+                    text = language.code.uppercase(Locale.ROOT)
+                    textSize = 11f
+                    setPadding(6, 0, 4, 0)
+                })
+                row.addView(TextView(context).apply {
+                    text = language.learnedWords.toString()
+                    textSize = 12f
+                })
+                binding.languageProgressContainer.addView(row)
             }
 
             binding.root.alpha = if (lesson.hidden) 0.4f else 1.0f
@@ -50,7 +89,7 @@ class LessonAdapter(
             } else {
                 binding.checkboxDelete.visibility = android.view.View.GONE
                 binding.btnHide.visibility = android.view.View.VISIBLE
-                binding.btnHide.text = if (lesson.hidden) "Показать" else "Скрыть"
+                binding.btnHide.text = if (lesson.hidden) context.getString(R.string.show) else context.getString(R.string.hide)
                 binding.btnHide.setOnClickListener { onHideToggle(lesson) }
                 binding.root.setOnClickListener { onLessonClick(lesson) }
             }

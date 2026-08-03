@@ -16,6 +16,49 @@ interface ApiService {
     @GET("api/me")
     suspend fun getMe(): Response<UserInfo>
 
+    @POST("api/account/type")
+    suspend fun setAccountType(@Body request: AccountTypeRequest): Response<GenericResponse>
+
+    @GET("api/family")
+    suspend fun getFamily(): Response<FamilyStatusResponse>
+
+    @GET("api/learning/streak")
+    suspend fun getLearningStreak(
+        @Query("tz_offset") timezoneOffsetMinutes: Int
+    ): Response<LearningStreakResponse>
+
+    @GET("api/child-learning/status")
+    suspend fun getChildLearningStatus(
+        @Query("tz_offset") timezoneOffsetMinutes: Int
+    ): Response<ChildLearningStatusResponse>
+
+    @GET("api/daily-goal")
+    suspend fun getDailyGoal(): Response<DailyGoalResponse>
+
+    @POST("api/daily-goal")
+    suspend fun saveDailyGoal(@Body request: SaveDailyGoalRequest): Response<DailyGoalResponse>
+
+    @GET("api/family/pairing-code")
+    suspend fun getPairingCode(): Response<PairingCodeResponse>
+
+    @POST("api/family/link")
+    suspend fun linkChild(@Body request: LinkChildRequest): Response<LinkChildResponse>
+
+    @GET("api/family/dashboard")
+    suspend fun getFamilyDashboard(
+        @Query("days") days: Int,
+        @Query("tz_offset") timezoneOffsetMinutes: Int
+    ): Response<FamilyDashboardResponse>
+
+    @DELETE("api/family/children/{childId}")
+    suspend fun unlinkChild(@Path("childId") childId: String): Response<GenericResponse>
+
+    @PUT("api/family/children/{childId}/priority-lesson")
+    suspend fun setPriorityLesson(
+        @Path("childId") childId: String,
+        @Body request: SetPriorityLessonRequest
+    ): Response<PriorityLessonResponse>
+
     // ─── Lessons ──────────────────────────────────────────────────────────────
 
     @GET("api/lessons")
@@ -28,7 +71,10 @@ interface ApiService {
     suspend fun getLessonWords(@Query("lesson") lesson: String): Response<List<WordDto>>
 
     @GET("api/next_lesson")
-    suspend fun getNextLesson(@Query("current") current: String): Response<LessonDto>
+    suspend fun getNextLesson(@Query("current") current: String): Response<LessonNavResponse>
+
+    @GET("api/prev_lesson")
+    suspend fun getPrevLesson(@Query("current") current: String): Response<LessonNavResponse>
 
     @POST("api/lessons/set_hidden")
     suspend fun setLessonHidden(@Body request: SetHiddenRequest): Response<GenericResponse>
@@ -55,15 +101,15 @@ interface ApiService {
     suspend fun importWords(@Body request: ImportWordsRequest): Response<ImportWordsResponse>
 
     @GET("api/words/nl-list")
-    suspend fun getNlWordList(): Response<List<String>>
+    suspend fun getNlWordList(): Response<NlWordListResponse>
 
     @GET("api/words/duplicates")
-    suspend fun getDuplicates(): Response<List<WordDto>>
+    suspend fun getDuplicates(): Response<DuplicatesResponse>
 
     // ─── Difficult ────────────────────────────────────────────────────────────
 
     @GET("api/difficult_words_user")
-    suspend fun getDifficultWords(): Response<List<WordDto>>
+    suspend fun getDifficultWords(): Response<DifficultWordsResponse>
 
     @POST("api/difficult/user_set")
     suspend fun setDifficult(@Body request: SetDifficultRequest): Response<GenericResponse>
@@ -78,6 +124,12 @@ interface ApiService {
 
     @POST("api/user-languages")
     suspend fun saveUserLanguages(@Body request: SaveLanguagesRequest): Response<GenericResponse>
+
+    @GET("api/ui-language")
+    suspend fun getUiLanguage(): Response<UiLanguageResponse>
+
+    @POST("api/ui-language")
+    suspend fun saveUiLanguage(@Body request: SaveUiLanguageRequest): Response<UiLanguageResponse>
 
     // ─── Subscription ─────────────────────────────────────────────────────────
 
@@ -116,18 +168,18 @@ interface ApiService {
     // ─── Progress sync ────────────────────────────────────────────────────────
 
     @POST("api/progress/sync")
-    suspend fun syncProgress(@Body request: SyncProgressRequest): Response<GenericResponse>
+    suspend fun syncProgress(@Body request: SyncProgressRequest): Response<SyncProgressResponse>
 
     @GET("api/sync/updates")
     suspend fun getSyncUpdates(@Query("since") since: Long): Response<GenericResponse>
 
-    // ─── AI Generation ────────────────────────────────────────────────────────
+    // ─── AI Generation (облако — AI Platform) ──────────────────────────────────
 
     @POST("api/generate/topic")
-    suspend fun generateByTopic(@Body request: GenerateByTopicRequest): Response<List<WordDto>>
+    suspend fun aiSuggestTopicWords(@Body request: AiSuggestTopicWordsRequest): Response<AiSuggestTopicWordsResponse>
 
     @POST("api/translate/word")
-    suspend fun translateWord(@Body request: TranslateWordRequest): Response<WordDto>
+    suspend fun aiTranslateWord(@Body request: AiTranslateWordRequest): Response<AiTranslateWordResponse>
 
     // ─── Admin ────────────────────────────────────────────────────────────────
 
@@ -139,4 +191,13 @@ interface ApiService {
 
     @POST("api/admin/revoke_access")
     suspend fun revokeAccess(@Body request: GrantAccessRequest): Response<GenericResponse>
+
+    @POST("api/admin/unlink_family")
+    suspend fun adminUnlinkFamily(@Body request: AdminUnlinkFamilyRequest): Response<GenericResponse>
+
+    @POST("api/admin/tts_usage/reset")
+    suspend fun resetTtsUsage(@Body request: ResetTtsUsageRequest): Response<GenericResponse>
+
+    @POST("api/admin/translation_usage/reset")
+    suspend fun resetTranslationUsage(@Body request: ResetTtsUsageRequest): Response<GenericResponse>
 }

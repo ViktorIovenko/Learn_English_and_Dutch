@@ -3,39 +3,305 @@
     <string name="app_name">LearnWords</string>
 
     <!-- Navigation -->
-    <string name="nav_lessons">Уроки</string>
-    <string name="nav_upload">Слова</string>
-    <string name="nav_difficult">Сложные</string>
-    <string name="nav_settings">Настройки</string>
+    <string name="nav_lessons">Lessons</string>
+    <string name="nav_upload">Words</string>
+    <string name="nav_difficult">Difficult</string>
+    <string name="nav_settings">Settings</string>
+    <string name="no_difficult_words">No difficult words</string>
 
     <!-- Common -->
-    <string name="loading">Загрузка…</string>
-    <string name="error_network">Ошибка сети</string>
-    <string name="cancel">Отмена</string>
-    <string name="save">Сохранить</string>
-    <string name="delete">Удалить</string>
+    <string name="loading">Loading…</string>
+    <string name="error_network">Network error</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
     <string name="ok">OK</string>
+    <string name="close">Close</string>
+    <string name="next_arrow">Next →</string>
+    <string name="previous_short">← Prev.</string>
+    <string name="refresh">Refresh</string>
+    <string name="search">Search</string>
+    <string name="import_action">Import</string>
+    <string name="copy_done">Copied to clipboard</string>
 
     <!-- Auth -->
-    <string name="login_title">Вход</string>
-    <string name="hint_server_url">URL сервера</string>
+    <string name="login_title">Sign in</string>
+    <string name="hint_server_url">Server URL</string>
     <string name="hint_user_id">Telegram User ID</string>
-    <string name="hint_password">Пароль</string>
-    <string name="btn_login">Войти</string>
-    <string name="btn_offline">Войти без сервера</string>
+    <string name="hint_password">Password</string>
+    <string name="btn_login">Sign in</string>
+    <string name="btn_offline">Continue offline</string>
+    <string name="login_subtitle">Sign in to your account</string>
+    <string name="hint_password_optional">Password (optional)</string>
+    <string name="invalid_auth_link">Invalid sign-in link</string>
+    <string name="login_success">Signed in</string>
+    <string name="server_user_id_missing">Server did not return User ID</string>
+    <string name="manual_login">Manual sign-in</string>
+    <string name="offline_login">Offline</string>
+    <string name="enter_user_id">Enter User ID</string>
+    <string name="enter_server_url">Enter server URL</string>
+    <string name="account_type_title">Who will use this account?</string>
+    <string name="account_type_note">Choose once so the app can show the right tools.</string>
+    <string name="account_type_child_card">🧒  Child account\n\nA parent can connect by scanning the QR code in Settings.</string>
+    <string name="account_type_standard_card">👤  Regular account\n\nLearn on your own or connect to a child as a parent.</string>
+    <string name="family_settings">Family connection</string>
+    <string name="family_child_qr_title">Parent connection QR code</string>
+    <string name="family_child_qr_note">Ask a parent to scan this code. It expires in 10 minutes.</string>
+    <string name="family_no_connections">No family connections yet</string>
+    <string name="family_connected_parents">Connected parents:\n%1$s</string>
+    <string name="family_connected_children">Connected children:\n%1$s</string>
+    <string name="family_parent_scan_note">Scan the QR code shown in the child’s Settings with your phone camera.</string>
+    <string name="family_linked_to">Connected to %1$s</string>
+    <string name="family_invalid_link">This QR code is invalid or has expired</string>
+    <string name="family_scan_qr">Scan child QR</string>
+    <string name="family_scan_prompt">Point the camera at the QR code in the child’s Settings</string>
 
     <!-- Lessons -->
-    <string name="lessons_title">Уроки</string>
-    <string name="no_lessons">Уроки не найдены</string>
-    <string name="words_count">%d слов</string>
+    <string name="lessons_title">Lessons</string>
+    <string name="no_lessons">No lessons found</string>
+    <string name="words_count">%d words</string>
+    <string name="words_label">words</string>
+    <string name="no_lessons_pull">No lessons found. Pull down to refresh.</string>
+    <string name="delete_lessons">Delete lessons</string>
+    <string name="delete_lessons_count">Delete (%d)</string>
+    <string name="select_lessons_to_delete">Select lessons to delete</string>
+    <string name="delete_lessons_message">Delete %d lesson(s) and all words in them?</string>
+    <string name="last_opened">Last opened: %s</string>
+    <string name="last_opened_never">Last opened: never</string>
+    <string name="hide">Hide</string>
+    <string name="show">Show</string>
 
     <!-- Learn -->
-    <string name="lesson_finished">Урок завершён!</string>
-    <string name="answer_correct">Правильно!</string>
-    <string name="answer_wrong">Неправильно</string>
-    <string name="btn_check">Проверить</string>
-    <string name="btn_next">Далее →</string>
-    <string name="btn_prev">← Назад</string>
+    <string name="btn_next_word">Next</string>
+    <string name="lang_all">ALL</string>
+    <string name="lesson_finished">Lesson completed!</string>
+    <string name="learn_title">Learn</string>
+    <string name="answer_correct">Correct!</string>
+    <string name="answer_wrong">Wrong</string>
+    <string name="btn_check">Check</string>
+    <string name="btn_next">Next</string>
+    <string name="btn_prev">← Back</string>
+    <string name="prev_lesson">Previous lesson</string>
+    <string name="next_lesson">Next lesson</string>
+    <string name="no_more_lessons">No more lessons</string>
+    <string name="no_prev_lessons">No previous lesson</string>
+    <string name="checked">Checked</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
+    <string name="restart_timer">Restart timer</string>
+    <string name="child_status_5">Good start 🌱</string>
+    <string name="child_status_10">Well done ⭐</string>
+    <string name="child_status_15">Great job 🚀</string>
+    <string name="child_status_20">Hero 🦸</string>
+    <string name="child_status_25">Champion of the day 🏆</string>
+    <string name="parent_today_progress">Today\'s progress</string>
+    <string name="parent_studied_today">Studied today</string>
+    <string name="parent_time_today">Study time today</string>
+    <string name="parent_zero_minutes">0 min</string>
+    <string name="parent_less_than_minute">&lt; 1 min</string>
+    <string name="parent_minutes">%1$d min</string>
+    <string name="parent_hours">%1$d h</string>
+    <string name="parent_hours_minutes">%1$d h %2$d min</string>
+    <string name="common_yes">Yes</string>
+    <string name="common_no">No</string>
+    <string name="daily_goal">Daily goal</string>
+    <string name="daily_goal_words">Daily goal (words)</string>
+    <string name="daily_goal_minutes">Daily goal (minutes)</string>
+    <string name="daily_goal_invalid">Enter a valid daily goal</string>
+    <string name="back">Back</string>
+    <string name="add_to_difficult">Add to difficult words</string>
+    <string name="remove_from_difficult">Remove from difficult words</string>
+    <string name="delete_word">Delete word</string>
+    <string name="delete_word_question">Delete word?</string>
+    <string name="delete_word_message">This word will be removed from the lesson.</string>
+    <string name="prepare_audio">Preparing audio, tap again in a few seconds</string>
+    <string name="words_not_found">Words not found</string>
+    <string name="audio_prepare_failed">Could not prepare audio</string>
+    <string name="word_delete_failed">Could not delete word</string>
+    <string name="changes_save_failed">Could not save changes</string>
+    <string name="lesson_finished_message">You completed all words in lesson \"%1$s\"</string>
+    <string name="to_lessons">To lessons</string>
+    <string name="repeat">Repeat</string>
+    <string name="speak_language">Play %1$s</string>
+    <string name="speak_language_nl">Play NL</string>
+    <string name="speak_language_en">Play EN</string>
+    <string name="speak_language_ru">Play RU</string>
+
+    <!-- Settings -->
+    <string name="languages_title">Languages</string>
+    <string name="interface_language">Interface language</string>
+    <string name="interface_language_auto_hint">System phone language is used by default</string>
+    <string name="learning_languages_hint">Choose 3–5 learning languages (first is the main learning language)</string>
+    <string name="max_languages_warning">Maximum reached (5 languages)</string>
+    <string name="add_language">+ Add language</string>
+    <string name="authorization">Authorization</string>
+    <string name="login_again">Sign in again</string>
+    <string name="logout">Sign out</string>
+    <string name="admin_access_management">User access management</string>
+    <string name="logged_out">You signed out</string>
+    <string name="auth_method">Sign-in method: %1$s</string>
+    <string name="auth_method_empty">not specified</string>
+    <string name="auth_user_id">Telegram ID: %1$s</string>
+    <string name="auth_user_empty">not signed in</string>
+    <string name="auth_server_url">Server: %1$s</string>
+    <string name="settings_saved">Settings saved</string>
+    <string name="cache_limit_mb">Cache size (MB)</string>
+    <string name="cache_limit_invalid">Enter a cache size from 10 to 2048 MB</string>
+    <string name="cache_limit_saved">Cache limit saved: %1$d MB</string>
+    <string name="ui_language_auto">Automatic (%1$s)</string>
+    <string name="no_languages_available">No languages available to add</string>
+    <string name="choose_3_to_5_languages">Choose 3 to 5 languages</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+
+    <!-- Upload / words -->
+    <string name="words_management">Word management</string>
+    <string name="add_tab">Add</string>
+    <string name="topic_tab">By topic</string>
+    <string name="word_database_tab">Word database</string>
+    <string name="search_words_hint">Search words...</string>
+    <string name="page_info">Page %1$d, total: %2$d</string>
+    <string name="share_tab">Share</string>
+    <string name="ai_cloud_only_info">Words are generated by cloud AI (AI Platform)</string>
+    <string name="translate_word_title">Translate word</string>
+    <string name="hint_word">Word</string>
+    <string name="example_nl">Example NL</string>
+    <string name="example_en">Example EN</string>
+    <string name="example_ru">Example RU</string>
+    <string name="translate_action">Translate</string>
+    <string name="hint_lesson_title">Lesson title</string>
+    <string name="add_row">+ Add row</string>
+    <string name="import_words">Import words</string>
+    <string name="generate_topic_title">Generate by topic (Cloud AI)</string>
+    <string name="hint_topic">Topic (e.g. Food, Travel)</string>
+    <string name="level">Level</string>
+    <string name="hint_word_count">Word count</string>
+    <string name="generate">Generate</string>
+    <string name="enter_word">Enter a word</string>
+    <string name="enter_topic">Enter a topic</string>
+    <string name="enter_lesson_title">Enter a lesson title</string>
+    <string name="no_words_to_import">No words to import</string>
+    <string name="import_result">Imported: %1$d, skipped: %2$d</string>
+    <string name="word_deleted">Word deleted</string>
+    <string name="audio_created">Audio created: %1$d, skipped: %2$d</string>
+    <string name="audio">Audio</string>
+    <string name="create_audio">Create audio</string>
+
+    <!-- Word duplicates -->
+    <string name="check_duplicates">Check duplicates</string>
+    <string name="no_duplicates">No duplicates found</string>
+    <string name="duplicates_found">Found %d possible duplicates</string>
+
+    <!-- Share -->
+    <string name="create_link">Create link</string>
+    <string name="select_lessons">Select lessons</string>
+    <string name="selected_count">Selected: %d</string>
+    <string name="hint_share_title">Title (optional)</string>
+    <string name="import_by_token">Import by token</string>
+    <string name="hint_token_or_link">Token or link</string>
+    <string name="enter_token">Enter token</string>
+    <string name="token_value">Token: %1$s</string>
+    <string name="link_copied">Link copied: %1$s</string>
+
+    <!-- Admin -->
+    <string name="admin_title">Access management</string>
+    <string name="hint_telegram_user_id">Telegram user ID</string>
+    <string name="grant_access">Grant access</string>
+    <string name="revoke_access">Revoke</string>
+    <string name="users_count">Users: %d</string>
+    <string name="users_count_empty">Users: —</string>
+    <string name="grant_unlimited_title">Grant unlimited access</string>
+    <string name="grant_unlimited_message">Grant unlimited access to %1$s (%2$s)?</string>
+    <string name="revoke_access_title">Revoke access</string>
+    <string name="revoke_access_message">Revoke access from %1$s (%2$s)?</string>
+    <string name="grant">Grant</string>
+    <string name="unlimited">Unlimited</string>
+    <string name="active_until">Active until %1$s</string>
+    <string name="trial_until">Trial until %1$s</string>
+    <string name="trial_expired">Trial expired</string>
+    <string name="no_subscription">No subscription</string>
+    <string name="enter_telegram_user_id">Enter Telegram user ID</string>
+    <string name="access_granted">Unlimited access granted: %1$s</string>
+    <string name="access_revoked">Access revoked: %1$s</string>
+
+    <!-- Subscription -->
+    <string name="subscription_title">Subscription</string>
+    <string name="subscription_status">Subscription status</string>
+    <string name="activating_subscription">Activating subscription…</string>
+    <string name="google_play_active">✓ Google Play subscription is active</string>
+    <string name="manage_google_play">Manage your subscription in Google Play → Subscriptions</string>
+    <string name="choose_plan">Choose plan</string>
+    <string name="subscription_google_note">Subscription is processed through Google Play. You can cancel anytime.</string>
+    <string name="plans_unavailable">Subscription plans are unavailable.\nMake sure the app is published in Google Play\nand products are configured in the console.</string>
+    <string name="offline_subscription_note">No internet connection? Status will update on next launch.</string>
+    <string name="popular">Popular</string>
+    <string name="subscribe">Subscribe</string>
+    <string name="trial_period">Trial period</string>
+    <string name="active_subscription">Active subscription</string>
+    <string name="expires_in_days">Expires in %1$d days (%2$s)</string>
+    <string name="next_billing">Next billing: %1$s</string>
+    <string name="monthly">Monthly</string>
+    <string name="yearly">Yearly</string>
+    <string name="purchase_error">Purchase error: %1$s</string>
+    <string name="subscription_active">Subscription active</string>
+    <string name="verification_error">Verification error: %1$s</string>
+    <string name="purchase_sync_failed">Purchase completed, but server sync failed. Try Refresh later.</string>
+    <string name="subscription_success">Subscription purchased successfully!</string>
+    <string name="trial_days_left">%d trial days left</string>
+    <string name="google_play_connecting">Connecting to Google Play…</string>
+    <string name="google_play_subscription_active">✓ Subscription active in Google Play</string>
+    <string name="product_id">Product: %1$s</string>
+    <string name="no_google_play_subscription">No active Google Play subscription</string>
+    <string name="free">free</string>
+    <string name="google_play_unavailable">Google Play unavailable: %1$s</string>
+    <string name="google_play_disconnected">Google Play connection lost</string>
+    <string name="billing_client_not_initialized">Billing client is not initialized</string>
+    <string name="no_product_offers">No offers are available for this product</string>
+    <string name="period_7_days">7 days</string>
+    <string name="period_14_days">14 days</string>
+    <string name="period_30_days">30 days</string>
+    <string name="period_1_month">1 month</string>
+    <string name="period_3_months">3 months</string>
+
+    <!-- Parent dashboard -->
+    <string name="nav_parent">Children</string>
+    <string name="parent_dashboard_title">Children dashboard</string>
+    <string name="parent_dashboard_note">Learning activity and progress of connected child accounts.</string>
+    <string name="parent_select_child">Child account</string>
+    <string name="parent_period">Period</string>
+    <string name="parent_period_7">7 days</string>
+    <string name="parent_period_30">30 days</string>
+    <string name="parent_period_90">90 days</string>
+    <string name="parent_connect_child">Connect child</string>
+    <string name="parent_priority_lesson">Priority lesson for the child</string>
+    <string name="parent_priority_none">No priority lesson</string>
+    <string name="parent_priority_save">Save priority</string>
+    <string name="parent_priority_current">Current priority: %1$s</string>
+    <string name="parent_priority_not_set">No priority lesson selected.</string>
+    <string name="parent_priority_history">Priority lesson history</string>
+    <string name="parent_priority_history_empty">No priority lesson history yet.</string>
+    <string name="parent_priority_now">Now</string>
+    <string name="parent_priority_history_item">%1$s\n%2$s — %3$s\nDuration: %4$s</string>
+    <string name="child_reminder_channel_name">Daily word practice</string>
+    <string name="child_reminder_channel_description">Reminder for a child account to practise words every day</string>
+    <string name="child_reminder_title">Time to learn words!</string>
+    <string name="child_reminder_text">Open your priority lesson and practise today’s words.</string>
+    <string name="parent_disconnect">Disconnect</string>
+    <string name="parent_disconnect_confirm">Disconnect the child account %1$s?</string>
+    <string name="parent_words">Words in lessons</string>
+    <string name="parent_lessons">Total lessons</string>
+    <string name="parent_learning_days">Learning days</string>
+    <string name="parent_active_lessons">Active lessons</string>
+    <string name="parent_correct_answers">Correct answers</string>
+    <string name="parent_success_rate">Success rate</string>
+    <string name="parent_percent">%1$d%%</string>
+    <string name="parent_activity_chart">Learning activity</string>
+    <string name="parent_chart_legend">Green — correct, red — errors, blue — other activity</string>
+    <string name="parent_latest_progress">Latest progress</string>
+    <string name="parent_latest_value">%1$s: %2$d / %3$d</string>
+    <string name="parent_last_activity_value">Last activity: %1$s</string>
+    <string name="parent_no_activity">No activity yet</string>
+    <string name="parent_no_progress">No learning activity for this period yet.</string>
 
     <!-- Languages array -->
     <string-array name="language_codes">
@@ -45,5 +311,55 @@
         <item>de</item>
         <item>fr</item>
         <item>es</item>
+        <item>it</item>
+        <item>pt</item>
+        <item>pl</item>
+        <item>uk</item>
     </string-array>
+
+    <string name="learning_streak_title">Learning streak</string>
+    <string name="learning_streak_value">🔥 %1$d</string>
+    <string name="today_timer_value">⏱ %1$s</string>
+    <string name="today_correct_words_value">%1$d / %2$d</string>
+    <string name="family_parents_count">%1$d of %2$d adults connected</string>
+    <string name="family_copy_link">Copy link</string>
+    <string name="family_share_link">Share</string>
+    <string name="family_refresh_link">Refresh link</string>
+    <string name="family_link_label">Telegram family link</string>
+    <string name="family_error_parent_limit">This child already has the maximum of 5 connected adults.</string>
+    <string name="family_error_child_parent">A child account cannot connect another child.</string>
+    <string name="family_error_self">You cannot connect your own account.</string>
+    <string name="family_error_expired">The pairing code is invalid or has expired. Create a new link.</string>
+    <string name="family_error_child_missing">The child account was not found.</string>
+    <string name="parent_connected_adults">Connected adults: %1$s</string>
+    <string name="family_parent_telegram_note">To connect a child, open the Telegram link sent by the child and confirm the connection in the bot.</string>
+    <string name="admin_account_child">Account type: child</string>
+    <string name="admin_account_standard">Account type: standard</string>
+    <string name="admin_relation_child">Child: %1$s — disconnect</string>
+    <string name="admin_relation_parent">Adult: %1$s — disconnect</string>
+    <string name="admin_unlink_family">Remove family connection</string>
+    <string name="admin_unlink_family_confirm">Remove the exact family connection with %1$s?</string>
+    <string name="admin_family_unlinked">Family connection removed</string>
+    <string name="tts_usage_summary_empty">Google TTS: 0 total · 0 successful · 0 failed</string>
+    <string name="tts_usage_summary">Google TTS: %1$d total · %2$d successful · %3$d failed</string>
+    <string name="tts_usage_user">Google TTS: %1$d total · %2$d successful · %3$d failed</string>
+    <string name="tts_usage_reset_all">Reset all</string>
+    <string name="tts_usage_reset_short">Reset TTS</string>
+    <string name="tts_usage_reset_title">Reset Google TTS counter?</string>
+    <string name="tts_usage_reset_all_confirm">Successful and failed Google TTS requests for all users in the current month will be reset to zero.</string>
+    <string name="tts_usage_reset_user_confirm">Reset this month’s Google TTS counter for %1$s (ID %2$s)?</string>
+    <string name="tts_usage_reset">Reset counter</string>
+    <string name="tts_usage_all_reset">All Google TTS counters were reset</string>
+    <string name="tts_usage_user_reset">Google TTS counter reset for ID %1$s</string>
+    <string name="translation_usage_summary_empty">AI: 0 tokens · input 0 · output 0 · successful 0 · failed 0</string>
+    <string name="translation_usage_summary">AI: %1$d tokens · input %2$d · output %3$d · successful %4$d · failed %5$d</string>
+    <string name="translation_usage_user">AI: %1$d tokens · input %2$d · output %3$d · successful %4$d · failed %5$d</string>
+    <string name="translation_usage_reset_all">Reset all</string>
+    <string name="translation_usage_reset_short">Reset AI tokens</string>
+    <string name="translation_usage_reset_title">Reset AI tokens?</string>
+    <string name="translation_usage_reset_all_confirm">Lifetime AI tokens and request counters for all users will be reset to zero.</string>
+    <string name="translation_usage_reset_user_confirm">Reset lifetime AI tokens for %1$s (ID %2$s)?</string>
+    <string name="translation_usage_reset">Reset tokens</string>
+    <string name="translation_usage_all_reset">All AI tokens were reset</string>
+    <string name="translation_usage_user_reset">AI tokens reset for ID %1$s</string>
 </resources>

@@ -12,8 +12,10 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -25,12 +27,13 @@ import com.learnwords.app.BuildConfig
 import com.learnwords.app.LearnWordsApp
 import com.learnwords.app.R
 import com.learnwords.app.databinding.FragmentLearnBinding
-import com.learnwords.app.databinding.DialogWordResultBinding
+import com.learnwords.app.databinding.ItemLearnLangRowBinding
 import com.learnwords.app.utils.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.time.LocalDate
 
 class LearnFragment : Fragment() {
 
@@ -40,7 +43,12 @@ class LearnFragment : Fragment() {
     private val viewModel: LearnViewModel by viewModels {
         object : ViewModelProvider.Factory {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                val handle = SavedStateHandle(mapOf("lesson" to (arguments?.getString("lesson") ?: "")))
+                val handle = SavedStateHandle(
+                    mapOf(
+                        "lesson" to (arguments?.getString("lesson") ?: ""),
+                        "wordSet" to (arguments?.getString("wordSet") ?: "lesson")
+                    )
+                )
                 @Suppress("UNCHECKED_CAST")
                 return LearnViewModel(handle) as T
             }
@@ -52,15 +60,21 @@ class LearnFragment : Fragment() {
     private val audioPlayer by lazy { AudioPlayer(requireContext()) }
     private var renderedLangs: List<String> = emptyList()
     private var renderedActiveLang: String = ""
-    private var resultDialog: AlertDialog? = null
     private val timerHandler = Handler(Looper.getMainLooper())
-    private var timerRemainingSeconds = TIMER_TOTAL_SECONDS
-    private var timerRunning = true
-    private var timerLastTickMs = 0L
+    private var timerSeconds = 0
+    private var timerRunning = false
+    private var timerGoalMinutes = 0
     private val timerRunnable = object : Runnable {
         override fun run() {
-            updateTimerTick()
-            timerHandler.postDelayed(this, 1000L)
+            if (timerRunning && timerSeconds > 0) {
+                timerSeconds--
+                if (timerSeconds == 0) timerRunning = false
+                renderStandardTimer()
+                saveTimerState()
+            }
+            if (timerRunning && timerSeconds > 0) {
+                timerHandler.postDelayed(this, 1000L)
+            }
         }
     }
 
@@ -98,15 +112,38 @@ class LearnFragment : Fragment() {
             adapter = slotAdapter
         }
 
-        binding.btnCheck.setOnClickListener { viewModel.checkAnswer() }
         binding.btnNext.setOnClickListener { viewModel.nextWord() }
         binding.btnPrev.setOnClickListener { viewModel.previousWord() }
         binding.btnDifficult.setOnClickListener { viewModel.toggleDifficult() }
         binding.btnDeleteWord.setOnClickListener { confirmDeleteCurrentWord() }
         binding.btnBack.setOnClickListener { findNavController().navigateUp() }
-        binding.btnTimerPause.setOnClickListener { toggleTimerPause() }
-        binding.btnTimerRestart.setOnClickListener { restartTimer() }
-        restoreTimerState()
+        binding.btnDailyPause.setOnClickListener {
+            timerRunning = !timerRunning
+            timerHandler.removeCallbacks(timerRunnable)
+            if (timerRunning && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                timerHandler.post(timerRunnable)
+            }
+            renderStandardTimer()
+            saveTimerState()
+        }
+        binding.btnDailyRestart.setOnClickListener {
+            timerSeconds = timerGoalMinutes * 60
+            timerRunning = true
+            timerHandler.removeCallbacks(timerRunnable)
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                timerHandler.post(timerRunnable)
+            }
+            renderStandardTimer()
+            saveTimerState()
+        }
+
+        // Навигация между уроками (скрыта в режиме «сложные слова»)
+        val showLessonNav = !viewModel.isDifficultMode
+        binding.lessonNavRow.visibility = if (showLessonNav) View.VISIBLE else View.GONE
+        binding.btnPrevLesson.visibility = if (showLessonNav) View.VISIBLE else View.GONE
+        binding.btnNextLesson.visibility = if (showLessonNav) View.VISIBLE else View.GONE
+        binding.btnPrevLesson.setOnClickListener { viewModel.goToPrevLesson() }
+        binding.btnNextLesson.setOnClickListener { viewModel.goToNextLesson() }
 
         // Language filter chips
         binding.chipGroupLang.setOnCheckedStateChangeListener { group, checkedIds ->
@@ -116,84 +153,19 @@ class LearnFragment : Fragment() {
             }
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collectLatest { state ->
                 renderState(state)
             }
         }
-    }
 
-    private fun restoreTimerState() {
-        lifecycleScope.launch {
-            val saved = LearnWordsApp.instance.preferencesManager.timerSeconds.first()
-            timerRemainingSeconds = saved
-                .takeIf { it in 1L..TIMER_TOTAL_SECONDS.toLong() }
-                ?.toInt()
-                ?: TIMER_TOTAL_SECONDS
-            timerRunning = timerRemainingSeconds > 0
-            timerLastTickMs = System.currentTimeMillis()
-            renderTimer()
-            timerHandler.removeCallbacks(timerRunnable)
-            timerHandler.post(timerRunnable)
-        }
-    }
-
-    private fun updateTimerTick() {
-        if (!timerRunning || timerRemainingSeconds <= 0) {
-            renderTimer()
-            return
-        }
-        val now = System.currentTimeMillis()
-        val delta = ((now - timerLastTickMs) / 1000L).toInt()
-        if (delta > 0) {
-            timerRemainingSeconds = (timerRemainingSeconds - delta).coerceAtLeast(0)
-            timerLastTickMs = now
-            if (timerRemainingSeconds == 0) timerRunning = false
-            renderTimer()
-            saveTimerState()
-        }
-    }
-
-    private fun toggleTimerPause() {
-        timerRunning = !timerRunning
-        timerLastTickMs = System.currentTimeMillis()
-        renderTimer()
-        saveTimerState()
-    }
-
-    private fun restartTimer() {
-        timerRemainingSeconds = TIMER_TOTAL_SECONDS
-        timerRunning = true
-        timerLastTickMs = System.currentTimeMillis()
-        renderTimer()
-        saveTimerState()
-    }
-
-    private fun renderTimer() {
-        val minutes = timerRemainingSeconds / 60
-        val seconds = timerRemainingSeconds % 60
-        binding.tvTimer.text = "%d:%02d".format(minutes, seconds)
-        binding.btnTimerPause.setImageResource(
-            if (timerRunning) R.drawable.ic_pause_24 else R.drawable.ic_play_24
-        )
-        binding.btnTimerPause.contentDescription =
-            if (timerRunning) "Пауза" else "Продолжить"
-        binding.btnTimerPause.isEnabled = timerRemainingSeconds > 0
-        binding.btnTimerPause.alpha = if (timerRemainingSeconds > 0) 1.0f else 0.45f
-        binding.tvTimer.setTextColor(
-            ContextCompat.getColor(
-                requireContext(),
-                if (timerRemainingSeconds == 0) R.color.colorSecondary else R.color.colorPrimary
-            )
-        )
-    }
-
-    private fun saveTimerState() {
-        lifecycleScope.launch {
-            LearnWordsApp.instance.preferencesManager.saveTimerState(
-                timerRemainingSeconds.toLong(),
-                ""
-            )
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.navigateToLesson.collect { lessonTitle ->
+                findNavController().navigate(
+                    R.id.action_learn_to_learn,
+                    bundleOf("lesson" to lessonTitle, "wordSet" to "lesson")
+                )
+            }
         }
     }
 
@@ -205,6 +177,25 @@ class LearnFragment : Fragment() {
         }
         binding.progressBar.gone()
         binding.contentGroup.visible()
+        binding.dailyGoalRow.visibility = View.VISIBLE
+        binding.btnDailyPause.visibility = if (state.isChild) View.GONE else View.VISIBLE
+        binding.btnDailyRestart.visibility = if (state.isChild) View.GONE else View.VISIBLE
+        if (state.isChild) {
+            timerHandler.removeCallbacks(timerRunnable)
+            timerGoalMinutes = 0
+            binding.tvDailyGoal.text = "${state.todayCount} / ${state.dailyGoal}"
+        } else {
+            ensureStandardTimer(state.goalValue)
+        }
+        binding.tvDailyStatus.text = when (state.statusMilestone) {
+            5 -> getString(R.string.child_status_5)
+            10 -> getString(R.string.child_status_10)
+            15 -> getString(R.string.child_status_15)
+            20 -> getString(R.string.child_status_20)
+            25 -> getString(R.string.child_status_25)
+            else -> ""
+        }
+        if (!state.isChild) binding.tvDailyStatus.text = ""
 
         if (state.isFinished) {
             showFinishedDialog()
@@ -212,44 +203,32 @@ class LearnFragment : Fragment() {
         }
 
         val word = state.currentWord ?: return
-        binding.tvLessonTitle.text = viewModel.lesson
+        binding.tvLessonTitle.text = viewModel.lessonTitle
 
+        val isAllMode = state.activeLang == "all"
         val answerChecked = state.checkResult != CheckResult.NONE
         val activeWord = cleanLearnText(word.getWordByLang(state.activeLang) ?: "")
-        val activeExample = cleanLearnText(word.getExampleByLang(state.activeLang) ?: "")
 
-        binding.btnCheck.text = if (answerChecked) "Проверено" else "Проверить"
-        binding.btnCheck.isEnabled = !answerChecked
-        binding.rvAnswerSlots.visibility = View.VISIBLE
-        binding.rvLetters.visibility = View.VISIBLE
+        // Button: "Проверить" → "Следующее слово" после проверки или в режиме ALL
+        if (isAllMode || answerChecked) {
+            binding.btnCheck.text = getString(R.string.btn_next_word)
+            binding.btnCheck.setOnClickListener { viewModel.nextWord() }
+            binding.btnCheck.isEnabled = true
+        } else {
+            binding.btnCheck.text = getString(R.string.btn_check)
+            binding.btnCheck.setOnClickListener { viewModel.checkAnswer() }
+            binding.btnCheck.isEnabled = true
+        }
 
-        val nlText = cleanLearnText(word.nl ?: "-")
-        val enText = cleanLearnText(word.en ?: "-")
-        val ruText = cleanLearnText(word.ru ?: "-")
-        val nlExample = cleanLearnText(word.exNl ?: "")
-        val enExample = cleanLearnText(word.exEn ?: "")
-        val ruExample = cleanLearnText(word.exRu ?: "")
+        // Скрываем тайлы в режиме ALL
+        binding.rvAnswerSlots.visibility = if (isAllMode) View.GONE else View.VISIBLE
+        binding.rvLetters.visibility = if (isAllMode) View.GONE else View.VISIBLE
 
-        binding.tvWordNl.text = if (state.activeLang == "nl" && answerChecked) activeWord else nlText
-        binding.tvWordEn.text = if (state.activeLang == "en" && answerChecked) activeWord else enText
-        binding.tvWordRu.text = if (state.activeLang == "ru" && answerChecked) activeWord else ruText
-
-        val showNl = state.activeLang != "nl" || answerChecked
-        val showEn = state.activeLang != "en" || answerChecked
-        val showRu = state.activeLang != "ru" || answerChecked
-        binding.tvWordNlRow.visibility = if (showNl) View.VISIBLE else View.GONE
-        binding.tvWordEnRow.visibility = if (showEn) View.VISIBLE else View.GONE
-        binding.tvWordRuRow.visibility = if (showRu) View.VISIBLE else View.GONE
-
-        binding.tvExampleNl.text = nlExample
-        binding.tvExampleEn.text = enExample
-        binding.tvExampleRu.text = ruExample
-        binding.tvExampleNl.visibility = if (showNl && nlExample.isNotBlank()) View.VISIBLE else View.GONE
-        binding.tvExampleEn.visibility = if (showEn && enExample.isNotBlank()) View.VISIBLE else View.GONE
-        binding.tvExampleRu.visibility = if (showRu && ruExample.isNotBlank()) View.VISIBLE else View.GONE
+        // Строки языков — динамически по availableLangs (не только NL/EN/RU):
+        // исправляет «итальянский не появился» — раньше строки были жёстко
+        // свёрстаны под три языка.
+        renderLangRows(word, state, activeWord, answerChecked, isAllMode)
         binding.tvExample.visibility = View.GONE
-        setupRowAudioButtons(word, showNl, showEn, showRu)
-        setupInlineEditors(word, showNl, showEn, showRu)
 
         // Progress bar
         binding.progressBar2.progress = if (state.words.isNotEmpty())
@@ -257,10 +236,12 @@ class LearnFragment : Fragment() {
         else 0
         binding.tvProgress.text = "${state.currentIndex + 1} / ${state.words.size}"
 
-        // Difficult star
-        binding.btnDifficult.text = if (word.difficult) "★" else "☆"
+        // Difficult word shortcut
+        binding.btnDifficult.setImageResource(
+            if (word.difficult) R.drawable.ic_star_24 else R.drawable.ic_star_border_24
+        )
         binding.btnDifficult.contentDescription =
-            if (word.difficult) "Убрать из сложных слов" else "Добавить в сложные слова"
+            if (word.difficult) getString(R.string.remove_from_difficult) else getString(R.string.add_to_difficult)
         binding.btnDeleteWord.visibility = if (word.editable) View.VISIBLE else View.GONE
 
         // Lang chips
@@ -275,10 +256,10 @@ class LearnFragment : Fragment() {
         // Check result styling
         when (state.checkResult) {
             CheckResult.CORRECT -> {
-                binding.root.setBackgroundColor(0x2200CC44.toInt())
+                binding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorGameCorrectOverlay))
             }
             CheckResult.WRONG -> {
-                binding.root.setBackgroundColor(0x22CC0000.toInt())
+                binding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorGameWrongOverlay))
             }
             CheckResult.NONE -> {
                 binding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorBackground))
@@ -288,14 +269,60 @@ class LearnFragment : Fragment() {
         binding.btnPrev.isEnabled = state.currentIndex > 0
         binding.btnNext.isEnabled = state.currentIndex < state.words.size - 1
 
-        if (state.showResultDialog && resultDialog?.isShowing != true) {
-            showResultDialog(state)
-        }
-
         state.error?.let {
             requireContext().toast(it)
             viewModel.clearError()
         }
+    }
+
+    private fun ensureStandardTimer(goalMinutes: Int) {
+        if (timerGoalMinutes == goalMinutes) return
+        timerGoalMinutes = goalMinutes
+        viewLifecycleOwner.lifecycleScope.launch {
+            val prefs = LearnWordsApp.instance.preferencesManager
+            val savedDate = prefs.timerDate.first()
+            val savedSeconds = prefs.timerSeconds.first().toInt()
+            val hasSavedState = savedDate == LocalDate.now().toString() &&
+                savedSeconds in 0..goalMinutes * 60
+            timerSeconds = if (hasSavedState) {
+                savedSeconds
+            } else goalMinutes * 60
+            timerRunning = timerSeconds > 0 && (!hasSavedState || prefs.timerRunning.first())
+            renderStandardTimer()
+            timerHandler.removeCallbacks(timerRunnable)
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && timerRunning) {
+                timerHandler.post(timerRunnable)
+            }
+        }
+    }
+
+    private fun renderStandardTimer() {
+        binding.tvDailyGoal.text = "%d:%02d".format(timerSeconds / 60, timerSeconds % 60)
+        binding.btnDailyPause.setImageResource(if (timerRunning) R.drawable.ic_pause_24 else R.drawable.ic_play_24)
+    }
+
+    private fun saveTimerState() {
+        if (timerGoalMinutes <= 0) return
+        lifecycleScope.launch {
+            LearnWordsApp.instance.preferencesManager.saveTimerState(
+                timerSeconds.toLong(), LocalDate.now().toString(), timerRunning
+            )
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!viewModel.uiState.value.isChild && timerGoalMinutes > 0 &&
+            timerRunning && timerSeconds > 0) {
+            timerHandler.removeCallbacks(timerRunnable)
+            timerHandler.post(timerRunnable)
+        }
+    }
+
+    override fun onPause() {
+        timerHandler.removeCallbacks(timerRunnable)
+        saveTimerState()
+        super.onPause()
     }
 
     private fun setupLangChips(langs: List<String>, active: String) {
@@ -303,37 +330,40 @@ class LearnFragment : Fragment() {
         renderedLangs = langs
         renderedActiveLang = active
         binding.chipGroupLang.removeAllViews()
-        val availableWidth = resources.displayMetrics.widthPixels - dp(108)
-        val chipWidth = (availableWidth / langs.size.coerceAtLeast(1)).coerceIn(dp(52), dp(70))
+        // Чипы компактные (ширина по тексту), чтобы ALL + 4-5 языков помещались
+        // на экране БЕЗ прокрутки — раньше фиксированные 56dp выталкивали
+        // последний язык (IT) за край HorizontalScrollView, и кнопка «терялась».
+        binding.chipGroupLang.chipSpacingHorizontal = dp(4)
         val chipHeight = dp(34)
-        val chipTextSize = if (langs.size >= 4) 13f else 14f
+        val chipTextSize = 12.5f
         langs.forEach { lang ->
             val chip = com.google.android.material.chip.Chip(requireContext()).apply {
-                text = lang.uppercase()
+                text = if (lang == "all") getString(R.string.lang_all) else lang.uppercase()
                 tag = lang
                 isCheckable = true
                 isChecked = lang == active
                 isCheckedIconVisible = false
                 chipMinHeight = chipHeight.toFloat()
                 minHeight = chipHeight
-                minWidth = chipWidth
+                minWidth = dp(44)
                 textSize = chipTextSize
                 textAlignment = View.TEXT_ALIGNMENT_CENTER
                 gravity = Gravity.CENTER
-                chipStartPadding = 0f
-                chipEndPadding = 0f
-                textStartPadding = 0f
-                textEndPadding = 0f
+                chipStartPadding = dp(4).toFloat()
+                chipEndPadding = dp(4).toFloat()
+                textStartPadding = dp(4).toFloat()
+                textEndPadding = dp(4).toFloat()
                 chipBackgroundColor = ColorStateList.valueOf(
-                    if (lang == active) 0xFFD0D0D0.toInt() else 0xFFE9E9E9.toInt()
+                    ContextCompat.getColor(
+                        requireContext(),
+                        if (lang == active) R.color.colorChipActive else R.color.colorChipInactive
+                    )
                 )
                 setPadding(0, 0, 0, 0)
                 layoutParams = com.google.android.material.chip.ChipGroup.LayoutParams(
-                    chipWidth,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
                     chipHeight
-                ).apply {
-                    marginEnd = dp(4)
-                }
+                )
                 shapeAppearanceModel = shapeAppearanceModel
                     .toBuilder()
                     .setAllCornerSizes(dp(17).toFloat())
@@ -348,18 +378,41 @@ class LearnFragment : Fragment() {
     private fun cleanLearnText(value: String): String =
         value.replace("**", "").trim()
 
-    private fun setupInlineEditors(
+    /**
+     * Строит строки карточки по СПИСКУ языков урока (как на вебе), а не по
+     * фиксированным NL/EN/RU. Строка активного языка скрыта до проверки
+     * (иначе ответ виден заранее); в режиме ALL показываются все.
+     */
+    private fun renderLangRows(
         word: com.learnwords.app.data.api.WordDto,
-        showNl: Boolean,
-        showEn: Boolean,
-        showRu: Boolean
+        state: LearnUiState,
+        activeWord: String,
+        answerChecked: Boolean,
+        isAllMode: Boolean
     ) {
-        setupEditableText(binding.tvWordNl, word.nl.orEmpty(), "nl", false, showNl && word.editable)
-        setupEditableText(binding.tvExampleNl, word.exNl.orEmpty(), "nl", true, showNl && word.editable)
-        setupEditableText(binding.tvWordEn, word.en.orEmpty(), "en", false, showEn && word.editable)
-        setupEditableText(binding.tvExampleEn, word.exEn.orEmpty(), "en", true, showEn && word.editable)
-        setupEditableText(binding.tvWordRu, word.ru.orEmpty(), "ru", false, showRu && word.editable)
-        setupEditableText(binding.tvExampleRu, word.exRu.orEmpty(), "ru", true, showRu && word.editable)
+        val container = binding.langRowsContainer
+        container.removeAllViews()
+        state.availableLangs.filter { it != "all" }.forEach { lang ->
+            val show = isAllMode || lang != state.activeLang || answerChecked
+            if (!show) return@forEach
+            val rawWord = word.getWordByLang(lang).orEmpty()
+            // У этого слова нет перевода на язык → строку не показываем вовсе
+            // (раньше выводился «-»). Исключение: активный язык после проверки.
+            if (rawWord.isBlank() && !(lang == state.activeLang && answerChecked)) return@forEach
+            val row = ItemLearnLangRowBinding.inflate(layoutInflater, container, false)
+            row.tvLangLabel.text = lang.uppercase()
+            row.tvLangWord.text =
+                if (lang == state.activeLang && answerChecked) activeWord
+                else cleanLearnText(rawWord)
+            val rawExample = word.getExampleByLang(lang).orEmpty()
+            val example = cleanLearnText(rawExample)
+            row.tvLangExample.text = example
+            row.tvLangExample.visibility = if (example.isNotBlank()) View.VISIBLE else View.GONE
+            setupAudioButton(row.btnLangAudio, word.getAudioByLang(lang), true, lang)
+            setupEditableText(row.tvLangWord, rawWord, lang, false, word.editable)
+            setupEditableText(row.tvLangExample, rawExample, lang, true, word.editable && example.isNotBlank())
+            container.addView(row.root)
+        }
     }
 
     private fun setupEditableText(
@@ -436,24 +489,13 @@ class LearnFragment : Fragment() {
         }
     }
 
-    private fun setupRowAudioButtons(
-        word: com.learnwords.app.data.api.WordDto,
-        showNl: Boolean,
-        showEn: Boolean,
-        showRu: Boolean
-    ) {
-        setupAudioButton(binding.btnAudioNl, word.audioNl, showNl, "nl")
-        setupAudioButton(binding.btnAudioEn, word.audioEn, showEn, "en")
-        setupAudioButton(binding.btnAudioRu, word.audioRu, showRu, "ru")
-    }
-
     private fun setupAudioButton(button: View, url: String?, rowVisible: Boolean, lang: String) {
         if (rowVisible) {
             button.visibility = View.VISIBLE
             button.alpha = if (url.isNullOrBlank()) 0.55f else 1.0f
             button.setOnClickListener {
                 if (url.isNullOrBlank()) {
-                    requireContext().toast("Готовлю аудио, нажмите ещё раз через пару секунд")
+                    requireContext().toast(getString(R.string.prepare_audio))
                     viewModel.ensureAudioForCurrent(lang)
                 } else {
                     audioPlayer.play(fullAudioUrl(url))
@@ -469,56 +511,23 @@ class LearnFragment : Fragment() {
         if (url.startsWith("http")) url
         else "${runBlocking { LearnWordsApp.instance.preferencesManager.serverUrl.first() }.trimEnd('/')}$url"
 
-    private fun showResultDialog(state: LearnUiState) {
-        val dialogBinding = DialogWordResultBinding.inflate(layoutInflater)
-        val word = state.currentWord ?: return
-
-        dialogBinding.tvResultTitle.text = "Неправильно"
-        dialogBinding.tvCorrectAnswer.text = cleanLearnText(word.getWordByLang(state.activeLang) ?: "")
-        dialogBinding.tvWordNl.text = "NL: ${cleanLearnText(word.nl ?: "-")}"
-        dialogBinding.tvWordEn.text = "EN: ${cleanLearnText(word.en ?: "-")}"
-        dialogBinding.tvWordRu.text = "RU: ${cleanLearnText(word.ru ?: "-")}"
-        dialogBinding.tvExampleNl.text = cleanLearnText(word.exNl ?: "")
-        dialogBinding.tvExampleEn.text = cleanLearnText(word.exEn ?: "")
-        dialogBinding.tvExampleRu.text = cleanLearnText(word.exRu ?: "")
-
-        resultDialog = AlertDialog.Builder(requireContext())
-            .setView(dialogBinding.root)
-            .setCancelable(true)
-            .create()
-
-        dialogBinding.btnNextWord.setOnClickListener {
-            resultDialog?.dismiss()
-            viewModel.nextWord()
-        }
-        dialogBinding.btnClose.setOnClickListener {
-            resultDialog?.dismiss()
-            viewModel.dismissResult()
-        }
-        resultDialog?.setOnDismissListener {
-            resultDialog = null
-            viewModel.dismissResult()
-        }
-        resultDialog?.show()
-    }
-
     private fun confirmDeleteCurrentWord() {
         val word = viewModel.uiState.value.currentWord ?: return
         val title = cleanLearnText(word.nl ?: word.en ?: word.ru ?: "")
         AlertDialog.Builder(requireContext())
-            .setTitle("Удалить слово?")
-            .setMessage(title.ifBlank { "Это слово будет удалено из урока." })
-            .setPositiveButton("Удалить") { _, _ -> viewModel.deleteCurrentWord() }
-            .setNegativeButton("Отмена", null)
+            .setTitle(R.string.delete_word_question)
+            .setMessage(title.ifBlank { getString(R.string.delete_word_message) })
+            .setPositiveButton(R.string.delete) { _, _ -> viewModel.deleteCurrentWord() }
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
     private fun showFinishedDialog() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Урок завершён!")
-            .setMessage("Вы прошли все слова урока \"${viewModel.lesson}\"")
-            .setPositiveButton("К урокам") { _, _ -> findNavController().navigateUp() }
-            .setNeutralButton("Повторить") { _, _ -> viewModel.loadWords() }
+            .setTitle(R.string.lesson_finished)
+            .setMessage(getString(R.string.lesson_finished_message, viewModel.lessonTitle))
+            .setPositiveButton(R.string.to_lessons) { _, _ -> findNavController().navigateUp() }
+            .setNeutralButton(R.string.repeat) { _, _ -> viewModel.loadWords() }
             .setCancelable(false)
             .show()
     }
@@ -528,12 +537,9 @@ class LearnFragment : Fragment() {
         timerHandler.removeCallbacks(timerRunnable)
         saveTimerState()
         audioPlayer.release()
-        resultDialog?.dismiss()
-        resultDialog = null
         _binding = null
     }
 
     companion object {
-        private const val TIMER_TOTAL_SECONDS = 10 * 60
     }
 }

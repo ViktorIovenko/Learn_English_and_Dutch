@@ -6,11 +6,10 @@ import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.learnwords.app.R
 import com.learnwords.app.databinding.FragmentTabTopicBinding
 import com.learnwords.app.utils.toast
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 
 class TopicTabFragment : Fragment() {
@@ -33,34 +32,20 @@ class TopicTabFragment : Fragment() {
             android.R.layout.simple_spinner_item, levels).also {
             it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
+        binding.spinnerLevel.setSelection(levels.indexOf("A2"))
 
         wordAdapter = WordPreviewAdapter()
         binding.rvGeneratedWords.adapter = wordAdapter
 
-        // Заполняем поля Ollama из настроек (только если не в фокусе)
-        viewModel.ollamaUrl.onEach { url ->
-            if (!binding.etOllamaUrl.hasFocus()) binding.etOllamaUrl.setText(url)
-        }.launchIn(viewLifecycleOwner.lifecycleScope)
-
-        viewModel.ollamaModel.onEach { model ->
-            if (!binding.etOllamaModel.hasFocus()) binding.etOllamaModel.setText(model)
-        }.launchIn(viewLifecycleOwner.lifecycleScope)
-
-        binding.btnCheckOllama.setOnClickListener {
-            saveOllamaSettings()
-            viewModel.checkOllamaConnection()
-        }
-
         binding.btnGenerate.setOnClickListener {
             val topic = binding.etTopic.text.toString().trim()
             if (topic.isBlank()) {
-                context?.toast("Введите тему")
+                context?.toast(getString(R.string.enter_topic))
                 return@setOnClickListener
             }
-            saveOllamaSettings()
             val level = binding.spinnerLevel.selectedItem.toString()
             val count = binding.etWordCount.text.toString().toIntOrNull() ?: 10
-            viewModel.generateByTopic(topic, level, count, listOf("nl", "en", "ru"))
+            viewModel.generateByTopic(topic, level, count)
         }
 
         binding.btnImport.setOnClickListener {
@@ -73,14 +58,6 @@ class TopicTabFragment : Fragment() {
         lifecycleScope.launch {
             viewModel.uiState.collectLatest { state ->
                 binding.progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
-
-                // Статус подключения к Ollama
-                state.ollamaStatus?.let { status ->
-                    binding.tvOllamaStatus.text = status
-                    binding.tvOllamaStatus.setTextColor(
-                        if (status.startsWith("Доступна")) 0xFF2E7D32.toInt() else 0xFFC62828.toInt()
-                    )
-                }
 
                 if (state.generatedWords.isNotEmpty()) {
                     val rows = state.generatedWords.map { dto ->
@@ -105,12 +82,6 @@ class TopicTabFragment : Fragment() {
                 }
             }
         }
-    }
-
-    private fun saveOllamaSettings() {
-        val url = binding.etOllamaUrl.text.toString()
-        val model = binding.etOllamaModel.text.toString()
-        viewModel.saveOllamaSettings(url, model)
     }
 
     override fun onDestroyView() {

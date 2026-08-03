@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.view.View
 import android.widget.Toast
+import com.learnwords.app.R
 import com.learnwords.app.data.api.WordDto
 import com.learnwords.app.data.db.WordEntity
 
@@ -15,7 +16,16 @@ fun Context.toast(message: String, long: Boolean = false) {
 fun Context.copyToClipboard(label: String, text: String) {
     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
-    toast("Скопировано в буфер обмена")
+    toast(getString(R.string.copy_done))
+}
+
+fun Context.familyErrorMessage(error: String): String = when (error.substringAfterLast(':').trim()) {
+    "parent_limit_reached" -> getString(R.string.family_error_parent_limit)
+    "child_cannot_be_parent" -> getString(R.string.family_error_child_parent)
+    "cannot_link_self" -> getString(R.string.family_error_self)
+    "invalid_or_expired_pairing_code" -> getString(R.string.family_error_expired)
+    "child_account_not_found" -> getString(R.string.family_error_child_missing)
+    else -> error
 }
 
 fun View.visible() { visibility = View.VISIBLE }
@@ -29,12 +39,33 @@ fun WordDto.toEntity(): WordEntity = WordEntity(
     nl = nl,
     en = en,
     ru = ru,
+    de = de,
+    fr = fr,
+    es = es,
+    ita = ita,
+    pt = pt,
+    pl = pl,
+    uk = uk,
     exNl = exNl,
     exEn = exEn,
     exRu = exRu,
+    exDe = exDe,
+    exFr = exFr,
+    exEs = exEs,
+    exIt = exIt,
+    exPt = exPt,
+    exPl = exPl,
+    exUk = exUk,
     audioNl = audioNl,
     audioEn = audioEn,
     audioRu = audioRu,
+    audioDe = audioDe,
+    audioFr = audioFr,
+    audioEs = audioEs,
+    audioIt = audioIt,
+    audioPt = audioPt,
+    audioPl = audioPl,
+    audioUk = audioUk,
     difficult = difficult,
     status = status
 )
@@ -46,12 +77,33 @@ fun WordEntity.toDto(): WordDto = WordDto(
     nl = nl,
     en = en,
     ru = ru,
+    de = de,
+    fr = fr,
+    es = es,
+    ita = ita,
+    pt = pt,
+    pl = pl,
+    uk = uk,
     exNl = exNl,
     exEn = exEn,
     exRu = exRu,
+    exDe = exDe,
+    exFr = exFr,
+    exEs = exEs,
+    exIt = exIt,
+    exPt = exPt,
+    exPl = exPl,
+    exUk = exUk,
     audioNl = audioNl,
     audioEn = audioEn,
     audioRu = audioRu,
+    audioDe = audioDe,
+    audioFr = audioFr,
+    audioEs = audioEs,
+    audioIt = audioIt,
+    audioPt = audioPt,
+    audioPl = audioPl,
+    audioUk = audioUk,
     difficult = difficult,
     status = status
 )
@@ -60,6 +112,13 @@ fun WordDto.getWordByLang(lang: String): String? = when (lang) {
     "nl" -> nl
     "en" -> en
     "ru" -> ru
+    "de" -> de
+    "fr" -> fr
+    "es" -> es
+    "it" -> ita
+    "pt" -> pt
+    "pl" -> pl
+    "uk" -> uk
     else -> nl ?: en ?: ru
 }
 
@@ -67,6 +126,13 @@ fun WordDto.getExampleByLang(lang: String): String? = when (lang) {
     "nl" -> exNl
     "en" -> exEn
     "ru" -> exRu
+    "de" -> exDe
+    "fr" -> exFr
+    "es" -> exEs
+    "it" -> exIt
+    "pt" -> exPt
+    "pl" -> exPl
+    "uk" -> exUk
     else -> null
 }
 
@@ -74,6 +140,13 @@ fun WordDto.getAudioByLang(lang: String): String? = when (lang) {
     "nl" -> audioNl
     "en" -> audioEn
     "ru" -> audioRu
+    "de" -> audioDe
+    "fr" -> audioFr
+    "es" -> audioEs
+    "it" -> audioIt
+    "pt" -> audioPt
+    "pl" -> audioPl
+    "uk" -> audioUk
     else -> null
 }
 

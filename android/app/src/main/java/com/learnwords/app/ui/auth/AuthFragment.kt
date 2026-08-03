@@ -9,6 +9,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.learnwords.app.R
+import com.learnwords.app.MainActivity
 import com.learnwords.app.databinding.FragmentAuthBinding
 import com.learnwords.app.utils.gone
 import com.learnwords.app.utils.toast
@@ -62,7 +63,13 @@ class AuthFragment : Fragment() {
                 }
 
                 if (state.isLoggedIn) {
-                    findNavController().navigate(R.id.action_authFragment_to_lessonsFragment)
+                    (activity as? MainActivity)?.syncChildLearningReminder(state.accountType)
+                    val action = if (state.needsAccountType) {
+                        R.id.action_authFragment_to_accountTypeFragment
+                    } else {
+                        R.id.action_authFragment_to_lessonsFragment
+                    }
+                    findNavController().navigate(action)
                 }
             }
         }

@@ -21,4 +21,10 @@
         android:icon="@android:drawable/ic_menu_preferences"
         android:title="@string/nav_settings" />
 
+    <item
+        android:id="@+id/parentDashboardFragment"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="@string/nav_parent"
+        android:visible="false" />
+
 </menu>

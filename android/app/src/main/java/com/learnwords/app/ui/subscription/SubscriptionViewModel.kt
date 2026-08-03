@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.learnwords.app.LearnWordsApp
+import com.learnwords.app.R
 import com.learnwords.app.billing.BillingConfig
 import com.learnwords.app.billing.BillingManager
 import com.learnwords.app.billing.BillingState
@@ -50,6 +51,7 @@ data class SubscriptionUiState(
 class SubscriptionViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repo = LearnWordsApp.instance.repository
+    private val appContext = getApplication<LearnWordsApp>()
     private val billingManager = BillingManager(app.applicationContext)
 
     private val _uiState = MutableStateFlow(SubscriptionUiState())
@@ -104,17 +106,17 @@ class SubscriptionViewModel(app: Application) : AndroidViewModel(app) {
             is NetworkResult.Success -> {
                 val sub = result.data
                 val statusText = when (sub.status) {
-                    "trial"  -> "Пробный период"
-                    "active" -> "Активная подписка"
-                    else     -> "Нет подписки"
+                    "trial"  -> appContext.getString(R.string.trial_period)
+                    "active" -> appContext.getString(R.string.active_subscription)
+                    else     -> appContext.getString(R.string.no_subscription)
                 }
                 val expiryText = when {
                     sub.status == "trial" && sub.trialEndsAt != null -> {
                         val d = sub.daysRemaining ?: 0
-                        "Истекает через $d дн. (${sdf.format(Date(sub.trialEndsAt))})"
+                        appContext.getString(R.string.expires_in_days, d, sdf.format(Date(sub.trialEndsAt)))
                     }
                     sub.currentPeriodEndsAt != null ->
-                        "Следующее списание: ${sdf.format(Date(sub.currentPeriodEndsAt))}"
+                        appContext.getString(R.string.next_billing, sdf.format(Date(sub.currentPeriodEndsAt)))
                     else -> ""
                 }
                 _uiState.value = _uiState.value.copy(
@@ -138,8 +140,8 @@ class SubscriptionViewModel(app: Application) : AndroidViewModel(app) {
             PlanUiModel(
                 productId = details.productId,
                 title = when (details.productId) {
-                    BillingConfig.SUBSCRIPTION_MONTHLY_ID -> "Ежемесячная"
-                    BillingConfig.SUBSCRIPTION_YEARLY_ID  -> "Годовая"
+                    BillingConfig.SUBSCRIPTION_MONTHLY_ID -> appContext.getString(R.string.monthly)
+                    BillingConfig.SUBSCRIPTION_YEARLY_ID  -> appContext.getString(R.string.yearly)
                     else -> details.title
                 },
                 priceString = billingManager.getPriceString(details),
@@ -157,7 +159,7 @@ class SubscriptionViewModel(app: Application) : AndroidViewModel(app) {
         val result = billingManager.launchBillingFlow(activity, plan.productDetails)
         when (result) {
             is PurchaseResult.Error -> _uiState.value = _uiState.value.copy(
-                error = "Ошибка покупки: ${result.message}"
+                error = appContext.getString(R.string.purchase_error, result.message)
             )
             PurchaseResult.Cancelled -> { /* пользователь закрыл диалог — ничего не делаем */ }
             else -> { /* Pending — ждём callback в purchaseListener */ }
@@ -183,12 +185,12 @@ class SubscriptionViewModel(app: Application) : AndroidViewModel(app) {
                         isVerifying = false,
                         purchaseSuccess = true,
                         isServerActive = true,
-                        serverStatusText = "Подписка активна"
+                        serverStatusText = appContext.getString(R.string.subscription_active)
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isVerifying = false,
-                        error = "Ошибка верификации: ${result.data.error}"
+                        error = appContext.getString(R.string.verification_error, result.data.error ?: "")
                     )
                 }
             }
@@ -198,7 +200,7 @@ class SubscriptionViewModel(app: Application) : AndroidViewModel(app) {
                 _uiState.value = _uiState.value.copy(
                     isVerifying = false,
                     purchaseSuccess = true,
-                    error = "Покупка прошла, но синхронизация с сервером не удалась. Повторите через 'Обновить'."
+                    error = appContext.getString(R.string.purchase_sync_failed)
                 )
             }
             else -> { _uiState.value = _uiState.value.copy(isVerifying = false) }

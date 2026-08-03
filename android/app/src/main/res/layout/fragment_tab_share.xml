@@ -13,7 +13,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Создать ссылку"
+            android:text="@string/create_link"
             android:textSize="16sp"
             android:textStyle="bold" />
 
@@ -22,7 +22,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Выберите уроки"
+            android:text="@string/select_lessons"
             android:textColor="@color/colorTextSecondary"
             android:textSize="13sp" />
 
@@ -38,7 +38,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Заголовок (необязательно)">
+            android:hint="@string/hint_share_title">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_title"
@@ -51,7 +51,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Создать ссылку" />
+            android:text="@string/create_link" />
 
         <ProgressBar
             android:id="@+id/progress_bar"
@@ -74,12 +74,12 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginVertical="20dp"
-            android:background="#EEEEEE" />
+            android:background="@color/colorDivider" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Импорт по токену"
+            android:text="@string/import_by_token"
             android:textSize="16sp"
             android:textStyle="bold" />
 
@@ -88,7 +88,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Токен или ссылка">
+            android:hint="@string/hint_token_or_link">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_token"
@@ -102,7 +102,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Импортировать" />
+            android:text="@string/import_action" />
 
     </LinearLayout>
 </ScrollView>

@@ -37,17 +37,17 @@
         <ImageButton android:id="@+id/btn_up" android:layout_width="36dp" android:layout_height="36dp"
             android:src="@android:drawable/arrow_up_float"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Вверх" />
+            android:contentDescription="@string/move_up" />
 
         <ImageButton android:id="@+id/btn_down" android:layout_width="36dp" android:layout_height="36dp"
             android:src="@android:drawable/arrow_down_float"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Вниз" />
+            android:contentDescription="@string/move_down" />
 
         <ImageButton android:id="@+id/btn_remove" android:layout_width="36dp" android:layout_height="36dp"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Удалить" />
+            android:contentDescription="@string/delete" />
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

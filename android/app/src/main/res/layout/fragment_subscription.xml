@@ -11,7 +11,7 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:title="Подписка" />
+            android:title="@string/subscription_title" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -34,7 +34,7 @@
                         android:orientation="vertical" android:padding="20dp" android:gravity="center">
 
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Статус подписки" android:textSize="13sp"
+                            android:text="@string/subscription_status" android:textSize="13sp"
                             android:textColor="@android:color/white" />
 
                         <TextView android:id="@+id/tv_status"
@@ -67,7 +67,7 @@
                 <!-- Верификация -->
                 <TextView android:id="@+id/tv_verifying"
                     android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:text="Активируем подписку…"
+                    android:text="@string/activating_subscription"
                     android:textSize="14sp" android:textColor="@color/colorPrimary"
                     android:gravity="center" android:padding="12dp"
                     android:visibility="gone" />
@@ -85,21 +85,21 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     app:cardCornerRadius="10dp"
-                    app:cardBackgroundColor="#E8F5E9"
+                    app:cardBackgroundColor="@color/colorSuccessBackground"
                     android:visibility="gone">
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="vertical" android:padding="16dp">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="✓ Google Play подписка активна"
+                            android:text="@string/google_play_active"
                             android:textSize="15sp" android:textStyle="bold"
-                            android:textColor="#1B5E20" />
+                            android:textColor="@color/colorSuccessDark" />
                         <TextView android:id="@+id/tv_active_product_id"
                             android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:textSize="12sp" android:textColor="#4CAF50"
+                            android:textSize="12sp" android:textColor="@color/colorSuccessMedium"
                             android:layout_marginTop="4dp" />
                         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:text="Управляйте подпиской в Google Play → Подписки"
-                            android:textSize="12sp" android:textColor="#757575"
+                            android:text="@string/manage_google_play"
+                            android:textSize="12sp" android:textColor="@color/colorTextSecondary"
                             android:layout_marginTop="8dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -116,7 +116,7 @@
                         android:orientation="vertical" android:padding="16dp">
 
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Выберите план" android:textSize="17sp"
+                            android:text="@string/choose_plan" android:textSize="17sp"
                             android:textStyle="bold" android:layout_marginBottom="12dp" />
 
                         <!-- Планы добавляются программно из SubscriptionFragment -->
@@ -128,7 +128,7 @@
 
                         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
-                            android:text="Подписка оформляется через Google Play. Отменить можно в любое время."
+                            android:text="@string/subscription_google_note"
                             android:textSize="11sp" android:textColor="@color/colorTextSecondary"
                             android:gravity="center" />
                     </LinearLayout>
@@ -137,7 +137,7 @@
                 <!-- Заглушка если планы не загружены -->
                 <TextView android:id="@+id/tv_no_plans"
                     android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:text="Планы подписки недоступны.\nУбедитесь, что приложение опубликовано в Google Play\nи продукты настроены в консоли."
+                    android:text="@string/plans_unavailable"
                     android:textSize="13sp" android:textColor="@color/colorTextSecondary"
                     android:gravity="center" android:padding="16dp"
                     android:visibility="gone" />
@@ -145,7 +145,7 @@
                 <!-- Нижний текст -->
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="Нет подключения к интернету? Статус обновится при следующем запуске."
+                    android:text="@string/offline_subscription_note"
                     android:textSize="12sp" android:textColor="@color/colorTextSecondary"
                     android:gravity="center" />
 

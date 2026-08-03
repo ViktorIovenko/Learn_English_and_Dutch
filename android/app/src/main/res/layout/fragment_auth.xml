@@ -26,14 +26,14 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="32dp"
-            android:text="Войдите в аккаунт"
+            android:text="@string/login_subtitle"
             android:textSize="16sp"
             android:textColor="@color/colorTextSecondary" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="URL сервера"
+            android:hint="@string/hint_server_url"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_server_url"
@@ -60,7 +60,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Пароль (необязательно)"
+            android:hint="@string/hint_password_optional"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             app:passwordToggleEnabled="true">
             <com.google.android.material.textfield.TextInputEditText
@@ -75,14 +75,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Войти" />
+            android:text="@string/btn_login" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_offline"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Войти без сервера"
+            android:text="@string/btn_offline"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
         <ProgressBar

@@ -3,8 +3,7 @@ package com.learnwords.app.ui.upload
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.learnwords.app.LearnWordsApp
-import com.learnwords.app.data.ai.OllamaConfig
-import com.learnwords.app.data.ai.OllamaStatus
+import com.learnwords.app.R
 import com.learnwords.app.data.api.WordDto
 import com.learnwords.app.utils.NetworkResult
 import kotlinx.coroutines.flow.*
@@ -21,57 +20,26 @@ data class UploadUiState(
     val dbQuery: String = "",
     val shareLessons: List<com.learnwords.app.data.api.LessonDto> = emptyList(),
     val shareUrl: String? = null,
-    val ollamaStatus: String? = null
+    val duplicates: List<WordDto> = emptyList()
 )
 
 class UploadViewModel : ViewModel() {
 
     private val repo = LearnWordsApp.instance.repository
     private val prefs = LearnWordsApp.instance.preferencesManager
+    private val app = LearnWordsApp.instance
 
     private val _uiState = MutableStateFlow(UploadUiState())
     val uiState: StateFlow<UploadUiState> = _uiState
 
     val serverUrl = prefs.serverUrl
 
-    val ollamaUrl: StateFlow<String> = prefs.ollamaUrl
-        .stateIn(viewModelScope, SharingStarted.Eagerly, OllamaConfig.DEFAULT_URL)
+    // ─── Manual word entry (облачная генерация через AI Platform) ───────────
 
-    val ollamaModel: StateFlow<String> = prefs.ollamaModel
-        .stateIn(viewModelScope, SharingStarted.Eagerly, OllamaConfig.DEFAULT_MODEL)
-
-    // ─── Ollama settings ─────────────────────────────────────────────────────
-
-    fun saveOllamaSettings(url: String, model: String) {
-        viewModelScope.launch {
-            prefs.saveOllamaUrl(url.trim())
-            prefs.saveOllamaModel(model.trim().ifBlank { OllamaConfig.DEFAULT_MODEL })
-        }
-    }
-
-    fun checkOllamaConnection() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, ollamaStatus = null)
-            val status = repo.checkOllamaConnection()
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                ollamaStatus = when (status) {
-                    is OllamaStatus.Available -> {
-                        val models = status.models.take(3).joinToString(", ").ifBlank { "нет моделей" }
-                        "Доступна. Модели: $models"
-                    }
-                    is OllamaStatus.Error -> "Ошибка: ${status.message}"
-                }
-            )
-        }
-    }
-
-    // ─── Manual word entry ───────────────────────────────────────────────────
-
-    fun translateWord(word: String, fromLang: String, toLangs: List<String>) {
+    fun translateWord(word: String, fromLang: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            when (val result = repo.translateWord(word, fromLang, toLangs)) {
+            when (val result = repo.translateWord(word, fromLang)) {
                 is NetworkResult.Success -> {
                     val current = _uiState.value.generatedWords.toMutableList()
                     current.add(result.data)
@@ -89,16 +57,16 @@ class UploadViewModel : ViewModel() {
         }
     }
 
-    // ─── Generate by topic ───────────────────────────────────────────────────
+    // ─── Generate by topic (облачная генерация через AI Platform) ───────────
 
-    fun generateByTopic(topic: String, level: String, count: Int, languages: List<String>) {
+    fun generateByTopic(topic: String, level: String, count: Int) {
         if (topic.isBlank()) {
-            _uiState.value = _uiState.value.copy(error = "Введите тему")
+            _uiState.value = _uiState.value.copy(error = app.getString(R.string.enter_topic))
             return
         }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null, generatedWords = emptyList())
-            when (val result = repo.generateByTopic(topic, level, count, languages)) {
+            when (val result = repo.generateByTopic(topic, level, count)) {
                 is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     generatedWords = result.data
@@ -116,11 +84,11 @@ class UploadViewModel : ViewModel() {
 
     fun importWords(lesson: String, words: List<Map<String, String?>>) {
         if (lesson.isBlank()) {
-            _uiState.value = _uiState.value.copy(error = "Введите название урока")
+            _uiState.value = _uiState.value.copy(error = app.getString(R.string.enter_lesson_title))
             return
         }
         if (words.isEmpty()) {
-            _uiState.value = _uiState.value.copy(error = "Нет слов для импорта")
+            _uiState.value = _uiState.value.copy(error = app.getString(R.string.no_words_to_import))
             return
         }
         viewModelScope.launch {
@@ -128,7 +96,7 @@ class UploadViewModel : ViewModel() {
             when (val result = repo.importWords(lesson, words)) {
                 is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    success = "Импортировано: ${result.data.imported}, пропущено: ${result.data.skipped}",
+                    success = app.getString(R.string.import_result, result.data.imported, result.data.skipped),
                     generatedWords = emptyList()
                 )
                 is NetworkResult.Error -> _uiState.value = _uiState.value.copy(
@@ -144,7 +112,13 @@ class UploadViewModel : ViewModel() {
 
     fun searchWords(query: String, page: Int = 1) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, dbQuery = query, dbPage = page)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                error = null,
+                success = null,
+                dbQuery = query,
+                dbPage = page
+            )
             when (val result = repo.getWords(query.ifBlank { null }, page, 30)) {
                 is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -167,7 +141,7 @@ class UploadViewModel : ViewModel() {
                     val state = _uiState.value
                     _uiState.value = state.copy(
                         dbWords = state.dbWords.filter { it.id != wordId },
-                        success = "Слово удалено"
+                        success = app.getString(R.string.word_deleted)
                     )
                 }
                 is NetworkResult.Error -> _uiState.value = _uiState.value.copy(error = result.message)
@@ -182,7 +156,7 @@ class UploadViewModel : ViewModel() {
             when (val result = repo.ensureAudio(wordIds)) {
                 is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    success = "Аудио создано: ${result.data.generated}, пропущено: ${result.data.skipped}"
+                    success = app.getString(R.string.audio_created, result.data.generated, result.data.skipped)
                 )
                 is NetworkResult.Error -> _uiState.value = _uiState.value.copy(
                     isLoading = false, error = result.message
@@ -227,7 +201,42 @@ class UploadViewModel : ViewModel() {
         }
     }
 
+    fun checkDuplicates() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                error = null,
+                success = null,
+                duplicates = emptyList()
+            )
+            when (val result = repo.getDuplicates()) {
+                is NetworkResult.Success -> {
+                    if (result.data.isEmpty()) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            success = app.getString(R.string.no_duplicates)
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            duplicates = result.data
+                        )
+                    }
+                }
+                is NetworkResult.Error -> _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = result.message
+                )
+                else -> {}
+            }
+        }
+    }
+
+    fun clearDuplicates() {
+        _uiState.value = _uiState.value.copy(duplicates = emptyList())
+    }
+
     fun clearMessages() {
-        _uiState.value = _uiState.value.copy(error = null, success = null, ollamaStatus = null)
+        _uiState.value = _uiState.value.copy(error = null, success = null)
     }
 }

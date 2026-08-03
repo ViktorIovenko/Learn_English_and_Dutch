@@ -9,7 +9,7 @@
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
-        android:title="Сложные слова"
+        android:title="@string/nav_difficult"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -35,7 +35,7 @@
         android:id="@+id/tv_empty"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Нет сложных слов"
+        android:text="@string/no_difficult_words"
         android:textSize="16sp"
         android:textColor="@color/colorTextSecondary"
         android:visibility="gone"

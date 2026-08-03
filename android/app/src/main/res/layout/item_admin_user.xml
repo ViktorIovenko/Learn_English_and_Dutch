@@ -24,8 +24,32 @@
     <!-- Имя пользователя -->
     <TextView android:id="@+id/tv_name"
         android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:textSize="13sp" android:textColor="#757575"
+        android:textSize="13sp" android:textColor="@color/colorTextSecondary"
         android:layout_marginTop="2dp" />
+
+    <TextView android:id="@+id/tv_account_type"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textSize="12sp" android:textColor="@color/colorTextSecondary" />
+
+    <LinearLayout android:id="@+id/family_relations_container"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <TextView
+        android:id="@+id/tv_tts_usage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textSize="12sp"
+        android:textColor="@color/colorTextSecondary" />
+
+    <TextView
+        android:id="@+id/tv_translation_usage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textSize="12sp"
+        android:textColor="@color/colorTextSecondary" />
 
     <!-- Кнопки -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -35,7 +59,7 @@
             android:id="@+id/btn_grant"
             android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="36dp"
-            android:text="Дать доступ"
+            android:text="@string/grant_access"
             android:textSize="12sp"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
@@ -44,11 +68,30 @@
             android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="36dp"
             android:layout_marginStart="8dp"
-            android:text="Отозвать"
+            android:text="@string/revoke_access"
             android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_reset_tts"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="@string/tts_usage_reset_short"
+            android:textSize="11sp" />
     </LinearLayout>
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_reset_translation"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:layout_marginTop="6dp"
+        android:text="@string/translation_usage_reset_short"
+        android:textSize="11sp" />
+
     <View android:layout_width="match_parent" android:layout_height="1dp"
-        android:background="#EEEEEE" android:layout_marginTop="8dp" />
+        android:background="@color/colorDivider" android:layout_marginTop="8dp" />
 
 </LinearLayout>

@@ -28,7 +28,7 @@
             android:layout_marginTop="8dp" />
 
         <View android:layout_width="match_parent" android:layout_height="1dp"
-            android:background="#EEEEEE" android:layout_marginVertical="12dp" />
+            android:background="@color/colorDivider" android:layout_marginVertical="12dp" />
 
         <TextView
             android:id="@+id/tv_word_nl"
@@ -51,7 +51,7 @@
             android:textSize="16sp" />
 
         <View android:layout_width="match_parent" android:layout_height="1dp"
-            android:background="#EEEEEE" android:layout_marginVertical="12dp" />
+            android:background="@color/colorDivider" android:layout_marginVertical="12dp" />
 
         <TextView
             android:id="@+id/tv_example_nl"
@@ -59,7 +59,7 @@
             android:layout_height="wrap_content"
             android:textSize="14sp"
             android:textStyle="italic"
-            android:textColor="#555555"
+            android:textColor="@color/colorTextMedium"
             android:layout_marginBottom="4dp" />
 
         <TextView
@@ -68,7 +68,7 @@
             android:layout_height="wrap_content"
             android:textSize="14sp"
             android:textStyle="italic"
-            android:textColor="#555555"
+            android:textColor="@color/colorTextMedium"
             android:layout_marginBottom="4dp" />
 
         <TextView
@@ -77,7 +77,7 @@
             android:layout_height="wrap_content"
             android:textSize="14sp"
             android:textStyle="italic"
-            android:textColor="#555555" />
+            android:textColor="@color/colorTextMedium" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -90,7 +90,7 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="Закрыть"
+                android:text="@string/close"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
             <com.google.android.material.button.MaterialButton
@@ -99,7 +99,7 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="Следующее →" />
+                android:text="@string/next_arrow" />
         </LinearLayout>
 
     </LinearLayout>

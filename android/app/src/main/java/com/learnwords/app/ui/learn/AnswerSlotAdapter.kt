@@ -2,7 +2,9 @@ package com.learnwords.app.ui.learn
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.learnwords.app.R
 import com.learnwords.app.databinding.ItemAnswerSlotBinding
 import kotlin.math.roundToInt
 
@@ -53,11 +55,12 @@ class AnswerSlotAdapter(
             binding.tvLetter.textSize = textSizeSp
             binding.tvLetter.text = char?.toString()?.uppercase() ?: ""
 
+            val context = binding.root.context
             val bgColor = when {
-                char == null -> 0xFFEEEEEE.toInt()
-                checkResult == CheckResult.CORRECT -> 0xFF00CC44.toInt()
-                checkResult == CheckResult.WRONG -> 0xFFCC0000.toInt()
-                else -> 0xFF3F51B5.toInt()
+                char == null -> ContextCompat.getColor(context, R.color.colorSlotEmpty)
+                checkResult == CheckResult.CORRECT -> ContextCompat.getColor(context, R.color.colorGameCorrect)
+                checkResult == CheckResult.WRONG -> ContextCompat.getColor(context, R.color.colorGameWrong)
+                else -> ContextCompat.getColor(context, R.color.colorPrimary)
             }
             binding.root.setCardBackgroundColor(bgColor)
 

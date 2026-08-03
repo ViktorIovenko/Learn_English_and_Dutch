@@ -2,9 +2,11 @@ package com.learnwords.app.ui.subscription
 
 import android.os.Bundle
 import android.view.*
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.learnwords.app.R
 import com.learnwords.app.billing.BillingState
 import com.learnwords.app.databinding.FragmentSubscriptionBinding
 import com.learnwords.app.utils.gone
@@ -40,7 +42,7 @@ class SubscriptionFragment : Fragment() {
         binding.swipeRefresh.isRefreshing = state.isLoading || state.isVerifying
 
         // ── Статус сервера ────────────────────────────────────────────────
-        binding.tvStatus.text = state.serverStatusText.ifBlank { "Загрузка…" }
+        binding.tvStatus.text = state.serverStatusText.ifBlank { getString(R.string.loading) }
         binding.tvExpiry.text = state.serverExpiryText
         binding.tvExpiry.visibility = if (state.serverExpiryText.isNotEmpty()) View.VISIBLE else View.GONE
 
@@ -49,7 +51,7 @@ class SubscriptionFragment : Fragment() {
             binding.progressTrial.max = 14
             binding.progressTrial.progress = (14 - trialDays).coerceIn(0, 14)
             binding.progressTrial.visible()
-            binding.tvTrialDays.text = "Осталось $trialDays дней пробного периода"
+            binding.tvTrialDays.text = getString(R.string.trial_days_left, trialDays)
             binding.tvTrialDays.visible()
         } else {
             binding.progressTrial.gone()
@@ -57,16 +59,19 @@ class SubscriptionFragment : Fragment() {
         }
 
         binding.cardStatus.setCardBackgroundColor(
-            if (state.isServerActive || state.isGooglePlayActive)
-                0xFF1B5E20.toInt()
-            else
-                0xFF880000.toInt()
+            ContextCompat.getColor(
+                requireContext(),
+                if (state.isServerActive || state.isGooglePlayActive)
+                    R.color.colorBannerActive
+                else
+                    R.color.colorBannerInactive
+            )
         )
 
         // ── Верификация ────────────────────────────────────────────────────
         if (state.isVerifying) {
             binding.tvVerifying.visible()
-            binding.tvVerifying.text = "Активируем подписку…"
+            binding.tvVerifying.text = getString(R.string.activating_subscription)
         } else {
             binding.tvVerifying.gone()
         }
@@ -74,19 +79,19 @@ class SubscriptionFragment : Fragment() {
         // ── Google Play статус ─────────────────────────────────────────────
         when (val billing = state.billingState) {
             is BillingState.Loading -> {
-                binding.tvBillingStatus.text = "Подключение к Google Play…"
+                binding.tvBillingStatus.text = getString(R.string.google_play_connecting)
                 binding.cardPlans.gone()
             }
             is BillingState.Active -> {
-                binding.tvBillingStatus.text = "✓ Подписка активна в Google Play"
-                binding.tvBillingStatus.setTextColor(0xFF2E7D32.toInt())
+                binding.tvBillingStatus.text = getString(R.string.google_play_subscription_active)
+                binding.tvBillingStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorCorrect))
                 binding.cardPlans.gone()
                 binding.cardActivePlay.visible()
-                binding.tvActiveProductId.text = "Продукт: ${billing.productId}"
+                binding.tvActiveProductId.text = getString(R.string.product_id, billing.productId)
             }
             is BillingState.NotSubscribed -> {
-                binding.tvBillingStatus.text = "Нет активной подписки Google Play"
-                binding.tvBillingStatus.setTextColor(0xFF757575.toInt())
+                binding.tvBillingStatus.text = getString(R.string.no_google_play_subscription)
+                binding.tvBillingStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorTextSecondary))
                 binding.cardActivePlay.gone()
 
                 if (state.availablePlans.isNotEmpty()) {
@@ -99,7 +104,7 @@ class SubscriptionFragment : Fragment() {
             }
             is BillingState.Error -> {
                 binding.tvBillingStatus.text = "Google Play: ${billing.message}"
-                binding.tvBillingStatus.setTextColor(0xFFB00020.toInt())
+                binding.tvBillingStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorError))
                 binding.cardPlans.gone()
             }
         }
@@ -110,7 +115,7 @@ class SubscriptionFragment : Fragment() {
             viewModel.clearMessages()
         }
         if (state.purchaseSuccess) {
-            requireContext().toast("Подписка успешно оформлена!", long = true)
+            requireContext().toast(getString(R.string.subscription_success), long = true)
             viewModel.clearMessages()
         }
     }

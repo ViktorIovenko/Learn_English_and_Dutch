@@ -8,6 +8,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.learnwords.app.R
 import com.learnwords.app.data.api.LessonDto
 import com.learnwords.app.databinding.FragmentTabShareBinding
 import com.learnwords.app.utils.toast
@@ -35,7 +36,7 @@ class ShareTabFragment : Fragment() {
             val lessons = selectedLessons.toList()
             val title = binding.etTitle.text.toString().trim().ifBlank { null }
             if (lessons.isEmpty()) {
-                requireContext().toast("Выберите уроки")
+                requireContext().toast(getString(R.string.select_lessons))
                 return@setOnClickListener
             }
             viewModel.createShare(lessons, title)
@@ -44,11 +45,11 @@ class ShareTabFragment : Fragment() {
         binding.btnImportShare.setOnClickListener {
             val token = binding.etToken.text.toString().trim()
             if (token.isBlank()) {
-                requireContext().toast("Введите токен")
+                requireContext().toast(getString(R.string.enter_token))
                 return@setOnClickListener
             }
             // Navigate to share import screen or import directly
-            requireContext().toast("Введите токен: $token")
+            requireContext().toast(getString(R.string.token_value, token))
         }
 
         viewModel.loadShareLessons()
@@ -91,7 +92,9 @@ class ShareTabFragment : Fragment() {
                     if (lesson.wordCount > 0) {
                         append(" (")
                         append(lesson.wordCount)
-                        append(" слов)")
+                        append(" ")
+                        append(getString(R.string.words_label))
+                        append(")")
                     }
                 }
                 textSize = 16f
@@ -114,9 +117,9 @@ class ShareTabFragment : Fragment() {
     private fun updateSelectedCount() {
         val binding = _binding ?: return
         binding.tvSelectedLessons.text = when {
-            renderedLessonNames.isEmpty() -> "Уроки не найдены"
-            selectedLessons.isEmpty() -> "Выберите уроки"
-            else -> "Выбрано: ${selectedLessons.size}"
+            renderedLessonNames.isEmpty() -> getString(R.string.no_lessons)
+            selectedLessons.isEmpty() -> getString(R.string.select_lessons)
+            else -> getString(R.string.selected_count, selectedLessons.size)
         }
         binding.btnCreateShare.isEnabled = !isLoading && selectedLessons.isNotEmpty()
     }

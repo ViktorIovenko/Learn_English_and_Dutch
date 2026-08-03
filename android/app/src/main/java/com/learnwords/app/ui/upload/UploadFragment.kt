@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.tabs.TabLayoutMediator
+import com.learnwords.app.R
 import com.learnwords.app.databinding.FragmentUploadBinding
 import com.learnwords.app.utils.copyToClipboard
 import com.learnwords.app.utils.toast
@@ -19,7 +20,12 @@ class UploadFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: UploadViewModel by viewModels()
 
-    private val tabTitles = listOf("Добавить", "По теме", "База слов", "Поделиться")
+    private val tabTitleRes = listOf(
+        R.string.add_tab,
+        R.string.topic_tab,
+        R.string.word_database_tab,
+        R.string.share_tab
+    )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentUploadBinding.inflate(inflater, container, false)
@@ -33,7 +39,7 @@ class UploadFragment : Fragment() {
         binding.viewPager.adapter = pagerAdapter
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
-            tab.text = tabTitles[position]
+            tab.text = getString(tabTitleRes[position])
         }.attach()
 
         lifecycleScope.launch {
@@ -48,7 +54,7 @@ class UploadFragment : Fragment() {
                 }
                 state.shareUrl?.let { url ->
                     requireContext().copyToClipboard("Share URL", url)
-                    requireContext().toast("Ссылка скопирована: $url", long = true)
+                    requireContext().toast(getString(R.string.link_copied, url), long = true)
                 }
             }
         }

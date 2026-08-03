@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:title="@string/parent_dashboard_title" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <LinearLayout
+                android:id="@+id/content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/parent_dashboard_note"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardCornerRadius="12dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/parent_select_child" android:textStyle="bold" />
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rv_children"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:clipToPadding="false"
+                            android:orientation="horizontal"
+                            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/parent_period" android:textStyle="bold" android:layout_marginTop="8dp" />
+                        <Spinner android:id="@+id/spinner_period" android:layout_width="match_parent"
+                            android:layout_height="wrap_content" android:layout_marginTop="4dp" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_connect_child" android:layout_width="match_parent"
+                            android:layout_height="wrap_content" android:layout_marginTop="10dp"
+                            android:text="@string/parent_connect_child" style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardCornerRadius="12dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/parent_priority_lesson"
+                            android:textStyle="bold" />
+                        <Spinner
+                            android:id="@+id/spinner_priority_lesson"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_save_priority"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/parent_priority_save" />
+                        <TextView
+                            android:id="@+id/tv_priority_status"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@color/colorTextSecondary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="2"
+                    android:layout_marginTop="8dp">
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/parent_today_progress" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_today_progress" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/parent_studied_today" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_studied_today" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/parent_time_today" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_time_today" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/parent_words" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_words" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/parent_lessons" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_lessons" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/parent_learning_days" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_learning_days" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/learning_streak_title" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_learning_streak" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/parent_active_lessons" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_active_lessons" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/parent_correct_answers" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_correct" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" app:cardCornerRadius="10dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/parent_success_rate" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/><TextView android:id="@+id/value_success" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="22sp"/></LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </GridLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" app:cardCornerRadius="12dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:padding="14dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/parent_activity_chart" android:textStyle="bold" android:textSize="17sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/parent_chart_legend" android:textColor="@color/colorTextSecondary" android:textSize="12sp"/>
+                        <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:fillViewport="true" android:scrollbars="horizontal">
+                            <com.learnwords.app.ui.parent.LearningChartView
+                                android:id="@+id/learning_chart"
+                                android:layout_width="wrap_content"
+                                android:layout_height="210dp" />
+                        </HorizontalScrollView>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" app:cardCornerRadius="12dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:padding="14dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="@string/parent_latest_progress" android:textStyle="bold" android:textSize="17sp"/>
+                        <TextView android:id="@+id/tv_latest_progress" android:layout_width="match_parent"
+                            android:layout_height="wrap_content" android:layout_marginTop="8dp"/>
+                        <TextView android:id="@+id/tv_last_activity" android:layout_width="match_parent"
+                            android:layout_height="wrap_content" android:layout_marginTop="5dp"
+                            android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardCornerRadius="12dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/parent_priority_history"
+                            android:textSize="17sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tv_priority_history"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:textColor="@color/colorTextSecondary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </ScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

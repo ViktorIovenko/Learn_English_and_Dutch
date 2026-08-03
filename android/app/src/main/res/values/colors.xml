@@ -13,4 +13,50 @@
     <color name="colorTextSecondary">#757575</color>
     <color name="colorCorrect">#2E7D32</color>
     <color name="colorWrong">#C62828</color>
+
+    <!-- Text shades (adapt in values-night) -->
+    <color name="colorTextTertiary">#888888</color>
+    <color name="colorTextHint">#AAAAAA</color>
+    <color name="colorTextMedium">#555555</color>
+
+    <!-- Surfaces / dividers (adapt in values-night) -->
+    <color name="colorDivider">#EEEEEE</color>
+    <color name="colorPanelBackground">#F5F5F5</color>
+    <color name="colorSlotEmpty">#EEEEEE</color>
+
+    <!-- Info banner (upload screens: "cloud AI" notice) -->
+    <color name="colorInfoBackground">#F0F4FF</color>
+    <color name="colorInfoText">#1A237E</color>
+
+    <!-- Success / subscription card -->
+    <color name="colorSuccessBackground">#E8F5E9</color>
+    <color name="colorSuccessDark">#1B5E20</color>
+    <color name="colorSuccessMedium">#4CAF50</color>
+
+    <!-- Account type screen -->
+    <color name="colorAccountTitle">#172554</color>
+    <color name="colorChildAccent">#FB923C</color>
+    <color name="colorParentAccent">#60A5FA</color>
+
+    <!-- Learn screen: language chip selector -->
+    <color name="colorChipActive">#D0D0D0</color>
+    <color name="colorChipInactive">#E9E9E9</color>
+
+    <!-- Parent dashboard chart -->
+    <color name="colorChartAxis">#CBD5E1</color>
+    <color name="colorChartAxisText">#64748B</color>
+
+    <!-- Admin: subscription status badges -->
+    <color name="colorStatusActive">#1565C0</color>
+    <color name="colorStatusTrial">#E65100</color>
+
+    <!-- Subscription: solid status banner (stays the same in both themes) -->
+    <color name="colorBannerActive">#1B5E20</color>
+    <color name="colorBannerInactive">#880000</color>
+
+    <!-- Learn screen: letter-scramble game feedback -->
+    <color name="colorGameCorrect">#00CC44</color>
+    <color name="colorGameWrong">#CC0000</color>
+    <color name="colorGameCorrectOverlay">#2200CC44</color>
+    <color name="colorGameWrongOverlay">#22CC0000</color>
 </resources>

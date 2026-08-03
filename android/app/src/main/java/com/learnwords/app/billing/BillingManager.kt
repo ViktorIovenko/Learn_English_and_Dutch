@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import com.android.billingclient.api.*
+import com.learnwords.app.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -58,13 +59,13 @@ class BillingManager(private val context: Context) {
                     onReady()
                 } else {
                     Log.w(TAG, "Billing setup failed: ${result.debugMessage}")
-                    _billingState.value = BillingState.Error("Google Play недоступен: ${result.debugMessage}")
+                    _billingState.value = BillingState.Error(context.getString(R.string.google_play_unavailable, result.debugMessage))
                 }
             }
 
             override fun onBillingServiceDisconnected() {
                 Log.w(TAG, "Billing service disconnected")
-                _billingState.value = BillingState.Error("Соединение с Google Play прервано")
+                _billingState.value = BillingState.Error(context.getString(R.string.google_play_disconnected))
             }
         })
     }
@@ -155,12 +156,12 @@ class BillingManager(private val context: Context) {
         offerToken: String? = null
     ): PurchaseResult {
         val client = billingClient
-            ?: return PurchaseResult.Error("Billing client не инициализирован")
+            ?: return PurchaseResult.Error(context.getString(R.string.billing_client_not_initialized))
 
         // Берём первый доступный offer token если не передан явно
         val token = offerToken
             ?: productDetails.subscriptionOfferDetails?.firstOrNull()?.offerToken
-            ?: return PurchaseResult.Error("Нет доступных предложений для этого продукта")
+            ?: return PurchaseResult.Error(context.getString(R.string.no_product_offers))
 
         val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
             .setProductDetails(productDetails)
@@ -263,17 +264,17 @@ class BillingManager(private val context: Context) {
         }
         return freeTrial?.let {
             val period = it.billingPeriod  // ISO 8601: "P7D", "P1M", etc.
-            parsePeriodToRussian(period) + " бесплатно"
+            parsePeriod(period) + " " + context.getString(R.string.free)
         }
     }
 
-    private fun parsePeriodToRussian(iso8601: String): String {
+    private fun parsePeriod(iso8601: String): String {
         return when {
-            iso8601.contains("7D")  -> "7 дней"
-            iso8601.contains("14D") -> "14 дней"
-            iso8601.contains("30D") -> "30 дней"
-            iso8601.contains("1M")  -> "1 месяц"
-            iso8601.contains("3M")  -> "3 месяца"
+            iso8601.contains("7D")  -> context.getString(R.string.period_7_days)
+            iso8601.contains("14D") -> context.getString(R.string.period_14_days)
+            iso8601.contains("30D") -> context.getString(R.string.period_30_days)
+            iso8601.contains("1M")  -> context.getString(R.string.period_1_month)
+            iso8601.contains("3M")  -> context.getString(R.string.period_3_months)
             else -> iso8601
         }
     }

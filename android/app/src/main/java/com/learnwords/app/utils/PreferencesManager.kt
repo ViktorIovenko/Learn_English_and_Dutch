@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
-import com.learnwords.app.data.ai.OllamaConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -19,11 +18,12 @@ class PreferencesManager(private val context: Context) {
         val KEY_LAST_SYNC = longPreferencesKey("last_sync_ts")
         val KEY_TIMER_SECONDS = longPreferencesKey("timer_seconds")
         val KEY_TIMER_DATE = stringPreferencesKey("timer_date")
+        val KEY_TIMER_RUNNING = booleanPreferencesKey("timer_running")
         val KEY_SELECTED_LANGS = stringPreferencesKey("selected_langs")
-        val KEY_OLLAMA_URL = stringPreferencesKey("ollama_url")
-        val KEY_OLLAMA_MODEL = stringPreferencesKey("ollama_model")
+        val KEY_UI_LANGUAGE_OVERRIDE = stringPreferencesKey("ui_language_override")
         val KEY_IS_ADMIN = booleanPreferencesKey("is_admin")
         val KEY_AUTH_METHOD = stringPreferencesKey("auth_method")
+        val KEY_CACHE_LIMIT_MB = intPreferencesKey("cache_limit_mb")
     }
 
     val userId: Flow<String> = context.dataStore.data.map { prefs ->
@@ -54,16 +54,21 @@ class PreferencesManager(private val context: Context) {
         prefs[KEY_TIMER_DATE] ?: ""
     }
 
+    val timerRunning: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_TIMER_RUNNING] ?: true
+    }
+
     val selectedLangs: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[KEY_SELECTED_LANGS] ?: "nl,en,ru"
     }
 
-    val ollamaUrl: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_OLLAMA_URL] ?: OllamaConfig.DEFAULT_URL
+    val uiLanguageOverride: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_UI_LANGUAGE_OVERRIDE] ?: ""
     }
 
-    val ollamaModel: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_OLLAMA_MODEL] ?: OllamaConfig.DEFAULT_MODEL
+    val cacheLimitMb: Flow<Int> = context.dataStore.data.map { prefs ->
+        (prefs[KEY_CACHE_LIMIT_MB] ?: WordContentCache.DEFAULT_CACHE_MB)
+            .coerceIn(WordContentCache.MIN_CACHE_MB, WordContentCache.MAX_CACHE_MB)
     }
 
     suspend fun saveUserId(userId: String) {
@@ -86,10 +91,11 @@ class PreferencesManager(private val context: Context) {
         context.dataStore.edit { prefs -> prefs[KEY_LAST_SYNC] = ts }
     }
 
-    suspend fun saveTimerState(seconds: Long, date: String) {
+    suspend fun saveTimerState(seconds: Long, date: String, running: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_TIMER_SECONDS] = seconds
             prefs[KEY_TIMER_DATE] = date
+            prefs[KEY_TIMER_RUNNING] = running
         }
     }
 
@@ -97,12 +103,24 @@ class PreferencesManager(private val context: Context) {
         context.dataStore.edit { prefs -> prefs[KEY_SELECTED_LANGS] = langs }
     }
 
-    suspend fun saveOllamaUrl(url: String) {
-        context.dataStore.edit { prefs -> prefs[KEY_OLLAMA_URL] = url }
+    suspend fun saveUiLanguageOverride(languageCode: String?) {
+        context.dataStore.edit { prefs ->
+            val value = languageCode.orEmpty()
+            if (value.isBlank()) {
+                prefs.remove(KEY_UI_LANGUAGE_OVERRIDE)
+            } else {
+                prefs[KEY_UI_LANGUAGE_OVERRIDE] = value
+            }
+        }
     }
 
-    suspend fun saveOllamaModel(model: String) {
-        context.dataStore.edit { prefs -> prefs[KEY_OLLAMA_MODEL] = model }
+    suspend fun saveCacheLimitMb(value: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_CACHE_LIMIT_MB] = value.coerceIn(
+                WordContentCache.MIN_CACHE_MB,
+                WordContentCache.MAX_CACHE_MB
+            )
+        }
     }
 
     val isAdmin: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -114,6 +132,7 @@ class PreferencesManager(private val context: Context) {
     }
 
     suspend fun clearUser() {
+        ChildLearningReminder.setEnabled(context, false)
         context.dataStore.edit { prefs ->
             prefs.remove(KEY_USER_ID)
             prefs.remove(KEY_USERNAME)

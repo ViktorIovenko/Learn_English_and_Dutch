@@ -1,5 +1,6 @@
 package com.learnwords.app.data.api
 
+import android.content.res.Resources
 import com.learnwords.app.BuildConfig
 import com.learnwords.app.utils.PreferencesManager
 import com.google.gson.GsonBuilder
@@ -21,13 +22,14 @@ class ApiClient(private val preferencesManager: PreferencesManager) {
         setCookiePolicy(CookiePolicy.ACCEPT_ALL)
     }
 
-    private val httpClient: OkHttpClient = OkHttpClient.Builder()
+    internal val httpClient: OkHttpClient = OkHttpClient.Builder()
         .cookieJar(JavaNetCookieJar(cookieManager))
         .addInterceptor { chain ->
             val userId = runBlocking { preferencesManager.userId.first() }
             val request = chain.request().newBuilder()
                 .addHeader("X-User-Id", userId)
                 .addHeader("X-Client", "android")
+                .addHeader("X-Device-Language", systemLanguageCode())
                 .build()
             chain.proceed(request)
         }
@@ -73,4 +75,7 @@ class ApiClient(private val preferencesManager: PreferencesManager) {
             .build()
             .create(ApiService::class.java)
     }
+
+    private fun systemLanguageCode(): String =
+        Resources.getSystem().configuration.locales[0].language
 }
