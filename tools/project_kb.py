@@ -654,7 +654,9 @@ def server_scan(host: str, key: str, mock_file: str | None=None, db_path: Path=D
         con.execute("INSERT OR REPLACE INTO database_tables(table_name,defined_in,definition_line,columns_json,indexes_json,environment) VALUES(?,?,?,?,?,?)",(name,"/app/words.db sqlite_master",None,json.dumps(split_columns(m.group(2)) if m else [],ensure_ascii=False),json.dumps(idx.get(name,[]),ensure_ascii=False),"production"))
     meta=data["meta"]
     con.execute("INSERT OR REPLACE INTO environment_snapshots(environment,git_branch,git_commit,git_dirty,project_path,captured_at,tracked_files_json,entrypoints_json,schema_hash) VALUES(?,?,?,?,?,?,?,?,?)",("production",meta.get("git_branch","unavailable"),meta.get("git_commit","unavailable"),None if meta.get("git_dirty")=="unknown" else int(meta.get("git_dirty","0")),meta.get("project_path","unknown"),NOW(),json.dumps(sorted(data["hashes"])),json.dumps(["run.py"]),schema_hash(con,"production")))
-    generate_catalog_docs(con); index_docs(con); refresh_fts(con); con.commit(); con.close()
+    if db_path==DB_PATH:
+        generate_catalog_docs(con); index_docs(con)
+    refresh_fts(con); con.commit(); con.close()
     if db_path==DB_PATH: write_snapshot(data); write_manifest()
     return data
 

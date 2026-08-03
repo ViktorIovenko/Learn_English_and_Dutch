@@ -9,7 +9,7 @@
 - local: `tools/project_kb.py`:86.
 - Колонки: `id` INTEGER PRIMARY KEY, `endpoint` TEXT, `http_method` TEXT, `android_file` TEXT, `android_symbol` TEXT, `request_model` TEXT, `response_model` TEXT, `auth_headers_json` TEXT, `backend_file` TEXT, `backend_handler` TEXT, `status` TEXT, `notes` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tests/test_project_kb.py:86` (read, local), `tools/project_kb.py:86` (migration, local), `tools/project_kb.py:418` (insert, local), `tools/project_kb.py:424` (read, local), `tools/project_kb.py:427` (update, local), `tools/project_kb.py:429` (update, local), `tools/project_kb.py:449` (delete, local), `tools/project_kb.py:467` (read, local), `tools/project_kb.py:510` (read, local), `tools/project_kb.py:526` (read, local), `tools/project_kb.py:563` (read, local), `tools/project_kb.py:578` (delete, local), `tools/project_kb.py:712` (read, local), `tools/project_kb.py:823` (read, local), `tools/project_kb.py:830` (read, local).
+- Чтение/запись/миграции: `tests/test_project_kb.py:86` (read, local), `tools/project_kb.py:86` (migration, local), `tools/project_kb.py:418` (insert, local), `tools/project_kb.py:424` (read, local), `tools/project_kb.py:427` (update, local), `tools/project_kb.py:429` (update, local), `tools/project_kb.py:449` (delete, local), `tools/project_kb.py:467` (read, local), `tools/project_kb.py:510` (read, local), `tools/project_kb.py:526` (read, local), `tools/project_kb.py:563` (read, local), `tools/project_kb.py:578` (delete, local), `tools/project_kb.py:714` (read, local), `tools/project_kb.py:825` (read, local), `tools/project_kb.py:832` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -66,7 +66,7 @@
 - local: `tools/project_kb.py`:76.
 - Колонки: `id` INTEGER PRIMARY KEY, `table_name` TEXT, `defined_in` TEXT, `definition_line` INTEGER, `columns_json` TEXT, `indexes_json` TEXT, `environment` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tests/test_project_kb.py:65` (read, local), `tools/project_kb.py:76` (migration, local), `tools/project_kb.py:372` (insert, local), `tools/project_kb.py:447` (read, local), `tools/project_kb.py:448` (delete, local), `tools/project_kb.py:491` (read, local), `tools/project_kb.py:494` (read, local), `tools/project_kb.py:554` (read, local), `tools/project_kb.py:563` (read, local), `tools/project_kb.py:577` (delete, local), `tools/project_kb.py:646` (delete, local), `tools/project_kb.py:654` (insert, local), `tools/project_kb.py:709` (read, local), `tools/project_kb.py:822` (read, local), `tools/project_kb.py:830` (read, local).
+- Чтение/запись/миграции: `tests/test_project_kb.py:65` (read, local), `tools/project_kb.py:76` (migration, local), `tools/project_kb.py:372` (insert, local), `tools/project_kb.py:447` (read, local), `tools/project_kb.py:448` (delete, local), `tools/project_kb.py:491` (read, local), `tools/project_kb.py:494` (read, local), `tools/project_kb.py:554` (read, local), `tools/project_kb.py:563` (read, local), `tools/project_kb.py:577` (delete, local), `tools/project_kb.py:646` (delete, local), `tools/project_kb.py:654` (insert, local), `tools/project_kb.py:711` (read, local), `tools/project_kb.py:824` (read, local), `tools/project_kb.py:832` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -75,7 +75,7 @@
 - local: `tools/project_kb.py`:80.
 - Колонки: `id` INTEGER PRIMARY KEY, `table_name` TEXT, `file_path` TEXT, `symbol_name` TEXT, `operation` TEXT, `line_number` INTEGER, `source_scope` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tools/project_kb.py:80` (migration, local), `tools/project_kb.py:381` (insert, local), `tools/project_kb.py:447` (read, local), `tools/project_kb.py:499` (read, local), `tools/project_kb.py:501` (read, local), `tools/project_kb.py:502` (read, local), `tools/project_kb.py:577` (delete, local), `tools/project_kb.py:815` (read, local), `tools/project_kb.py:822` (read, local).
+- Чтение/запись/миграции: `tools/project_kb.py:80` (migration, local), `tools/project_kb.py:381` (insert, local), `tools/project_kb.py:447` (read, local), `tools/project_kb.py:499` (read, local), `tools/project_kb.py:501` (read, local), `tools/project_kb.py:502` (read, local), `tools/project_kb.py:577` (delete, local), `tools/project_kb.py:817` (read, local), `tools/project_kb.py:824` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -84,7 +84,7 @@
 - local: `tools/project_kb.py`:96.
 - Колонки: `id` INTEGER PRIMARY KEY, `server_name` TEXT, `public_path` TEXT, `proxy_target` TEXT, `nginx_config_path` TEXT, `backend_service` TEXT, `notes` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tools/project_kb.py:96` (migration, local), `tools/project_kb.py:639` (delete, local), `tools/project_kb.py:645` (insert, local), `tools/project_kb.py:715` (read, local), `tools/project_kb.py:826` (read, local).
+- Чтение/запись/миграции: `tools/project_kb.py:96` (migration, local), `tools/project_kb.py:639` (delete, local), `tools/project_kb.py:645` (insert, local), `tools/project_kb.py:717` (read, local), `tools/project_kb.py:828` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -93,7 +93,7 @@
 - local: `tools/project_kb.py`:109.
 - Колонки: `id` INTEGER PRIMARY KEY, `key` TEXT UNIQUE, `title` TEXT, `content` TEXT, `source_path` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tools/project_kb.py:28` (read, local), `tools/project_kb.py:109` (migration, local), `tools/project_kb.py:123` (read, local), `tools/project_kb.py:129` (read, local), `tools/project_kb.py:131` (read, local), `tools/project_kb.py:133` (read, local), `tools/project_kb.py:135` (read, local), `tools/project_kb.py:183` (read, local), `tools/project_kb.py:468` (read, local), `tools/project_kb.py:480` (insert, local), `tools/project_kb.py:783` (read, local).
+- Чтение/запись/миграции: `tools/project_kb.py:28` (read, local), `tools/project_kb.py:109` (migration, local), `tools/project_kb.py:123` (read, local), `tools/project_kb.py:129` (read, local), `tools/project_kb.py:131` (read, local), `tools/project_kb.py:133` (read, local), `tools/project_kb.py:135` (read, local), `tools/project_kb.py:183` (read, local), `tools/project_kb.py:468` (read, local), `tools/project_kb.py:480` (insert, local), `tools/project_kb.py:785` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -102,7 +102,7 @@
 - local: `tools/project_kb.py`:100.
 - Колонки: `id` INTEGER PRIMARY KEY, `environment` TEXT, `git_branch` TEXT, `git_commit` TEXT, `git_dirty` INTEGER, `project_path` TEXT, `captured_at` TEXT, `tracked_files_json` TEXT, `entrypoints_json` TEXT, `schema_hash` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tests/test_project_kb.py:136` (read, local), `tools/project_kb.py:100` (migration, local), `tools/project_kb.py:549` (insert, local), `tools/project_kb.py:656` (insert, local), `tools/project_kb.py:702` (read, local), `tools/project_kb.py:828` (read, local), `tools/project_kb.py:830` (read, local).
+- Чтение/запись/миграции: `tests/test_project_kb.py:136` (read, local), `tools/project_kb.py:100` (migration, local), `tools/project_kb.py:549` (insert, local), `tools/project_kb.py:656` (insert, local), `tools/project_kb.py:704` (read, local), `tools/project_kb.py:830` (read, local), `tools/project_kb.py:832` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -123,7 +123,7 @@
 - local: `tools/project_kb.py`:60.
 - Колонки: `path` TEXT NOT NULL, `source_scope` TEXT NOT NULL, `language` TEXT, `layer` TEXT, `purpose` TEXT, `size_bytes` INTEGER, `sha256` TEXT, `indexed_at` TEXT, `is_generated` INTEGER NOT NULL DEFAULT 0, `is_entrypoint` INTEGER NOT NULL DEFAULT 0.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tests/test_project_kb.py:47` (delete, local), `tests/test_project_kb.py:49` (read, local), `tools/project_kb.py:60` (migration, local), `tools/project_kb.py:135` (read, local), `tools/project_kb.py:153` (read, local), `tools/project_kb.py:445` (read, local), `tools/project_kb.py:450` (insert, local), `tools/project_kb.py:465` (read, local), `tools/project_kb.py:547` (read, local), `tools/project_kb.py:548` (read, local), `tools/project_kb.py:550` (read, local), `tools/project_kb.py:563` (read, local), `tools/project_kb.py:568` (update, local), `tools/project_kb.py:570` (read, local), `tools/project_kb.py:573` (read, local), `tools/project_kb.py:574` (read, local), `tools/project_kb.py:577` (delete, local), `tools/project_kb.py:706` (read, local), `tools/project_kb.py:708` (read, local), `tools/project_kb.py:718` (update, local), `tools/project_kb.py:735` (read, local), `tools/project_kb.py:738` (read, local), `tools/project_kb.py:798` (update, local), `tools/project_kb.py:801` (read, local), `tools/project_kb.py:805` (update, local), `tools/project_kb.py:818` (read, local), `tools/project_kb.py:830` (read, local).
+- Чтение/запись/миграции: `tests/test_project_kb.py:47` (delete, local), `tests/test_project_kb.py:49` (read, local), `tools/project_kb.py:60` (migration, local), `tools/project_kb.py:135` (read, local), `tools/project_kb.py:153` (read, local), `tools/project_kb.py:445` (read, local), `tools/project_kb.py:450` (insert, local), `tools/project_kb.py:465` (read, local), `tools/project_kb.py:547` (read, local), `tools/project_kb.py:548` (read, local), `tools/project_kb.py:550` (read, local), `tools/project_kb.py:563` (read, local), `tools/project_kb.py:568` (update, local), `tools/project_kb.py:570` (read, local), `tools/project_kb.py:573` (read, local), `tools/project_kb.py:574` (read, local), `tools/project_kb.py:577` (delete, local), `tools/project_kb.py:708` (read, local), `tools/project_kb.py:710` (read, local), `tools/project_kb.py:720` (update, local), `tools/project_kb.py:737` (read, local), `tools/project_kb.py:740` (read, local), `tools/project_kb.py:800` (update, local), `tools/project_kb.py:803` (read, local), `tools/project_kb.py:807` (update, local), `tools/project_kb.py:820` (read, local), `tools/project_kb.py:832` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -186,7 +186,7 @@
 - local: `tools/project_kb.py`:238.
 - Колонки: `name` TEXT PRIMARY KEY, `enabled` INTEGER.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tests/test_project_kb.py:103` (read, local), `tools/project_kb.py:221` (migration, local), `tools/project_kb.py:222` (insert, local), `tools/project_kb.py:234` (migration, local), `tools/project_kb.py:235` (insert, local), `tools/project_kb.py:238` (migration, local), `tools/project_kb.py:239` (insert, local), `tools/project_kb.py:461` (read, local), `tools/project_kb.py:830` (read, local).
+- Чтение/запись/миграции: `tests/test_project_kb.py:103` (read, local), `tools/project_kb.py:221` (migration, local), `tools/project_kb.py:222` (insert, local), `tools/project_kb.py:234` (migration, local), `tools/project_kb.py:235` (insert, local), `tools/project_kb.py:238` (migration, local), `tools/project_kb.py:239` (insert, local), `tools/project_kb.py:461` (read, local), `tools/project_kb.py:832` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -252,7 +252,7 @@
 - local: `tools/project_kb.py`:91.
 - Колонки: `id` INTEGER PRIMARY KEY, `environment` TEXT, `service_name` TEXT, `service_type` TEXT, `working_directory` TEXT, `exec_start_redacted` TEXT, `user_name` TEXT, `group_name` TEXT, `environment_file_path` TEXT, `port` TEXT, `source_file` TEXT, `last_indexed_at` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tests/test_project_kb.py:122` (read, local), `tests/test_project_kb.py:135` (read, local), `tools/project_kb.py:91` (migration, local), `tools/project_kb.py:591` (read, local), `tools/project_kb.py:596` (read, local), `tools/project_kb.py:639` (delete, local), `tools/project_kb.py:640` (read, local), `tools/project_kb.py:642` (insert, local), `tools/project_kb.py:667` (read, local), `tools/project_kb.py:714` (read, local), `tools/project_kb.py:806` (read, local), `tools/project_kb.py:824` (read, local), `tools/project_kb.py:825` (read, local), `tools/project_kb.py:830` (read, local).
+- Чтение/запись/миграции: `tests/test_project_kb.py:122` (read, local), `tests/test_project_kb.py:135` (read, local), `tools/project_kb.py:91` (migration, local), `tools/project_kb.py:591` (read, local), `tools/project_kb.py:596` (read, local), `tools/project_kb.py:639` (delete, local), `tools/project_kb.py:640` (read, local), `tools/project_kb.py:642` (insert, local), `tools/project_kb.py:669` (read, local), `tools/project_kb.py:716` (read, local), `tools/project_kb.py:808` (read, local), `tools/project_kb.py:826` (read, local), `tools/project_kb.py:827` (read, local), `tools/project_kb.py:832` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -273,7 +273,7 @@
 - local: `tools/project_kb.py`:65.
 - Колонки: `id` INTEGER PRIMARY KEY, `name` TEXT, `symbol_type` TEXT, `signature` TEXT, `file_path` TEXT, `line_start` INTEGER, `line_end` INTEGER, `docstring` TEXT, `parent_symbol` TEXT, `source_scope` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `tests/test_project_kb.py:45` (read, local), `tests/test_project_kb.py:48` (delete, local), `tests/test_project_kb.py:63` (read, local), `tools/project_kb.py:65` (migration, local), `tools/project_kb.py:268` (insert, local), `tools/project_kb.py:272` (insert, local), `tools/project_kb.py:329` (insert, local), `tools/project_kb.py:447` (read, local), `tools/project_kb.py:464` (read, local), `tools/project_kb.py:563` (read, local), `tools/project_kb.py:577` (delete, local), `tools/project_kb.py:813` (read, local), `tools/project_kb.py:816` (read, local), `tools/project_kb.py:819` (read, local), `tools/project_kb.py:830` (read, local).
+- Чтение/запись/миграции: `tests/test_project_kb.py:45` (read, local), `tests/test_project_kb.py:48` (delete, local), `tests/test_project_kb.py:63` (read, local), `tools/project_kb.py:65` (migration, local), `tools/project_kb.py:268` (insert, local), `tools/project_kb.py:272` (insert, local), `tools/project_kb.py:329` (insert, local), `tools/project_kb.py:447` (read, local), `tools/project_kb.py:464` (read, local), `tools/project_kb.py:563` (read, local), `tools/project_kb.py:577` (delete, local), `tools/project_kb.py:815` (read, local), `tools/project_kb.py:818` (read, local), `tools/project_kb.py:821` (read, local), `tools/project_kb.py:832` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -282,7 +282,7 @@
 - local: `tools/project_kb.py`:105.
 - Колонки: `id` INTEGER PRIMARY KEY, `topic` TEXT UNIQUE, `keywords` TEXT, `primary_files_json` TEXT, `secondary_files_json` TEXT, `excluded_paths_json` TEXT, `recommended_checks_json` TEXT, `environment_scope` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `docs/codex/TASK_ROUTING.md:19` (read, local), `tools/project_kb.py:105` (migration, local), `tools/project_kb.py:113` (read, local), `tools/project_kb.py:469` (read, local), `tools/project_kb.py:540` (read, local), `tools/project_kb.py:541` (insert, local), `tools/project_kb.py:760` (read, local).
+- Чтение/запись/миграции: `docs/codex/TASK_ROUTING.md:19` (read, local), `tools/project_kb.py:105` (migration, local), `tools/project_kb.py:113` (read, local), `tools/project_kb.py:469` (read, local), `tools/project_kb.py:540` (read, local), `tools/project_kb.py:541` (insert, local), `tools/project_kb.py:762` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
