@@ -11,6 +11,7 @@
   window.__LEARN_BOOTED__ = true;
   const $  = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  const tr = (key, params) => (window.I18N && window.I18N.t) ? window.I18N.t(key, params) : key;
   function escapeHtml(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   function renderSentence(s){ return escapeHtml(s).replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>"); }
   async function apiGet(url){ const r = await window.apiFetch(url); return r.json(); }
@@ -29,16 +30,12 @@
   }
   function itemsSig(items){
     if (!Array.isArray(items) || !items.length) return "";
-    return items.map((i) => [
-      i.id ?? "",
-      i.number ?? "",
-      i.nl_word ?? i.translation_nl ?? "",
-      i.en_word ?? i.word_en ?? "",
-      i.ru_word ?? i.translation_ru ?? "",
-      i.nl_sentence ?? i.sentence_nl ?? "",
-      i.en_sentence ?? i.sentence_en ?? "",
-      i.ru_sentence ?? i.sentence_ru ?? ""
-    ].join("|")).join("||");
+    return items.map((i) => Object.keys(i)
+      .filter(key => key === "id" || key === "number" || /^(?:[a-z]{2}_(?:word|sentence)|(?:word|sentence)_[a-z]{2})$/.test(key))
+      .sort()
+      .map(key => `${key}:${i[key] ?? ""}`)
+      .join("|")
+    ).join("||");
   }
   async function idbGet(store, key){
     if (!IDB) return null;
@@ -97,7 +94,9 @@
       String(p.index ?? ""),
       String(p.total ?? ""),
       String(p.word_id ?? ""),
-      String(p.passed ?? "")
+      String(p.passed ?? ""),
+      p.lang || "",
+      p.reason || ""
     ].join("|");
   }
   function buildProgressPayload(reason){
@@ -112,6 +111,7 @@
       passed: total ? countPassed() : 0,
       lang: currentLang,
       reason: reason || "",
+      tz_offset: new Date().getTimezoneOffset(),
       ts: Date.now()
     };
   }
@@ -136,6 +136,7 @@
     await idbSet("progress", key, payload);
     const event = { type: "progress", scope: "learn", state: payload, ts: payload.ts };
     await idbSet("outbox", makeOutboxKey(payload.ts), event);
+    window.dispatchEvent(new Event("learning-progress-queued"));
   }
   function queueProgressSave(reason){
     saveProgress(reason).catch(() => {});
@@ -156,6 +157,11 @@
 
   let LESSON=""; let ITEMS=[]; let index=0; let current=null;
   let currentLang="nl";
+  let availableLanguages = [
+    { code:"nl", name:"Dutch", native:"Dutch" },
+    { code:"en", name:"English", native:"English" },
+    { code:"ru", name:"Russian", native:"Russian" },
+  ];
   let correct="";
   let answer=[]; let pool=[]; let usedFrom=[];
   let fireworksFired = false;
@@ -165,16 +171,25 @@
     if (_advanceLock) return;
     _advanceLock = true;
     closeModal();
-    nextWord();
+    if (current?.learned === true) {
+      ITEMS.splice(index, 1);
+      if (!ITEMS.length) {
+        wordBox.textContent = tr("learn.all_words_learned");
+        setPracticeVisible(false);
+        progress.textContent = "0 / 0";
+      } else {
+        if (index >= ITEMS.length) index = 0;
+        renderCurrent();
+      }
+    } else {
+      nextWord();
+    }
     setTimeout(()=>{ _advanceLock = false; }, 200);
   }
 
   function pickAudioSrc(obj, lang){
     if (!obj) return "";
-    if (lang==="nl") return obj.audio_nl||obj.nl_audio||"";
-    if (lang==="en") return obj.audio_en||obj.en_audio||"";
-    if (lang==="ru") return obj.audio_ru||obj.ru_audio||"";
-    return "";
+    return obj[`audio_${lang}`] || obj[`${lang}_audio`] || "";
   }
   async function ensureAudioForCurrent(lang, force){
     if (!current || !window.AudioWorker?.ensureForWord) return;
@@ -244,9 +259,43 @@
     }
   }
 
+  function languageLabel(lang){
+    const meta = availableLanguages.find(x => x.code === lang);
+    return (meta && (meta.native || meta.name)) || String(lang || "").toUpperCase();
+  }
+
+  function lessonHasCompleteLanguage(items, lang){
+    if (!Array.isArray(items) || !items.length) return false;
+    return items.every(item => String(
+      item?.[`${lang}_word`] || item?.[lang] ||
+      (lang === "en" ? item?.word_en : "") ||
+      (lang === "ru" ? item?.translation_ru : "") ||
+      (lang === "nl" ? item?.translation_nl : "") || ""
+    ).trim());
+  }
+
+  function renderLanguageButtons(languages, items=ITEMS){
+    if (Array.isArray(languages)) {
+      availableLanguages = languages.filter(meta => meta?.code && lessonHasCompleteLanguage(items, meta.code));
+    }
+    const switcher = document.querySelector(".lang-switch");
+    if (!switcher) return;
+    switcher.innerHTML = [
+      `<button data-lang="" class="lang-btn">${tr("common.all")}</button>`,
+      ...availableLanguages.map(meta => `<button data-lang="${escapeHtml(meta.code)}" class="lang-btn">${escapeHtml(meta.native || meta.name || meta.code.toUpperCase())}</button>`)
+    ].join("");
+    langButtons = $$(".lang-switch .lang-btn");
+    langButtons.forEach(btn=> btn.addEventListener("click", ()=> setLanguage(btn.dataset.lang||"")));
+    if (currentLang !== "all" && !availableLanguages.some(x => x.code === currentLang)) {
+      currentLang = availableLanguages[0]?.code || "all";
+    }
+    setLanguage(currentLang);
+  }
+
   function applyLessonItems(items){
-    if (!items.length){ wordBox.textContent="В этом уроке пока нет слов."; return false; }
-    ITEMS = items; index=0;
+    const available = items.filter(item => item?.learned !== true);
+    if (!available.length){ wordBox.textContent=tr("learn.all_words_learned"); return false; }
+    ITEMS = available; index=0;
     ITEMS.forEach(x=>{ x._passed = false; });
     fireworksFired = false;
     try{ window.AudioWorker?.warmup?.(); }catch(e){}
@@ -258,23 +307,24 @@
   }
 
   async function loadLesson(){
-    if (!LESSON){ wordBox.textContent="???????? ???? ???<?+??????."; return; }
+    if (!LESSON){ wordBox.textContent=tr("learn.lesson_not_selected"); return; }
     try{
       let items = await readLessonWordsFromIdb(LESSON);
       const cachedSig = itemsSig(items);
       if (items && items.length){
         applyLessonItems(items);
       } else {
-        wordBox.textContent="?-??????????????...";
+        wordBox.textContent=tr("learn.loading");
       }
       const js = await apiGet("/api/lesson_words?lesson="+encodeURIComponent(LESSON));
       if (!js || js.ok===false){
         if (!items || !items.length){
-          wordBox.textContent="???????+???? ???????????????? ???>????.";
+          wordBox.textContent=tr("learn.words_load_error");
         }
         return;
       }
       const fresh = Array.isArray(js.items) ? js.items : [];
+      renderLanguageButtons(Array.isArray(js.languages) ? js.languages : [], fresh);
       await writeLessonWordsToIdb(LESSON, fresh);
       const cachedEmpty = !Array.isArray(items) || items.length === 0;
       if (cachedEmpty || itemsSig(fresh) !== cachedSig){
@@ -282,43 +332,29 @@
       }
     }catch(e){
       console.error(e);
-      if (!ITEMS || !ITEMS.length) wordBox.textContent="Нет соединения с сервером.";
+      if (!ITEMS || !ITEMS.length) wordBox.textContent=tr("common.no_connection_lessons");
     }
   }
 
   function pickByLang(item){
-    const nlW = item.translation_nl || item.nl_word || "";
-    const enW = item.word_en        || item.en_word || "";
-    const ruW = item.translation_ru || item.ru_word || "";
-    const nlS = item.sentence_nl || "";
-    const enS = item.sentence_en || "";
-    const ruS = item.sentence_ru || "";
+    const getWord = (lang) => item[`${lang}_word`] || item[lang] || (lang==="en" ? item.word_en : "") || (lang==="ru" ? item.translation_ru : "") || (lang==="nl" ? item.translation_nl : "") || "";
+    const getSent = (lang) => item[`${lang}_sentence`] || item[`sentence_${lang}`] || item[`ex_${lang}`] || "";
+    const rowFor = (lang, showWord) => ({
+      head: `(${escapeHtml(lang)}) ${showWord ? `<b>${escapeHtml(getWord(lang))}</b>` : ""}`,
+      sent: getSent(lang),
+      lang
+    });
     if (currentLang === "all"){
-      return { mode:"all", rows:[
-        { head:`(nl) <b>${escapeHtml(nlW)}</b>`, sent:nlS, lang:"nl" },
-        { head:`(en) <b>${escapeHtml(enW)}</b>`, sent:enS, lang:"en" },
-        { head:`(ru) <b>${escapeHtml(ruW)}</b>`, sent:ruS, lang:"ru" },
-      ]};
+      return { mode:"all", rows:availableLanguages.map(meta => rowFor(meta.code, true)) };
     }
-    if (currentLang === "nl"){
-      const correct = (nlW||"").trim() || (enW||ruW||"");
-      return { mode:"one", correct, rows:[
-        { head:`(en) <b>${escapeHtml(enW)}</b>`, sent:enS, lang:"en" },
-        { head:`(ru) <b>${escapeHtml(ruW)}</b>`, sent:ruS, lang:"ru" },
-      ]};
-    }
-    if (currentLang === "en"){
-      const correct = (enW||"").trim() || (nlW||ruW||"");
-      return { mode:"one", correct, rows:[
-        { head:`(nl) <b>${escapeHtml(nlW)}</b>`, sent:nlS, lang:"nl" },
-        { head:`(ru) <b>${escapeHtml(ruW)}</b>`, sent:ruS, lang:"ru" },
-      ]};
-    }
-    const correct = (ruW||"").trim() || (nlW||enW||"");
-    return { mode:"one", correct, rows:[
-      { head:`(nl) <b>${escapeHtml(nlW)}</b>`, sent:nlS, lang:"nl" },
-      { head:`(en) <b>${escapeHtml(enW)}</b>`, sent:enS, lang:"en" },
-    ]};
+    const correct = (getWord(currentLang)||"").trim() || availableLanguages.map(meta => getWord(meta.code)).find(Boolean) || "";
+    return {
+      mode:"one",
+      correct,
+      rows: availableLanguages
+        .filter(meta => meta.code !== currentLang)
+        .map(meta => rowFor(meta.code, true))
+    };
   }
 
   function renderCurrent(){ current = ITEMS[index]; renderWordCard(); }
@@ -334,14 +370,9 @@
       </div>
       <div${editable ? ` class="editable-text" data-field="sentence" data-lang="${r.lang}"` : ''} style="margin-bottom:8px">${renderSentence(r.sent||"")}</div>
     `;
-    const nlS = current.sentence_nl || "";
-    const enS = current.sentence_en || "";
-    const ruS = current.sentence_ru || "";
-    let sentForModal = "";
-    if (currentLang === "nl") sentForModal = nlS;
-    else if (currentLang === "en") sentForModal = enS;
-    else if (currentLang === "ru") sentForModal = ruS;
-    if (!sentForModal) sentForModal = nlS || enS || ruS || "";
+    const sentForLang = (lang) => current[`${lang}_sentence`] || current[`sentence_${lang}`] || current[`ex_${lang}`] || "";
+    let sentForModal = currentLang !== "all" ? sentForLang(currentLang) : "";
+    if (!sentForModal) sentForModal = availableLanguages.map(meta => sentForLang(meta.code)).find(Boolean) || "";
 
     if (view.mode === "all"){
       setPracticeVisible(false);
@@ -380,7 +411,7 @@
       .map((_,i)=>{
         const ch = filled[i] || "";
         const filledCls = ch ? " filled clickable" : "";
-        return `<div class="slot${filledCls}" data-pos="${i}" title="${ch ? 'Нажмите, чтобы вернуть букву' : ''}">${escapeHtml(ch)}</div>`;
+        return `<div class="slot${filledCls}" data-pos="${i}" title="${ch ? tr("learn.return_letter") : ''}">${escapeHtml(ch)}</div>`;
       }).join("");
     $$("#answer-slots .slot.filled").forEach(div=>{
       div.addEventListener("click", ()=>{
@@ -436,7 +467,7 @@
     if (starBtn){
       starBtn.classList.toggle("on", isDiff);
       starBtn.setAttribute("aria-pressed", isDiff ? "true" : "false");
-      starBtn.title = isDiff ? "Убрать из сложных" : "Добавить в сложные";
+      starBtn.title = isDiff ? tr("learn.remove_difficult") : tr("learn.add_difficult");
       starBtn.dataset.wordId = wid;
     }
   }
@@ -459,20 +490,22 @@
       console.error("[difficult] save failed:", e);
       current.difficult = prev ? 1 : 0;
       updateDifficultUI();
-      alert("Не удалось сохранить статус «сложное слово». Проверьте соединение и попробуйте ещё раз.");
+      alert(tr("learn.difficult_save_failed"));
     }
   }
   // --------------------------------------------------
 
   function checkAnswer() {
     if (currentLang === "all") return;
+    if (current?._answerRecorded) return;
+    current._answerRecorded = true;
     const user = answer.join("");
     const ok = (user === correct);
 
-    line1.textContent = ok ? "Правильно!" : "Неправильно!";
+    line1.textContent = ok ? tr("learn.correct") : tr("learn.incorrect");
 
     const _editable = !!current?.editable;
-    line2.innerHTML = `Правильно: ${
+    line2.innerHTML = `${tr("learn.correct_label")} ${
       _editable
         ? `<b><span class="editable-text" data-field="word" data-lang="${currentLang}">${escapeHtml(correct)}</span></b>`
         : `<b>${escapeHtml(correct)}</b>`
@@ -512,6 +545,8 @@
       line1.style.border = "3px solid #15803d";
       line1.style.color = "#fff";
       current._passed = true;
+      current.practice_count = Number(current.practice_count || 0) + 1;
+      current.learned = current.practice_count >= 10;
       maybeFireworks();
     } else {
       line1.style.backgroundColor = "#dc2626";
@@ -529,6 +564,13 @@
     }
     updateDifficultUI();
     queueProgressSave(ok ? "answer_ok" : "answer_fail");
+    if (ok) {
+      if (typeof window.updateChildGoalOptimistic === "function") {
+        window.updateChildGoalOptimistic();
+      } else {
+        window.dispatchEvent(new Event("child-progress-updated"));
+      }
+    }
 
     // обработчик клика по ▶
     if (modalAudioBtn){
@@ -556,11 +598,13 @@
   }
   function prevWord(){
     index = (index - 1 + ITEMS.length) % ITEMS.length;
+    ITEMS[index]._answerRecorded = false;
     renderCurrent();
     queueProgressSave("navigate");
   }
   function nextWord(){
     index = (index + 1) % ITEMS.length;
+    ITEMS[index]._answerRecorded = false;
     renderCurrent();
     queueProgressSave("navigate");
   }
@@ -613,26 +657,34 @@
   // ---- Инлайн-редактирование конкретного поля слова ----
   function getFieldValue(item, lang, field) {
     if (field === "word") {
-      if (lang === "nl") return item.nl_word || item.translation_nl || "";
-      if (lang === "en") return item.en_word || item.word_en || "";
-      if (lang === "ru") return item.ru_word || item.translation_ru || "";
+      return item[`${lang}_word`] || item[lang] || (lang === "nl" ? item.translation_nl : "") || (lang === "en" ? item.word_en : "") || (lang === "ru" ? item.translation_ru : "") || "";
     }
-    if (lang === "nl") return item.nl_sentence || item.sentence_nl || "";
-    if (lang === "en") return item.en_sentence || item.sentence_en || "";
-    if (lang === "ru") return item.ru_sentence || item.sentence_ru || "";
-    return "";
+    return item[`${lang}_sentence`] || item[`sentence_${lang}`] || item[`ex_${lang}`] || "";
   }
 
   function applyWordUpdate(item, w) {
-    if (w.nl_word     !== undefined) { item.nl_word     = w.nl_word;     item.translation_nl = w.nl_word; }
-    if (w.en_word     !== undefined) { item.en_word     = w.en_word;     item.word_en        = w.en_word; }
-    if (w.ru_word     !== undefined) { item.ru_word     = w.ru_word;     item.translation_ru = w.ru_word; }
-    if (w.nl_sentence !== undefined) { item.nl_sentence = w.nl_sentence; item.sentence_nl    = w.nl_sentence; }
-    if (w.en_sentence !== undefined) { item.en_sentence = w.en_sentence; item.sentence_en    = w.en_sentence; }
-    if (w.ru_sentence !== undefined) { item.ru_sentence = w.ru_sentence; item.sentence_ru    = w.ru_sentence; }
-    const aNl = w.nl_audio ?? w.audio_nl; if (aNl !== undefined) { item.audio_nl = aNl; item.nl_audio = aNl; }
-    const aEn = w.en_audio ?? w.audio_en; if (aEn !== undefined) { item.audio_en = aEn; item.en_audio = aEn; }
-    const aRu = w.ru_audio ?? w.audio_ru; if (aRu !== undefined) { item.audio_ru = aRu; item.ru_audio = aRu; }
+    availableLanguages.forEach(meta => {
+      const lang = meta.code;
+      const word = w[`${lang}_word`] ?? w[lang];
+      if (word !== undefined) {
+        item[`${lang}_word`] = word;
+        item[lang] = word;
+        if (lang === "nl") item.translation_nl = word;
+        if (lang === "en") item.word_en = word;
+        if (lang === "ru") item.translation_ru = word;
+      }
+      const sentence = w[`${lang}_sentence`] ?? w[`sentence_${lang}`] ?? w[`ex_${lang}`];
+      if (sentence !== undefined) {
+        item[`${lang}_sentence`] = sentence;
+        item[`sentence_${lang}`] = sentence;
+        item[`ex_${lang}`] = sentence;
+      }
+      const audio = w[`${lang}_audio`] ?? w[`audio_${lang}`];
+      if (audio !== undefined) {
+        item[`${lang}_audio`] = audio;
+        item[`audio_${lang}`] = audio;
+      }
+    });
   }
 
   function startInlineEdit(el) {
@@ -688,7 +740,7 @@
           body: JSON.stringify({ [dbField]: newVal })
         });
         const js = await r.json();
-        if (!js || js.ok !== true) throw new Error(js?.error || "Ошибка");
+        if (!js || js.ok !== true) throw new Error(js?.error || tr("common.error"));
         applyWordUpdate(current, js.word || {});
         const i = ITEMS.findIndex(x => x.id === current.id);
         if (i >= 0) ITEMS[i] = current;
@@ -862,7 +914,7 @@
     // ── Удаление слова ──────────────────────────────────────────
     deleteWordBtn?.addEventListener("click", ()=>{
       if (!current || !current.editable) return;
-      const label = current.translation_nl || current.nl_word || current.word_en || current.en_word || "это слово";
+      const label = current.translation_nl || current.nl_word || current.word_en || current.en_word || tr("learn.delete_word");
       if (delWordName) delWordName.textContent = `«${label}»`;
       if (delErrorMsg) delErrorMsg.textContent = "";
       if (deleteConfirmModal) deleteConfirmModal.style.display = "";
@@ -883,14 +935,14 @@
       try {
         const r = await window.apiFetch(`/api/words/${current.id}`, { method: "DELETE" });
         const js = await r.json();
-        if (!js || !js.ok) throw new Error(js?.error || "Ошибка удаления");
+        if (!js || !js.ok) throw new Error(js?.error || tr("learn.delete_error"));
 
         ITEMS.splice(index, 1);
         writeLessonWordsToIdb(LESSON, ITEMS).catch(()=>{});
         if (deleteConfirmModal) deleteConfirmModal.style.display = "none";
 
         if (!ITEMS.length) {
-          wordBox.textContent = "В этом уроке пока нет слов.";
+          wordBox.textContent = tr("learn.no_words_in_lesson");
           setPracticeVisible(false);
           if (progress) progress.textContent = "0 / 0";
           if (deleteWordBtn) deleteWordBtn.style.display = "none";
@@ -899,7 +951,7 @@
         if (index >= ITEMS.length) index = ITEMS.length - 1;
         renderCurrent();
       } catch(e) {
-        if (delErrorMsg) delErrorMsg.textContent = "Ошибка: " + (e.message || "не удалось удалить");
+        if (delErrorMsg) delErrorMsg.textContent = tr("common.error") + ": " + (e.message || tr("learn.delete_failed"));
       } finally {
         delConfirmBtn.disabled = false;
       }

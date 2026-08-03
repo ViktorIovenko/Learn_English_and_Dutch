@@ -14,6 +14,9 @@ from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from app.routes import init_app as init_web
+from app.account_types import migrate_account_types
+from app.tts_usage import ensure_tts_usage_schema
+from app.translation_usage import ensure_translation_usage_schema
 
 from telegram import Update
 from telegram.ext import ApplicationBuilder, Defaults, JobQueue, PicklePersistence
@@ -48,6 +51,7 @@ def init_db(db_path: str) -> None:
                 first_name TEXT,
                 last_name  TEXT,
                 is_active  INTEGER NOT NULL DEFAULT 1,
+                account_type TEXT NOT NULL DEFAULT 'pending',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -110,6 +114,31 @@ def init_db(db_path: str) -> None:
                 "CREATE UNIQUE INDEX IF NOT EXISTS u_users_google_id "
                 "ON users(google_id) WHERE google_id IS NOT NULL;"
             )
+        if "account_type" not in user_cols:
+            # Existing users keep their current behaviour. Only newly created
+            # users go through the account-type onboarding screen.
+            c.execute(
+                "ALTER TABLE users ADD COLUMN account_type "
+                "TEXT NOT NULL DEFAULT 'standard';"
+            )
+        migrate_account_types(c)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS parent_child_links (
+                parent_user_id TEXT NOT NULL,
+                child_user_id  TEXT NOT NULL,
+                created_at     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (parent_user_id, child_user_id),
+                CHECK (parent_user_id <> child_user_id),
+                FOREIGN KEY (parent_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (child_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            );
+        """)
+        c.execute(
+            "CREATE INDEX IF NOT EXISTS idx_parent_child_links_child "
+            "ON parent_child_links(child_user_id);"
+        )
+        ensure_tts_usage_schema(c)
+        ensure_translation_usage_schema(c)
         c.commit()
 
 

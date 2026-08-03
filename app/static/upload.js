@@ -74,6 +74,71 @@ function _updateRemoveButtons() {
   btns.forEach(b => { b.style.visibility = btns.length > 1 ? 'visible' : 'hidden'; });
 }
 
+// ── AI source toggle (Ollama локально / Облако через AI Platform) ────
+
+const AI_SOURCE_KEY = 'ai_source';
+
+function _getAiSource() {
+  return localStorage.getItem(AI_SOURCE_KEY) || 'ollama';
+}
+
+function _setAiSource(value) {
+  localStorage.setItem(AI_SOURCE_KEY, value);
+  document.querySelectorAll('.ai-source-select').forEach(sel => { sel.value = value; });
+  document.querySelectorAll('.ollama-only').forEach(el => {
+    if (value === 'cloud') {
+      if (el.dataset.prevDisplay === undefined) el.dataset.prevDisplay = el.style.display || '';
+      el.style.display = 'none';
+    } else {
+      el.style.display = el.dataset.prevDisplay || '';
+    }
+  });
+}
+
+function initAiSourceControls() {
+  const saved = _getAiSource();
+  document.querySelectorAll('.ai-source-select').forEach(sel => {
+    sel.addEventListener('change', () => _setAiSource(sel.value));
+  });
+  _setAiSource(saved);
+}
+
+async function _cloudTranslateWord(word, fromLang, level, knownRu) {
+  const resp = await apiFetch('/api/translate/word', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ word, from_lang: fromLang, level, known_ru: knownRu || null }),
+  });
+  const data = await resp.json();
+  if (!data.ok) throw new Error(data.error || 'Ошибка облака');
+  return [data];
+}
+
+async function _cloudSuggestTopicWords(topic, lang, level, count, existingWords) {
+  const resp = await apiFetch('/api/generate/topic', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic, lang, level, count, existing_words: existingWords }),
+  });
+  const data = await resp.json();
+  if (!data.ok) throw new Error(data.error || 'Ошибка облака');
+  return data.words || [];
+}
+
+async function _cloudTranslateLanguage(sourceWord, sourceSentence, sourceLangName, targetLangName) {
+  const resp = await apiFetch('/api/translate/language', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      source_word: sourceWord, source_sentence: sourceSentence,
+      source_lang_name: sourceLangName, target_lang_name: targetLangName,
+    }),
+  });
+  const data = await resp.json();
+  if (!data.ok) throw new Error(data.error || 'Ошибка облака');
+  return { word: data.word || '', sentence: data.sentence || '' };
+}
+
 // ── Ollama helpers ──────────────────────────────────────────────
 
 function _ollamaUrl() {
@@ -128,6 +193,9 @@ Return ONLY a JSON array with one object per word. No markdown, no code fences, 
 }
 
 async function _callOllama(lessonName, words, lang, level) {
+  if (_getAiSource() === 'cloud') {
+    return _cloudTranslateWord(words[0], lang, level);
+  }
   const body = {
     model:   _ollamaModel(),
     messages: [
@@ -219,6 +287,30 @@ async function generateWords() {
     return;
   }
 
+  // Warmup: first Ollama request after idle loads model into VRAM (can take 2–5 min).
+  // Send a trivial request with a long timeout so the model is hot before real generation.
+  // Not needed in cloud mode — AI Platform keeps no local model to warm up.
+  if (_getAiSource() !== 'cloud') {
+    statusEl.textContent = '🔥 Прогрев модели Ollama… (может занять до 5 минут при первом запуске)';
+    try {
+      const warmupResp = await fetch(_ollamaUrl() + '/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: _ollamaModel(), prompt: 'hi', stream: false }),
+        signal: AbortSignal.timeout(300000)
+      });
+      if (!warmupResp.ok) throw new Error(`Ollama HTTP ${warmupResp.status}`);
+    } catch(e) {
+      if (e.name === 'TimeoutError' || e.message.includes('timeout') || e.message.includes('AbortError')) {
+        statusEl.textContent = '❌ Ollama не ответила за 5 минут — проверьте, что она запущена';
+      } else {
+        statusEl.textContent = `❌ Не удалось подключиться к Ollama: ${e.message}`;
+      }
+      genBtn.disabled = false;
+      return;
+    }
+  }
+
   for (const { block, words, dupes, fmt, lessonName, lang } of parsedBlocks) {
     const lgs = block.querySelector('[id^="lgs-"]');
 
@@ -232,24 +324,71 @@ async function generateWords() {
     }
 
     let doneInBlock = 0;
+    const deferred = [];
+    const MAX_RETRIES = 3;
 
     for (const wordObj of words) {
       const wordLabel = wordObj.nl;
       totalDone++;
       doneInBlock++;
-      statusEl.textContent = `⏳ ${totalDone}/${totalWords}: «${wordLabel}» (${lessonName})`;
       if (lgs) lgs.textContent = `⏳ ${doneInBlock}/${words.length}: ${wordLabel}`;
 
       const placeholder = _addPendingRow(lessonName, wordLabel);
 
+      let succeeded = false;
+      let lastError;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        statusEl.textContent = attempt > 1
+          ? `🔄 ${totalDone}/${totalWords}: «${wordLabel}» — попытка ${attempt}/${MAX_RETRIES}`
+          : `⏳ ${totalDone}/${totalWords}: «${wordLabel}» (${lessonName})`;
+
+        try {
+          let item;
+          if (fmt === 'nl+ru') {
+            const items = await _callOllamaRuKnown(lessonName, wordObj.nl, wordObj.ru || '', level);
+            item = Array.isArray(items) ? items[0] : items;
+          } else {
+            const items = await _callOllama(lessonName, [wordLabel], lang, level);
+            item = Array.isArray(items) ? items[0] : items;
+          }
+          if (!item) throw new Error('Ollama вернула пустой ответ');
+          _fillRow(placeholder, {
+            lesson: lessonName, word: wordLabel,
+            nl:    item.nl    || wordObj.nl  || '',
+            en:    item.en    || '',
+            ru:    item.ru    || wordObj.ru  || '',
+            ex_nl: item.ex_nl || '', ex_en: item.ex_en || '', ex_ru: item.ex_ru || '',
+          }, lang, level, wordObj.ru || null);
+          succeeded = true;
+          break;
+        } catch(e) {
+          lastError = e;
+        }
+      }
+
+      if (!succeeded) {
+        placeholder.style.opacity = '';
+        placeholder.style.background = '#fef9c3';
+        placeholder.innerHTML = `
+          <td class="cell-lesson" contenteditable="true">${_esc(lessonName)}</td>
+          <td colspan="6" style="color:#92400e;font-size:12px">⏳ «${_esc(wordLabel)}» — не удалось после ${MAX_RETRIES} попыток, повторим в конце…</td>
+          <td></td>
+        `;
+        deferred.push({ wordObj, placeholder });
+      }
+    }
+
+    // Retry deferred words at the end of the block
+    for (const { wordObj, placeholder } of deferred) {
+      const wordLabel = wordObj.nl;
+      statusEl.textContent = `🔄 Повтор: «${wordLabel}» (${lessonName})`;
       try {
         let item;
         if (fmt === 'nl+ru') {
-          // NL + RU known → Ollama generates only EN + sentences
           const items = await _callOllamaRuKnown(lessonName, wordObj.nl, wordObj.ru || '', level);
           item = Array.isArray(items) ? items[0] : items;
         } else {
-          // Only NL → Ollama generates EN, RU + sentences
           const items = await _callOllama(lessonName, [wordLabel], lang, level);
           item = Array.isArray(items) ? items[0] : items;
         }
@@ -557,6 +696,9 @@ function parsePasteText(text) {
 
 
 async function _callOllamaRuKnown(lessonName, nl, ru, level) {
+  if (_getAiSource() === 'cloud') {
+    return _cloudTranslateWord(nl, 'nl', level, ru);
+  }
   const prompt = `You are a language learning assistant for a Dutch course.
 Lesson: "${lessonName}"
 CEFR level: ${level || 'A2'}
@@ -615,6 +757,7 @@ Return ONLY a JSON array. No markdown, no fences, no explanation.`;
 
 addLesson();
 initAdminSubscriptionsLink();
+initAiSourceControls();
 
 // ════════════════════════════════════════════════════════════════
 //  TOPIC GENERATOR TAB
@@ -675,6 +818,9 @@ function _deduplicateWords(words) {
 }
 
 async function _suggestWordsByTopic(topic, lang, level, count, existingWords) {
+  if (_getAiSource() === 'cloud') {
+    return _cloudSuggestTopicWords(topic, lang, level, count, existingWords);
+  }
   const langLabel = lang === 'nl' ? 'Dutch' : 'English';
   const avoid = existingWords.length
     ? `\nDo NOT suggest any of these words (already in the user's vocabulary): ${existingWords.slice(0, 150).join(', ')}`
@@ -823,6 +969,9 @@ async function generateByTopic() {
 
 // Same as _callOllama but uses topic-panel Ollama settings
 async function _callOllamaForTopic(lessonName, word, lang, level) {
+  if (_getAiSource() === 'cloud') {
+    return _cloudTranslateWord(word, lang, level);
+  }
   const langLabel = lang === 'nl' ? 'Dutch' : 'English';
   const prompt = `You are a language learning assistant. Create a vocabulary entry for a language course.
 Lesson: "${lessonName}"
@@ -902,6 +1051,12 @@ function switchTab(name) {
 // ── State ───────────────────────────────────────────────────────
 // Share lessons
 let _shareLessonsLoaded = false;
+let _shareLessons = [];
+let _shareLanguageOptions = [];
+let _sharePreferredLanguages = [];
+let _shareEditingLesson = null;
+let _shareMissingTasks = [];
+let _shareGenerationRunning = false;
 
 async function shareLessonsLoad(force) {
   const listEl = document.getElementById('share-lessons-list');
@@ -918,7 +1073,11 @@ async function shareLessonsLoad(force) {
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Не удалось загрузить уроки');
     _shareLessonsLoaded = true;
-    renderShareLessons(data.lessons || []);
+    _shareLessons = data.lessons || [];
+    _shareLanguageOptions = data.language_options || [];
+    _sharePreferredLanguages = data.preferred_languages || [];
+    renderShareLessons(_shareLessons);
+    renderShareChildren(data.children || []);
   } catch (e) {
     statusEl.textContent = 'Ошибка: ' + e.message;
   }
@@ -941,6 +1100,18 @@ function renderShareLessons(lessons) {
     const lesson = item.lesson || item.lesson_title || '';
     const count = Number(item.words_count || 0);
     const words = Array.isArray(item.words) ? item.words : [];
+    const languages = Array.isArray(item.languages) ? item.languages : [];
+    const languageText = languages.map(lang => lang.native || lang.name || String(lang.code || '').toUpperCase()).join(', ');
+    const missingLanguages = _sharePreferredLanguages.filter(lang =>
+      words.some(word =>
+        !String(word[lang.code] || '').trim() || !String(word[`ex_${lang.code}`] || '').trim()
+      )
+    );
+    const languageButtons = missingLanguages.map(lang => `
+      <button type="button" class="share-add-language-btn" data-language="${_esc(lang.code)}">
+        + Добавить: ${_esc(lang.native || lang.name || String(lang.code || '').toUpperCase())}
+      </button>
+    `).join('');
     const row = document.createElement('div');
     row.className = 'share-lesson-item';
     row.dataset.lesson = lesson;
@@ -949,8 +1120,12 @@ function renderShareLessons(lessons) {
         <div class="share-lesson-main">
           <input type="checkbox" class="share-lesson-check" value="${_esc(lesson)}" aria-label="Выбрать урок ${_esc(lesson)}">
           <button type="button" class="share-lesson-name" aria-label="Показать слова урока ${_esc(lesson)}">${_esc(lesson)}</button>
+          ${languageText ? `<span class="share-lesson-languages">· ${_esc(languageText)}</span>` : ''}
         </div>
-        <div class="share-lesson-meta">${count} слов</div>
+        <div class="share-lesson-side">
+          <div class="share-lesson-language-actions">${languageButtons}</div>
+          <div class="share-lesson-meta">${count} слов</div>
+        </div>
       </div>
       <div class="share-lesson-words"></div>
     `;
@@ -968,6 +1143,9 @@ function renderShareLessons(lessons) {
       row.classList.toggle('is-open');
     });
     row.querySelector('.share-lesson-check').addEventListener('change', updateShareSelection);
+    row.querySelectorAll('.share-add-language-btn').forEach(button => {
+      button.addEventListener('click', () => addShareLessonLanguage(lesson, button.dataset.language));
+    });
     listEl.appendChild(row);
   });
   updateShareSelection();
@@ -985,6 +1163,350 @@ function updateShareSelection() {
   const selected = getSelectedShareLessons();
   if (countEl) countEl.textContent = selected.length ? `Выбрано уроков: ${selected.length}` : '';
   if (btn) btn.disabled = selected.length === 0;
+  const childBtn = document.getElementById('share-child-btn');
+  if (childBtn) childBtn.disabled = selected.length === 0;
+  hideShareLanguageWarning();
+}
+
+function renderShareChildren(children) {
+  const actions = document.getElementById('share-child-actions');
+  const select = document.getElementById('share-child-select');
+  const status = document.getElementById('share-child-status');
+  if (!actions || !select || !status) return;
+  select.innerHTML = '';
+  if (!children.length) {
+    actions.style.display = 'none';
+    status.textContent = 'Чтобы добавлять уроки ребёнку, сначала привяжите его аккаунт.';
+    return;
+  }
+  children.forEach(child => {
+    const option = document.createElement('option');
+    option.value = child.user_id;
+    const languageText = (child.languages || []).map(language => language.native || language.name || language.code).join(', ');
+    option.textContent = `${child.display_name || child.username || child.user_id}${languageText ? ` — ${languageText}` : ''}`;
+    select.appendChild(option);
+  });
+  select._children = children;
+  select.addEventListener('change', hideShareLanguageWarning);
+  actions.style.display = 'flex';
+  status.textContent = '';
+  updateShareSelection();
+}
+
+function openShareLanguageEditor(lessonName) {
+  _shareEditingLesson = _shareLessons.find(item => item.lesson === lessonName) || null;
+  if (!_shareEditingLesson) return;
+  const editor = document.getElementById('share-language-editor');
+  document.getElementById('share-language-title').textContent = `Языки урока: ${lessonName}`;
+  renderShareLanguageTable();
+  document.getElementById('share-language-status').textContent = '';
+  editor.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeShareLanguageEditor() {
+  if (_shareGenerationRunning) return;
+  document.getElementById('share-language-editor')?.classList.remove('open');
+  document.body.style.overflow = '';
+  _shareEditingLesson = null;
+}
+
+function renderShareLanguageTable() {
+  if (!_shareEditingLesson) return;
+  const languages = _shareEditingLesson.languages || [];
+  const head = document.getElementById('share-language-head');
+  const body = document.getElementById('share-language-body');
+  head.innerHTML = `<tr><th>№</th>${languages.map(language =>
+    `<th>${_esc(language.native || language.name || language.code)}</th>`
+  ).join('')}</tr>`;
+  body.innerHTML = (_shareEditingLesson.words || []).map(word => `
+    <tr data-word-id="${Number(word.id)}">
+      <td>${_esc(word.number || '')}</td>
+      ${languages.map(language => `
+        <td class="share-language-cell">
+          <div class="share-language-word" contenteditable="true" data-field="${_esc(language.code)}">${_esc(word[language.code] || '')}</div>
+          <div class="share-language-sentence" contenteditable="true" data-field="ex_${_esc(language.code)}">${_esc(word[`ex_${language.code}`] || '')}</div>
+        </td>
+      `).join('')}
+    </tr>
+  `).join('');
+  body.querySelectorAll('[data-field]').forEach(cell => {
+    cell.addEventListener('keydown', async event => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        await saveShareLanguageCell(cell);
+        cell.blur();
+      }
+    });
+  });
+}
+
+async function saveShareLanguageCell(cell) {
+  const row = cell.closest('tr');
+  const wordId = Number(row?.dataset.wordId || 0);
+  if (!wordId || !cell.dataset.field) return false;
+  row.classList.add('saving');
+  try {
+    const value = cell.textContent.trim();
+    const response = await apiFetch(`/api/words/${wordId}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({[cell.dataset.field]: value}),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || 'save_failed');
+    const word = (_shareEditingLesson?.words || []).find(item => Number(item.id) === wordId);
+    if (word) word[cell.dataset.field] = value;
+    row.classList.remove('saving');
+    row.classList.add('saved');
+    setTimeout(() => row.classList.remove('saved'), 1000);
+    return true;
+  } catch (error) {
+    row.classList.remove('saving');
+    row.style.outline = '2px solid #f87171';
+    setTimeout(() => { row.style.outline = ''; }, 1800);
+    document.getElementById('share-language-status').textContent = `Ошибка сохранения: ${error.message}`;
+    return false;
+  }
+}
+
+async function _generateShareLanguageValue(word, targetLanguage, level) {
+  const sourceLanguage = (_shareEditingLesson.languages || [])[0];
+  if (!sourceLanguage) throw new Error('В уроке нет исходного языка');
+  const sourceWord = String(word[sourceLanguage.code] || '').trim();
+  const sourceSentence = String(word[`ex_${sourceLanguage.code}`] || '').trim();
+  if (!sourceWord) throw new Error('В первом столбце отсутствует исходное слово');
+  const sourceName = sourceLanguage.name || sourceLanguage.native || sourceLanguage.code;
+  const targetName = targetLanguage.name || targetLanguage.native || targetLanguage.code;
+
+  if (_getAiSource() === 'cloud') {
+    return _cloudTranslateLanguage(sourceWord, sourceSentence, sourceName, targetName);
+  }
+  const prompt = `Translate one vocabulary entry from ${sourceName} to ${targetName}.\n\nSOURCE WORD: ${JSON.stringify(sourceWord)}\nSOURCE SENTENCE: ${JSON.stringify(sourceSentence)}\n\nRules:\n1. Translate SOURCE WORD directly and precisely into ${targetName}. Return only its normal dictionary form.\n2. Translate SOURCE SENTENCE directly and naturally into ${targetName}; preserve its exact meaning, tense, person, negation and tone.\n3. Do not invent a new example sentence. Do not use the lesson title or any context outside SOURCE WORD and SOURCE SENTENCE.\n4. Do not add explanations, alternatives, parentheses, labels or markdown.\n5. If SOURCE SENTENCE is empty, return an empty sentence.\n6. The translated sentence must contain the translated meaning of SOURCE WORD.\n\nReturn ONLY this JSON object:\n{"word":"direct translation of SOURCE WORD", "sentence":"direct translation of SOURCE SENTENCE"}`;
+  const response = await fetch(_ollamaUrl() + '/api/chat', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      model: _ollamaModel(),
+      messages: [
+        {role: 'system', content: 'Return only valid JSON with keys word and sentence.'},
+        {role: 'user', content: prompt},
+      ],
+      stream: false,
+      format: 'json',
+      options: {temperature: 0},
+    }),
+    signal: AbortSignal.timeout(120000),
+  });
+  if (!response.ok) throw new Error(`Ollama HTTP ${response.status}`);
+  const payload = await response.json();
+  const raw = String(payload.message?.content || payload.response || '').trim();
+  let result;
+  try {
+    result = JSON.parse(raw);
+  } catch (_) {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('Ollama вернула неверный JSON');
+    result = JSON.parse(match[0]);
+  }
+  if (!result || typeof result !== 'object' || (!result.word && !result.sentence)) {
+    throw new Error('Ollama не вернула слово и предложение');
+  }
+  return {word: String(result.word || '').trim(), sentence: String(result.sentence || '').trim()};
+}
+
+function hideShareLanguageWarning() {
+  document.getElementById('share-language-warning')?.classList.remove('open');
+  _shareMissingTasks = [];
+}
+
+function getShareMissingLanguageTasks() {
+  const childSelect = document.getElementById('share-child-select');
+  const child = (childSelect?._children || []).find(item => String(item.user_id) === String(childSelect.value));
+  if (!child) return [];
+  const selected = new Set(getSelectedShareLessons());
+  const tasks = [];
+  _shareLessons.filter(lesson => selected.has(lesson.lesson)).forEach(lesson => {
+    (child.languages || []).forEach(childLanguage => {
+      const target = _shareLanguageOptions.find(option => option.code === childLanguage.code) || childLanguage;
+      const missingWords = (lesson.words || []).filter(word =>
+        !String(word[target.code] || '').trim() || !String(word[`ex_${target.code}`] || '').trim()
+      );
+      if (missingWords.length) tasks.push({lesson, target, words: lesson.words || []});
+    });
+  });
+  return tasks;
+}
+
+function showShareLanguageWarning(tasks) {
+  const grouped = new Map();
+  tasks.forEach(task => {
+    if (!grouped.has(task.lesson.lesson)) grouped.set(task.lesson.lesson, []);
+    grouped.get(task.lesson.lesson).push(task.target.native || task.target.name || task.target.code.toUpperCase());
+  });
+  document.getElementById('share-language-warning-text').textContent =
+    'Перед передачей нужно дополнить языки: ' + Array.from(grouped.entries())
+      .map(([lesson, languages]) => `${lesson} — ${Array.from(new Set(languages)).join(', ')}`)
+      .join('; ') + '.';
+  document.getElementById('share-language-warning').classList.add('open');
+}
+
+async function checkShareOllama() {
+  const status = document.getElementById('share-language-status');
+  const btn = document.getElementById('share-ollama-check-btn');
+  btn.disabled = true;
+  status.textContent = 'Проверяю подключение к Ollama...';
+  try {
+    const response = await fetch(_ollamaUrl() + '/api/tags', {signal: AbortSignal.timeout(8000)});
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const models = (data.models || []).map(model => model.name).join(', ');
+    status.textContent = `Ollama подключена${models ? `. Модели: ${models}` : ''}.`;
+  } catch (error) {
+    status.textContent = `Ollama недоступна: ${error.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function saveGeneratedShareTranslation(word, target, generated) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await apiFetch(`/api/words/${word.id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          [target.code]: generated.word,
+          [`ex_${target.code}`]: generated.sentence,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || 'save_failed');
+      word[target.code] = generated.word;
+      word[`ex_${target.code}`] = generated.sentence;
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 3) await new Promise(resolve => setTimeout(resolve, attempt * 500));
+    }
+  }
+  throw new Error(`не удалось сохранить перевод: ${lastError?.message || 'save_failed'}`);
+}
+
+async function addShareLessonLanguage(lessonName, languageCode) {
+  if (_shareGenerationRunning) return;
+  const lesson = _shareLessons.find(item => item.lesson === lessonName);
+  const target = _shareLanguageOptions.find(option => option.code === languageCode)
+    || _sharePreferredLanguages.find(option => option.code === languageCode);
+  if (!lesson || !target) return;
+  const missingWords = (lesson.words || []).filter(word =>
+    !String(word[target.code] || '').trim() || !String(word[`ex_${target.code}`] || '').trim()
+  );
+  if (!missingWords.length) {
+    await shareLessonsLoad(true);
+    return;
+  }
+  await runShareLanguageGeneration([{lesson, target, words: missingWords}], false);
+}
+
+async function startMissingLanguageGeneration() {
+  const tasks = getShareMissingLanguageTasks();
+  _shareMissingTasks = tasks;
+  if (!_shareMissingTasks.length) {
+    hideShareLanguageWarning();
+    await assignLessonsToChild(true);
+    return;
+  }
+  await runShareLanguageGeneration(tasks, true);
+}
+
+async function runShareLanguageGeneration(tasks, assignAfterGeneration) {
+  _shareMissingTasks = tasks;
+  const addBtn = document.getElementById('share-add-missing-btn');
+  const status = document.getElementById('share-language-status');
+  const level = document.getElementById('share-language-level').value || 'A2';
+  const closeBtn = document.getElementById('share-language-close-btn');
+  if (addBtn) addBtn.disabled = true;
+  closeBtn.disabled = true;
+  _shareGenerationRunning = true;
+  let completedWords = 0;
+  const totalWords = _shareMissingTasks.reduce((sum, task) => sum + task.words.length, 0);
+  try {
+    for (let taskIndex = 0; taskIndex < _shareMissingTasks.length; taskIndex += 1) {
+      const task = _shareMissingTasks[taskIndex];
+      _shareEditingLesson = task.lesson;
+      if (!task.lesson.languages.some(language => language.code === task.target.code)) {
+        task.lesson.languages.push(task.target);
+      }
+      document.getElementById('share-language-editor').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      document.getElementById('share-language-title').textContent = `Урок ${taskIndex + 1} из ${_shareMissingTasks.length}: ${task.lesson.lesson}`;
+      document.getElementById('share-language-current').textContent = `Добавляется язык: ${task.target.native || task.target.name || task.target.code}`;
+      renderShareLanguageTable();
+      for (const word of task.words) {
+        status.textContent = `Слово ${completedWords + 1} из ${totalWords}. Урок «${task.lesson.lesson}», язык ${task.target.native || task.target.name}.`;
+        const generated = await _generateShareLanguageValue(word, task.target, level);
+        status.textContent = `Перевод получен. Сохраняю слово ${completedWords + 1} из ${totalWords}...`;
+        await saveGeneratedShareTranslation(word, task.target, generated);
+        completedWords += 1;
+        renderShareLanguageTable();
+      }
+    }
+    status.textContent = assignAfterGeneration
+      ? `Все языки добавлены. Сохранено слов: ${completedWords}. Передаю уроки ребёнку...`
+      : `Язык добавлен. Сохранено слов: ${completedWords}.`;
+    hideShareLanguageWarning();
+    _shareGenerationRunning = false;
+    closeShareLanguageEditor();
+    if (assignAfterGeneration) {
+      await assignLessonsToChild(true);
+    } else {
+      await shareLessonsLoad(true);
+    }
+  } catch (error) {
+    status.textContent = `Генерация остановлена после ${completedWords} из ${totalWords}: ${error.message}`;
+  } finally {
+    _shareGenerationRunning = false;
+    if (addBtn) addBtn.disabled = false;
+    closeBtn.disabled = false;
+  }
+}
+
+async function assignLessonsToChild(skipLanguageCheck) {
+  const select = document.getElementById('share-child-select');
+  const status = document.getElementById('share-child-status');
+  const btn = document.getElementById('share-child-btn');
+  const lessons = getSelectedShareLessons();
+  if (!select || !status || !btn || !lessons.length) return;
+  if (!skipLanguageCheck) {
+    _shareMissingTasks = getShareMissingLanguageTasks();
+    if (_shareMissingTasks.length) {
+      showShareLanguageWarning(_shareMissingTasks);
+      status.textContent = 'В выбранных уроках не хватает языков ребёнка.';
+      return;
+    }
+  }
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Добавляю...';
+  status.textContent = '';
+  try {
+    const resp = await apiFetch('/api/share/assign_child', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ child_user_id: select.value, lessons }),
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Не удалось добавить уроки ребёнку');
+    const childName = select.options[select.selectedIndex]?.textContent || 'ребёнку';
+    status.textContent = `Добавлено для ${childName}: ${data.lessons_count} ${_ruPlural(data.lessons_count, 'урок', 'урока', 'уроков')}, ${data.count} ${_ruPlural(data.count, 'слово', 'слова', 'слов')}.`;
+  } catch (e) {
+    status.textContent = 'Ошибка: ' + e.message;
+  } finally {
+    btn.textContent = oldText;
+    updateShareSelection();
+  }
 }
 
 function _ruPlural(n, one, few, many) {
@@ -1057,6 +1579,11 @@ const db = {
   query:      '',
   saveTimers: {},   // wordId → timer
   audio:      null, // current HTMLAudioElement
+  languages:  [
+    {code: 'nl', native: 'Nederlands'},
+    {code: 'en', native: 'English'},
+    {code: 'ru', native: 'Русский'},
+  ],
 };
 
 // ── Search debounce ─────────────────────────────────────────────
@@ -1085,8 +1612,12 @@ async function dbLoad() {
 
     db.total = data.total;
     db.pages = data.pages;
+    db.languages = Array.isArray(data.languages) && data.languages.length ? data.languages : db.languages;
     document.getElementById('db-count').textContent = `${data.total} слов`;
+    document.getElementById('db-search').placeholder =
+      `Поиск по ${db.languages.map(language => language.code.toUpperCase()).join(', ')}, уроку…`;
 
+    dbRenderHead();
     dbRender(data.words);
     dbRenderPager();
     loading.style.display = 'none';
@@ -1234,12 +1765,26 @@ async function confirmDuplicateDelete() {
 }
 
 // ── Render table rows ────────────────────────────────────────────
+function dbRenderHead() {
+  const row = document.getElementById('db-head-row');
+  if (!row) return;
+  row.innerHTML = `
+    <th>Урок</th>
+    ${db.languages.map(language => `
+      <th title="${_esc(language.native || language.name || language.code)}">${_esc(String(language.code || '').toUpperCase())}</th>
+    `).join('')}
+    <th>Аудио</th>
+    <th>⭐</th>
+    <th></th>
+  `;
+}
+
 function dbRender(words) {
   const tbody = document.getElementById('db-body');
   tbody.innerHTML = '';
 
   if (!words.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px">Ничего не найдено</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="${db.languages.length + 4}" style="text-align:center;color:#94a3b8;padding:20px">Ничего не найдено</td></tr>`;
     return;
   }
 
@@ -1254,18 +1799,12 @@ function dbRender(words) {
 
     tr.innerHTML = `
       <td class="cell-lesson editable" contenteditable="true" data-field="lesson">${_esc(w.lesson)}</td>
-      <td class="cell-with-ex">
-        <div class="cell-word" contenteditable="true" data-field="nl">${_esc(w.nl)}</div>
-        <div class="cell-ex"   contenteditable="true" data-field="ex_nl">${_esc(w.ex_nl)}</div>
-      </td>
-      <td class="cell-with-ex">
-        <div class="cell-word" contenteditable="true" data-field="en">${_esc(w.en)}</div>
-        <div class="cell-ex"   contenteditable="true" data-field="ex_en">${_esc(w.ex_en)}</div>
-      </td>
-      <td class="cell-with-ex">
-        <div class="cell-word" contenteditable="true" data-field="ru">${_esc(w.ru)}</div>
-        <div class="cell-ex"   contenteditable="true" data-field="ex_ru">${_esc(w.ex_ru)}</div>
-      </td>
+      ${db.languages.map(language => `
+        <td class="cell-with-ex">
+          <div class="cell-word" contenteditable="true" data-field="${_esc(language.code)}">${_esc(w[language.code] || '')}</div>
+          <div class="cell-ex" contenteditable="true" data-field="ex_${_esc(language.code)}">${_esc(w[`ex_${language.code}`] || '')}</div>
+        </td>
+      `).join('')}
       <td style="white-space:nowrap">${audioHtml}</td>
       <td class="cell-diff">${diffHtml}</td>
       <td style="white-space:nowrap">
@@ -1288,11 +1827,10 @@ function dbRender(words) {
 
 // ── Audio buttons ────────────────────────────────────────────────
 function _dbAudioButtons(w) {
-  const langs = [
-    { key: 'audio_nl', label: 'NL' },
-    { key: 'audio_en', label: 'EN' },
-    { key: 'audio_ru', label: 'RU' },
-  ];
+  const langs = db.languages.map(language => ({
+    key: `audio_${language.code}`,
+    label: String(language.code || '').toUpperCase(),
+  }));
   const btns = langs
     .filter(l => w[l.key])
     .map(l => {

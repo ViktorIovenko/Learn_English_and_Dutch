@@ -61,6 +61,7 @@ def _ensure_schema() -> None:
                 first_name TEXT,
                 last_name  TEXT,
                 is_active  INTEGER NOT NULL DEFAULT 1,
+                account_type TEXT NOT NULL DEFAULT 'pending',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
         """)

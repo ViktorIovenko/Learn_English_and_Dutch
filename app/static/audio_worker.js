@@ -7,11 +7,8 @@
     return typeof value === "string" && value.trim() !== "";
   }
   function hasAudioForLang(word, lang){
-    if (!word) return false;
-    if (lang === "nl") return hasAudio(word.audio_nl) || hasAudio(word.nl_audio);
-    if (lang === "en") return hasAudio(word.audio_en) || hasAudio(word.en_audio);
-    if (lang === "ru") return hasAudio(word.audio_ru) || hasAudio(word.ru_audio);
-    return false;
+    if (!word || !lang) return false;
+    return hasAudio(word[`audio_${lang}`]) || hasAudio(word[`${lang}_audio`]);
   }
   function needForWord(word, lang){
     return !hasAudioForLang(word, lang);
@@ -50,9 +47,9 @@
       return (items||[]).map(w => {
         const u = map.get(w.id);
         if (u){
-          if (u.nl) w.audio_nl = u.nl;
-          if (u.en) w.audio_en = u.en;
-          if (u.ru) w.audio_ru = u.ru;
+          Object.keys(u).forEach(lang => {
+            if (lang !== "id" && lang !== "ok" && u[lang]) w[`audio_${lang}`] = u[lang];
+          });
         }
         return w;
       });
@@ -66,9 +63,9 @@
       const u = (items && items[0]) ? items[0] : null;
       if (!u) return word;
       // дописываем поля
-      if (u.nl) word.audio_nl = u.nl;
-      if (u.en) word.audio_en = u.en;
-      if (u.ru) word.audio_ru = u.ru;
+      Object.keys(u).forEach(lang => {
+        if (lang !== "id" && lang !== "ok" && u[lang]) word[`audio_${lang}`] = u[lang];
+      });
       return word;
     }
   };

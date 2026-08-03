@@ -14,8 +14,11 @@ main.container {
   box-shadow: 0 4px 16px rgba(15, 23, 42, .05); overflow: hidden;
 }
 .admin-note { padding: 18px; color: #64748b; }
-.admin-table-wrap { overflow: visible; }
-.admin-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; font-size: 11px; }
+.admin-table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; min-width: 900px; border-collapse: collapse; table-layout: auto; font-size: 11px; }
+.admin-table.general-table { min-width: 1350px; }
+.admin-table.subscription-table { min-width: 1150px; }
+.admin-table.cost-table { min-width: 1500px; }
 .admin-table th {
   background: #f8fafc; color: #334155; text-align: left; font-weight: 700;
   padding: 8px 6px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;
@@ -24,19 +27,6 @@ main.container {
   padding: 8px 6px; border-bottom: 1px solid #eef2f7; vertical-align: middle;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.admin-table th:nth-child(1) { width: 17%; }
-.admin-table th:nth-child(2) { width: 7%; }
-.admin-table th:nth-child(3) { width: 10%; }
-.admin-table th:nth-child(4) { width: 4%; }
-.admin-table th:nth-child(5) { width: 4%; }
-.admin-table th:nth-child(6) { width: 7%; }
-.admin-table th:nth-child(7) { width: 6%; }
-.admin-table th:nth-child(8) { width: 7%; }
-.admin-table th:nth-child(9) { width: 7%; }
-.admin-table th:nth-child(10) { width: 5%; }
-.admin-table th:nth-child(11) { width: 8%; }
-.admin-table th:nth-child(12) { width: 9%; }
-.admin-table th:nth-child(13) { width: 9%; }
 .admin-table tr:hover td { background: #f8fbff; }
 .user-name { display: inline; font-weight: 700; color: #0f172a; }
 .user-sub { display: inline; color: #64748b; font-size: 11px; margin-left: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -48,7 +38,12 @@ main.container {
 .status-pill.unlimited { background: #dbeafe; color: #1d4ed8; }
 .status-pill.off { background: #fee2e2; color: #991b1b; }
 .num-cell { font-variant-numeric: tabular-nums; }
-.admin-actions { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+.family-cell { min-width: 220px; white-space: normal !important; overflow: visible !important; }
+.family-relation { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 2px 0; }
+.family-relation-label { line-height: 1.25; }
+.family-empty { color: #94a3b8; }
+.relation-unlink { padding: 3px 6px; flex: 0 0 auto; }
+.admin-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 220px; }
 .small-btn {
   border: 1px solid #d0d7e2; border-radius: 8px; background: #fff; color: #0f172a;
   padding: 5px 7px; font-size: 11px; font-weight: 700; cursor: pointer;
@@ -62,6 +57,33 @@ main.container {
 .admin-flash { margin-bottom: 10px; min-height: 20px; font-size: 13px; color: #64748b; }
 .admin-flash.ok { color: #16a34a; }
 .admin-flash.err { color: #dc2626; }
+.tts-summary {
+  display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 10px;
+  margin-bottom: 12px;
+}
+.tts-summary-card {
+  border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;
+  padding: 12px; box-shadow: 0 4px 16px rgba(15, 23, 42, .04);
+}
+.tts-summary-label { color: #64748b; font-size: 11px; margin-bottom: 4px; }
+.tts-summary-value { color: #0f172a; font-size: 22px; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tts-summary-value.ok { color: #15803d; }
+.tts-summary-value.err { color: #dc2626; }
+.tts-summary-meta { color: #64748b; font-size: 11px; margin-top: 5px; line-height: 1.35; }
+.tts-summary-actions { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.usage-section-title { margin: 14px 0 8px; font-size: 15px; color: #334155; }
+.translation-summary { grid-template-columns: repeat(5, minmax(150px, 1fr)); }
+.admin-tabs { display: flex; gap: 8px; margin: 12px 0; border-bottom: 1px solid #dbe3ee; }
+.admin-tab { border: 0; border-bottom: 3px solid transparent; background: transparent; color: #64748b; padding: 10px 14px; font-weight: 800; cursor: pointer; }
+.admin-tab.is-active { color: #1d4ed8; border-bottom-color: #2563eb; }
+.admin-panel { display: none; }
+.admin-panel.is-active { display: block; }
+.limit-editor { display: flex; align-items: center; gap: 6px; }
+.limit-input { width: 112px; border: 1px solid #cbd5e1; border-radius: 7px; padding: 5px 7px; font-size: 11px; }
+.limit-progress { height: 7px; margin-top: 7px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.limit-progress > span { display: block; height: 100%; background: #2563eb; }
+.limit-progress > span.warn { background: #f59e0b; }
+.limit-progress > span.danger { background: #dc2626; }
 .back-link {
   display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 9px;
   border: 1px solid #d0d7e2; color: #0f172a; text-decoration: none; background: #fff;
@@ -100,6 +122,8 @@ main.container {
 }
 .confirm-danger:disabled, .confirm-primary:disabled { opacity: .65; cursor: default; }
 @media (max-width: 900px) {
+  .tts-summary { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+  .translation-summary { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
   .admin-table { font-size: 11px; }
   .admin-table th, .admin-table td { padding: 7px 5px; }
   .small-btn { padding: 5px 6px; font-size: 11px; }
@@ -153,23 +177,26 @@ main.container {
     </script>
   {% else %}
     <div id="admin-flash" class="admin-flash"></div>
-    <div class="admin-card">
+    <div class="admin-tabs" role="tablist" aria-label="Разделы админки">
+      <button type="button" class="admin-tab is-active" data-admin-tab="general">Общее</button>
+      <button type="button" class="admin-tab" data-admin-tab="subscriptions">Подписки</button>
+      <button type="button" class="admin-tab" data-admin-tab="costs">Затраты и лимиты</button>
+    </div>
+
+    <section class="admin-panel is-active" data-admin-panel="general">
+      <div class="admin-card">
       {% if users %}
         <div class="admin-table-wrap">
-          <table class="admin-table">
+          <table class="admin-table general-table">
             <thead>
               <tr>
                 <th>Пользователь</th>
                 <th>Telegram ID</th>
                 <th>Присоединился</th>
+                <th>Тип аккаунта</th>
+                <th>Семейные связи</th>
                 <th>Уроки</th>
                 <th>Слова</th>
-                <th>Подписка</th>
-                <th>Provider</th>
-                <th>Trial до</th>
-                <th>Period до</th>
-                <th>Отмена</th>
-                <th>Доступ до</th>
                 <th>Последняя активность</th>
                 <th>Действия</th>
               </tr>
@@ -183,32 +210,41 @@ main.container {
                   </td>
                   <td class="num-cell">{{ u.user_id }}</td>
                   <td>{{ u.created_at or "—" }}</td>
-                  <td class="num-cell">{{ u.lessons_count }}</td>
-                  <td class="num-cell">{{ u.words_count }}</td>
                   <td>
-                    <span class="status-pill {% if u.is_unlimited %}unlimited{% elif u.subscription_active %}ok{% else %}off{% endif %}">
-                      {{ u.subscription_status }}
+                    <span class="status-pill {% if u.account_type == 'child' %}ok{% endif %}">
+                      {% if u.account_type == "child" %}🧒{% else %}👤{% endif %} {{ u.account_type_label }}
                     </span>
                   </td>
-                  <td>{{ u.subscription_provider or "—" }}</td>
-                  <td class="num-cell" data-ms-inline="{{ u.trial_ends_at or '' }}">—</td>
-                  <td class="num-cell" data-ms-inline="{{ u.current_period_ends_at or '' }}">—</td>
-                  <td>{% if u.cancel_at_period_end %}Да{% else %}Нет{% endif %}</td>
-                  <td class="num-cell" {% if u.is_unlimited %}data-unlimited="1"{% else %}data-ms="{{ u.access_until or '' }}"{% endif %}>
-                    {% if u.is_unlimited %}Безлимит{% else %}—{% endif %}
+                  <td class="family-cell">
+                    {% if u.family_relations %}
+                      {% for rel in u.family_relations %}
+                        <div class="family-relation">
+                          <span class="family-relation-label">
+                            {% if rel.direction == "parent_of" %}🧒 Ребёнок:{% else %}👤 Взрослый:{% endif %}
+                            {{ rel.counterpart_name }}
+                          </span>
+                          <button type="button" class="small-btn danger relation-unlink"
+                                  data-action="unlink-family"
+                                  data-user-id="{{ rel.child_user_id }}"
+                                  data-user-name="{{ rel.description }}"
+                                  data-user-username=""
+                                  data-parent-id="{{ rel.parent_user_id }}"
+                                  data-child-id="{{ rel.child_user_id }}">Открепить</button>
+                        </div>
+                      {% endfor %}
+                    {% else %}
+                      <span class="family-empty">Нет связей</span>
+                    {% endif %}
                   </td>
+                  <td class="num-cell">{{ u.lessons_count }}</td>
+                  <td class="num-cell">{{ u.words_count }}</td>
                   <td class="num-cell" data-ms="{{ u.last_event_ts or '' }}">—</td>
                   <td>
                     <div class="admin-actions">
-                      {% if u.is_admin %}
-                        <button type="button" class="small-btn" disabled>Админ</button>
-                      {% elif u.is_unlimited %}
-                        <button type="button" class="small-btn danger" data-action="revoke" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Отозвать</button>
-                      {% else %}
-                        <button type="button" class="small-btn primary" data-action="grant" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Безлимит</button>
-                      {% endif %}
                       {% if not u.is_admin %}
                         <button type="button" class="small-btn danger" data-action="delete" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Удалить</button>
+                      {% else %}
+                        <button type="button" class="small-btn" disabled>Админ</button>
                       {% endif %}
                     </div>
                   </td>
@@ -220,7 +256,113 @@ main.container {
       {% else %}
         <div class="admin-note">Пользователей пока нет.</div>
       {% endif %}
-    </div>
+      </div>
+    </section>
+
+    <section class="admin-panel" data-admin-panel="subscriptions">
+      <div class="admin-card">
+        {% if users %}
+          <div class="admin-table-wrap">
+            <table class="admin-table subscription-table">
+              <thead><tr>
+                <th>Пользователь</th><th>Telegram ID</th><th>Подписка</th><th>Provider</th>
+                <th>Trial до</th><th>Period до</th><th>Отмена</th><th>Доступ до</th><th>Управление</th>
+              </tr></thead>
+              <tbody>
+              {% for u in users %}
+                <tr>
+                  <td><div class="user-name">{{ u.display_name }}</div><div class="user-sub">{% if u.username %}@{{ u.username }}{% else %}без username{% endif %}</div></td>
+                  <td class="num-cell">{{ u.user_id }}</td>
+                  <td><span class="status-pill {% if u.is_unlimited %}unlimited{% elif u.subscription_active %}ok{% else %}off{% endif %}">{{ u.subscription_status }}</span></td>
+                  <td>{{ u.subscription_provider or "—" }}</td>
+                  <td class="num-cell" data-ms-inline="{{ u.trial_ends_at or '' }}">—</td>
+                  <td class="num-cell" data-ms-inline="{{ u.current_period_ends_at or '' }}">—</td>
+                  <td>{% if u.cancel_at_period_end %}Да{% else %}Нет{% endif %}</td>
+                  <td class="num-cell" {% if u.is_unlimited %}data-unlimited="1"{% else %}data-ms="{{ u.access_until or '' }}"{% endif %}>{% if u.is_unlimited %}Безлимит{% else %}—{% endif %}</td>
+                  <td><div class="admin-actions">
+                    {% if u.is_admin %}<button type="button" class="small-btn" disabled>Админ</button>
+                    {% elif u.is_unlimited %}<button type="button" class="small-btn danger" data-action="revoke" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Отозвать</button>
+                    {% else %}<button type="button" class="small-btn primary" data-action="grant" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Безлимит</button>{% endif %}
+                  </div></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}<div class="admin-note">Пользователей пока нет.</div>{% endif %}
+      </div>
+    </section>
+
+    <section class="admin-panel" data-admin-panel="costs">
+      <h2 class="usage-section-title">Озвучивание · текущий месяц</h2>
+      <div class="tts-summary">
+        <div class="tts-summary-card">
+          <div class="tts-summary-label">Использовано символов</div>
+          <div class="tts-summary-value">{{ tts_usage_summary.characters }} / {{ tts_usage_summary.character_limit }}</div>
+          <div class="limit-progress"><span class="{% if tts_usage_summary.limit_percent >= 100 %}danger{% elif tts_usage_summary.limit_percent >= 80 %}warn{% endif %}" style="width:{{ tts_usage_summary.limit_percent }}%"></span></div>
+          <div class="tts-summary-meta">Осталось: {{ tts_usage_summary.characters_remaining }} · {{ tts_usage_summary.limit_percent }}%</div>
+        </div>
+        <div class="tts-summary-card">
+          <div class="tts-summary-label">Фактические запросы gTTS</div>
+          <div class="tts-summary-value">{{ tts_usage_summary.total_requests }}</div>
+          <div class="tts-summary-meta"><span style="color:#15803d">{{ tts_usage_summary.successful_requests }} успешно</span> · <span style="color:#dc2626">{{ tts_usage_summary.failed_requests }} ошибок</span></div>
+        </div>
+        <div class="tts-summary-card">
+          <div class="tts-summary-label">Заблокировано лимитом</div>
+          <div class="tts-summary-value err">{{ tts_usage_summary.blocked_requests }}</div>
+          <div class="tts-summary-meta">Без обращения к сервису озвучивания</div>
+        </div>
+        <div class="tts-summary-card">
+          <div class="tts-summary-label">Общий месячный лимит</div>
+          <div class="limit-editor"><input id="global-tts-limit" class="limit-input" type="number" min="1" value="{{ tts_usage_summary.character_limit }}"><button id="save-global-tts-limit" type="button" class="small-btn primary">Сохранить</button></div>
+          <div class="tts-summary-meta">Сброс бюджета: <span data-ms="{{ tts_usage_summary.next_reset_at }}">—</span> · {{ tts_usage_summary.timezone }}</div>
+        </div>
+      </div>
+
+      <h2 class="usage-section-title">AI-токены · перевод и генерация · за всё время</h2>
+      <div class="tts-summary translation-summary">
+        <div class="tts-summary-card"><div class="tts-summary-label">Всего токенов</div><div class="tts-summary-value">{{ translation_usage_summary.total_tokens }}</div><div class="tts-summary-meta">Без автоматического месячного сброса</div></div>
+        <div class="tts-summary-card"><div class="tts-summary-label">Входные токены</div><div class="tts-summary-value">{{ translation_usage_summary.prompt_tokens }}</div><div class="tts-summary-meta">Промпт и контекст</div></div>
+        <div class="tts-summary-card"><div class="tts-summary-label">Выходные токены</div><div class="tts-summary-value">{{ translation_usage_summary.completion_tokens }}</div><div class="tts-summary-meta">Ответ модели</div></div>
+        <div class="tts-summary-card"><div class="tts-summary-label">Успешные AI-запросы</div><div class="tts-summary-value ok">{{ translation_usage_summary.successful_requests }}</div><div class="tts-summary-meta">Переводы, предложения и тематические слова</div></div>
+        <div class="tts-summary-card tts-summary-actions"><div><div class="tts-summary-label">Ошибки AI-запросов</div><div class="tts-summary-value err">{{ translation_usage_summary.failed_requests }}</div><div class="tts-summary-meta">Накопительно</div></div><button type="button" class="small-btn danger" data-action="reset-translation-all" data-user-id="" data-user-name="Все пользователи" data-user-username="">Сбросить AI</button></div>
+      </div>
+
+      <div class="admin-card">
+        {% if users %}
+          <div class="admin-table-wrap">
+            <table class="admin-table cost-table">
+              <thead><tr>
+                <th>Пользователь</th><th>Telegram ID</th><th>TTS запросы</th><th>TTS символы</th><th>Заблокировано</th><th>Лимит пользователя</th>
+                <th>AI-токены</th><th>Вход</th><th>Выход</th><th>AI успешно</th><th>AI ошибки</th><th>Действия</th>
+              </tr></thead>
+              <tbody>
+              {% for u in users %}
+                <tr>
+                  <td><div class="user-name">{{ u.display_name }}</div><div class="user-sub">{% if u.username %}@{{ u.username }}{% else %}без username{% endif %}</div></td>
+                  <td class="num-cell">{{ u.user_id }}</td>
+                  <td class="num-cell">{{ u.tts_total_requests }} ({{ u.tts_successful_requests }}/{{ u.tts_failed_requests }})</td>
+                  <td class="num-cell">{{ u.tts_characters }}</td>
+                  <td class="num-cell" style="color:#dc2626">{{ u.tts_blocked_requests }}</td>
+                  <td><div class="limit-editor"><input class="limit-input user-tts-limit" data-user-id="{{ u.user_id }}" type="number" min="1" value="{% if u.tts_character_limit is not none %}{{ u.tts_character_limit }}{% endif %}" placeholder="Безлимит"><button type="button" class="small-btn save-user-tts-limit" data-user-id="{{ u.user_id }}">Сохранить</button></div></td>
+                  <td class="num-cell">{{ u.translation_total_tokens }}</td>
+                  <td class="num-cell">{{ u.translation_prompt_tokens }}</td>
+                  <td class="num-cell">{{ u.translation_completion_tokens }}</td>
+                  <td class="num-cell" style="color:#15803d">{{ u.translation_successful_requests }}</td>
+                  <td class="num-cell" style="color:#dc2626">{{ u.translation_failed_requests }}</td>
+                  <td><div class="admin-actions">
+                    <button type="button" class="small-btn" data-action="reset-tts" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Сбросить TTS-статистику</button>
+                    <button type="button" class="small-btn" data-action="reset-translation" data-user-id="{{ u.user_id }}" data-user-name="{{ u.display_name }}" data-user-username="{{ u.username or '' }}">Сбросить AI</button>
+                  </div></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}<div class="admin-note">Пользователей пока нет.</div>{% endif %}
+      </div>
+      <div class="admin-note">Сброс TTS-статистики не восстанавливает израсходованный месячный бюджет символов.</div>
+    </section>
   {% endif %}
 </div>
 
@@ -280,11 +422,76 @@ async function adminPost(url, payload) {
   return data;
 }
 
+function activateAdminTab(tabName) {
+  const selected = ["general", "subscriptions", "costs"].includes(tabName) ? tabName : "general";
+  document.querySelectorAll("[data-admin-tab]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.adminTab === selected);
+  });
+  document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
+    panel.classList.toggle("is-active", panel.dataset.adminPanel === selected);
+  });
+  try { localStorage.setItem("admin-users-tab-v1", selected); } catch(e) {}
+}
+
+document.querySelectorAll("[data-admin-tab]").forEach((button) => {
+  button.addEventListener("click", () => activateAdminTab(button.dataset.adminTab));
+});
+try { activateAdminTab(localStorage.getItem("admin-users-tab-v1") || "general"); }
+catch(e) { activateAdminTab("general"); }
+
+const saveGlobalLimit = document.getElementById("save-global-tts-limit");
+if (saveGlobalLimit) {
+  saveGlobalLimit.addEventListener("click", async () => {
+    const input = document.getElementById("global-tts-limit");
+    const limit = Number(input && input.value);
+    if (!Number.isInteger(limit) || limit <= 0) {
+      setFlash("Введите положительный лимит символов.", "err");
+      return;
+    }
+    saveGlobalLimit.disabled = true;
+    try {
+      await adminPost("/api/admin/tts_usage/limit", {monthly_character_limit: limit});
+      setFlash("Общий месячный лимит сохранён.", "ok");
+      window.location.reload();
+    } catch(e) {
+      setFlash("Ошибка: " + e.message, "err");
+      saveGlobalLimit.disabled = false;
+    }
+  });
+}
+
+document.querySelectorAll(".save-user-tts-limit").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const userId = button.dataset.userId || "";
+    const input = document.querySelector(`.user-tts-limit[data-user-id="${CSS.escape(userId)}"]`);
+    const raw = input ? input.value.trim() : "";
+    const limit = raw === "" ? null : Number(raw);
+    if (limit !== null && (!Number.isInteger(limit) || limit <= 0)) {
+      setFlash("Лимит пользователя должен быть положительным числом или пустым для безлимита.", "err");
+      return;
+    }
+    button.disabled = true;
+    try {
+      await adminPost("/api/admin/tts_usage/limit", {
+        user_id: userId,
+        monthly_character_limit: limit
+      });
+      setFlash(limit === null ? "Пользовательский лимит отключён." : "Пользовательский лимит сохранён.", "ok");
+      window.location.reload();
+    } catch(e) {
+      setFlash("Ошибка: " + e.message, "err");
+      button.disabled = false;
+    }
+  });
+});
+
 function openAdminConfirmModal(btn) {
   const action = btn.dataset.action || "";
   const userId = btn.dataset.userId || "";
   const userName = btn.dataset.userName || "Без имени";
   const username = btn.dataset.userUsername ? ("@" + btn.dataset.userUsername) : "без username";
+  const parentId = btn.dataset.parentId || "";
+  const childId = btn.dataset.childId || "";
 
   const titleEl = document.getElementById("admin-confirm-title");
   const textEl = document.getElementById("admin-confirm-text");
@@ -312,15 +519,49 @@ function openAdminConfirmModal(btn) {
       text: "Пользователь и все его данные будут удалены. При следующем входе он зарегистрируется заново.",
       btn: "Удалить пользователя",
       cls: "confirm-danger"
+    },
+    "unlink-family": {
+      title: "Открепить ребёнка?",
+      text: "Будет удалена только выбранная связь между взрослым и ребёнком.",
+      btn: "Открепить",
+      cls: "confirm-danger"
+    },
+    "reset-tts": {
+      title: "Сбросить счётчик Google TTS?",
+      text: "У выбранного пользователя успешные и неуспешные запросы станут равны нулю. Израсходованный месячный бюджет символов не изменится.",
+      btn: "Сбросить счётчик",
+      cls: "confirm-danger"
+    },
+    "reset-tts-all": {
+      title: "Сбросить все счётчики Google TTS?",
+      text: "У всех пользователей успешные и неуспешные запросы станут равны нулю. Израсходованный месячный бюджет символов не изменится.",
+      btn: "Сбросить все",
+      cls: "confirm-danger"
+    },
+    "reset-translation": {
+      title: "Сбросить AI-токены?",
+      text: "У выбранного пользователя накопительные токены и счётчики AI-запросов станут равны нулю.",
+      btn: "Сбросить AI-токены",
+      cls: "confirm-danger"
+    },
+    "reset-translation-all": {
+      title: "Сбросить все AI-токены?",
+      text: "У всех пользователей накопительные токены и счётчики AI-запросов станут равны нулю.",
+      btn: "Сбросить все AI-токены",
+      cls: "confirm-danger"
     }
   }[action];
   if (!config) return;
 
-  pendingAdminAction = { action, userId, btn };
+  pendingAdminAction = { action, userId, parentId, childId, btn };
   titleEl.textContent = config.title;
   textEl.textContent = config.text;
   userEl.textContent = userName;
-  metaEl.textContent = `ID: ${userId} · ${username}`;
+  metaEl.textContent = action === "unlink-family"
+    ? `Взрослый ID: ${parentId} · Ребёнок ID: ${childId}`
+    : action === "reset-tts-all" || action === "reset-translation-all"
+      ? (action === "reset-tts-all" ? "Текущий месячный период" : "Накопительная статистика за всё время")
+      : `ID: ${userId} · ${username}`;
   confirmBtn.textContent = config.btn;
   confirmBtn.className = config.cls;
   confirmBtn.disabled = false;
@@ -340,7 +581,7 @@ function closeAdminConfirmModal() {
 
 async function runAdminConfirmAction() {
   if (!pendingAdminAction) return;
-  const { action, userId, btn } = pendingAdminAction;
+  const { action, userId, parentId, childId, btn } = pendingAdminAction;
   const confirmBtn = document.getElementById("admin-confirm-btn");
   if (confirmBtn) {
     confirmBtn.disabled = true;
@@ -350,14 +591,29 @@ async function runAdminConfirmAction() {
   const endpoints = {
     grant: "/api/admin/grant_access",
     revoke: "/api/admin/revoke_access",
-    delete: "/api/admin/delete_user"
+    delete: "/api/admin/delete_user",
+    "unlink-family": "/api/admin/unlink_family",
+    "reset-tts": "/api/admin/tts_usage/reset",
+    "reset-tts-all": "/api/admin/tts_usage/reset",
+    "reset-translation": "/api/admin/translation_usage/reset",
+    "reset-translation-all": "/api/admin/translation_usage/reset"
   };
   try {
-    await adminPost(endpoints[action], { user_id: userId });
+    const payload = action === "unlink-family"
+      ? {parent_user_id: parentId, child_user_id: childId}
+      : action === "reset-tts-all" || action === "reset-translation-all"
+        ? {}
+        : {user_id: userId};
+    await adminPost(endpoints[action], payload);
     const messages = {
       grant: "Безлимитный доступ выдан.",
       revoke: "Безлимитный доступ отозван.",
-      delete: "Пользователь удален."
+      delete: "Пользователь удален.",
+      "unlink-family": "Связь взрослого с ребёнком удалена.",
+      "reset-tts": "Счётчик Google TTS пользователя сброшен.",
+      "reset-tts-all": "Все счётчики Google TTS сброшены.",
+      "reset-translation": "AI-токены пользователя сброшены.",
+      "reset-translation-all": "Все AI-токены сброшены."
     };
     setFlash(messages[action] || "Готово.", "ok");
     window.location.reload();

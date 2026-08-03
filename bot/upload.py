@@ -19,6 +19,12 @@ from config import Config
 from bot.db import is_user_registered, bulk_upsert_words
 from bot.validators import parse_csv_to_rows, validate_example_usage, expected_word_for
 from bot.auth import get_persistent_keyboard, show_menu_with_keyboard  # ← ИЗМЕНЕНО: новый хелпер
+from bot.onboarding import (
+    bot_interface_text,
+    bot_interface_values,
+    normalize_telegram_language,
+    selected_ui_language,
+)
 from app.auth_links import create_auth_token
 
 EPHEMERAL_SECONDS = 20.0
@@ -212,25 +218,27 @@ def _filter_duplicates_by_nl(rows: List[Dict[str, str]], db_path: str, user_id: 
 async def cmd_upload_words(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     user = update.effective_user
+    language = selected_ui_language(Config.DB_PATH, user.id) or normalize_telegram_language(
+        user.language_code
+    )
     await _delete_user_trigger(update, context)
     await show_menu_with_keyboard(update, context, user.id)
 
     if not is_user_registered(Config.DB_PATH, user.id):
         m = await update.effective_chat.send_message(
-            "Сначала пройдите регистрацию: отправьте /start и введите пароль."
+            bot_interface_text(language, "registration_required")
         )
         asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
     upload_url = f"{Config.PUBLIC_BASE_URL}/upload?auth={create_auth_token(user.id)}"
     keyboard = InlineKeyboardMarkup([[
-        InlineKeyboardButton("📤 Открыть страницу загрузки", url=upload_url)
+        InlineKeyboardButton(bot_interface_text(language, "open_upload_page"), url=upload_url)
     ]])
     m = await update.effective_chat.send_message(
-        "📤 <b>Загрузка слов</b>\n\n"
-        "Откройте страницу на компьютере, вставьте слова и нажмите «Сгенерировать» — "
-        "Ollama создаст переводы и примеры.\n\n"
-        "💡 <i>Одиночное слово можно добавить прямо здесь: просто напишите его.</i>",
+        bot_interface_text(language, "upload_title")
+        + "\n\n"
+        + bot_interface_text(language, "upload_help"),
         parse_mode="HTML",
         reply_markup=keyboard
     )
@@ -446,16 +454,19 @@ async def on_single_word(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 def register_upload_handlers(application: Application) -> None:
+    upload_words_pattern = "^(?:" + "|".join(
+        re.escape(value) for value in bot_interface_values("upload_words")
+    ) + ")$"
     application.add_handler(CommandHandler("upload_words", cmd_upload_words))
-    application.add_handler(MessageHandler(filters.Regex(r"^(Загрузить слова)$"), cmd_upload_words))
+    application.add_handler(MessageHandler(filters.Regex(upload_words_pattern), cmd_upload_words))
     application.add_handler(MessageHandler(filters.Regex(r"^(Добавить слова|Импортировать слова)$"), cmd_upload_words))
     application.add_handler(MessageHandler(filters.Document.ALL & (~filters.COMMAND), on_csv_document))
     application.add_handler(MessageHandler(filters.Regex(r"(?i)^(импортировать как есть)$"), on_confirm_import_all))
     application.add_handler(MessageHandler(filters.Regex(r"(?i)^(отменить импорт)$"), on_cancel_import))
     # Одиночное слово — последним, чтобы не перехватывать команды и кнопки
     application.add_handler(MessageHandler(
-        filters.TEXT & (~filters.COMMAND) & (~filters.Regex(
-            r"(?i)^(загрузить слова|добавить слова|импортировать слова|импортировать как есть|отменить импорт|меню|начать|помощь|старт)$"
+        filters.TEXT & (~filters.COMMAND) & (~filters.Regex(upload_words_pattern)) & (~filters.Regex(
+            r"(?i)^(добавить слова|импортировать слова|импортировать как есть|отменить импорт|меню|начать|помощь|старт)$"
         )),
         on_single_word,
         block=False

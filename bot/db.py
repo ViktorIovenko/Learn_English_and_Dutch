@@ -118,8 +118,8 @@ def upsert_registered_user(db_path: str, tg_id: int, username: str, first_name: 
             # новая схема
             conn.execute(
                 """
-                INSERT INTO users (user_id, username, first_name, is_active)
-                VALUES (?, ?, ?, 1)
+                INSERT INTO users (user_id, username, first_name, is_active, account_type)
+                VALUES (?, ?, ?, 1, 'pending')
                 ON CONFLICT(user_id) DO UPDATE SET
                     username=excluded.username,
                     first_name=excluded.first_name,
@@ -139,14 +139,15 @@ def upsert_registered_user(db_path: str, tg_id: int, username: str, first_name: 
                 first_name TEXT,
                 last_name  TEXT,
                 is_active  INTEGER NOT NULL DEFAULT 1,
+                account_type TEXT NOT NULL DEFAULT 'pending',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
         conn.execute(
             """
-            INSERT INTO users (user_id, username, first_name, is_active)
-            VALUES (?, ?, ?, 1)
+            INSERT INTO users (user_id, username, first_name, is_active, account_type)
+            VALUES (?, ?, ?, 1, 'pending')
             ON CONFLICT(user_id) DO UPDATE SET
                 username=excluded.username,
                 first_name=excluded.first_name,

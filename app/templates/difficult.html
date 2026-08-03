@@ -1,20 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Сложные слова{% endblock %}
+{% block title %}{{ t("nav.difficult") }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='learn.css') }}">
 <div id="learn-root" data-mode="difficult" class="learn-page">
   <div class="topbar">
-    <a href="{{ url_for('web.home') }}" class="pill-btn">← Назад к урокам</a>
-    <a href="#" class="pill-btn ghost">Сложные слова</a>
+    <a href="{{ url_for('web.home') }}" class="pill-btn">← {{ t("learn.back_to_lessons") }}</a>
+    <a href="#" class="pill-btn ghost">{{ t("nav.difficult") }}</a>
   </div>
 
   <div id="progress" class="center-progress"></div>
 
-  <div class="lang-switch">
-    <button data-lang=""  class="lang-btn">Все</button>
-    <button data-lang="nl" class="lang-btn">Dutch</button>
-    <button data-lang="en" class="lang-btn">English</button>
-    <button data-lang="ru" class="lang-btn">Русский</button>
+  <div id="difficult-language-switch" class="lang-switch">
+    <button data-lang=""  class="lang-btn">{{ t("common.all") }}</button>
   </div>
 
   <div id="word-view" class="card"></div>
@@ -25,16 +22,16 @@
   <div class="builder">
     <div class="builder-controls">
       <div class="controls-row split">
-        <button id="clear-btn" class="ctrl-btn">Сброс</button>
-        <button id="undo-btn" class="ctrl-btn">↩ Вернуть букву</button>
+        <button id="clear-btn" class="ctrl-btn">{{ t("difficult.clear") }}</button>
+        <button id="undo-btn" class="ctrl-btn">↩ {{ t("difficult.undo") }}</button>
       </div>
       <div class="controls-row center">
-        <button id="check-btn" class="ctrl-btn check-btn">Проверить</button>
+        <button id="check-btn" class="ctrl-btn check-btn">{{ t("learn.check") }}</button>
       </div>
     </div>
     <div class="nav-row">
-      <button id="prev-btn" class="ctrl-btn">← Предыдущее</button>
-      <button id="next-btn" class="ctrl-btn">Следующее →</button>
+      <button id="prev-btn" class="ctrl-btn">← {{ t("learn.previous_word") }}</button>
+      <button id="next-btn" class="ctrl-btn">{{ t("learn.next_word") }} →</button>
     </div>
   </div>
 
@@ -43,18 +40,18 @@
     <div class="modal-content" id="modal-content"><!-- [ДОБАВЛЕНО] id для делегата -->
       <div class="modal-head">
         <div class="modal-head-actions">
-          <label class="flag-toggle" title="Отметить как сложное">
+          <label class="flag-toggle" title="{{ t('learn.mark_difficult') }}">
             <input type="checkbox" id="difficultToggle" checked>
             <span class="icon">★</span>
           </label>
-          <button id="modal-close" class="close" aria-label="Закрыть">×</button>
+          <button id="modal-close" class="close" aria-label="{{ t('common.close') }}">×</button>
         </div>
       </div>
       <p id="modal-line1"></p>
       <p id="modal-line2"></p>
       <p id="modal-line3"></p>
       <div class="controls-row center" style="margin-top:12px">
-        <button id="next-word-btn" class="ctrl-btn">Следующее слово</button>
+        <button id="next-word-btn" class="ctrl-btn">{{ t("learn.next_word_button") }}</button>
         <!-- без «Следующий урок» -->
       </div>
     </div>

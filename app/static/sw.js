@@ -1,4 +1,4 @@
-const VERSION = "v1";
+const VERSION = "v3-child-goal-live";
 const PAGE_CACHE = `pages-${VERSION}`;
 const ASSET_CACHE = `assets-${VERSION}`;
 const AUDIO_CACHE = `audio-${VERSION}`;
@@ -117,6 +117,10 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (isAssetRequest(request)) {
+    if (request.destination === "script" || request.destination === "style") {
+      event.respondWith(networkFirst(request, ASSET_CACHE));
+      return;
+    }
     event.respondWith(staleWhileRevalidate(request, ASSET_CACHE, event));
   }
 });

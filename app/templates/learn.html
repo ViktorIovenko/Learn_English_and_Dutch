@@ -1,33 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Обучение{% endblock %}
+{% block title %}{{ t("learn.title") }}{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='learn.css') }}">
 <div id="learn-root" data-lesson="{{ lesson_title }}" class="learn-page">
   <div class="topbar">
     <a href="{{ url_for('web.home') }}" class="pill-btn">
-      <span class="txt-full">← Назад к урокам</span>
-      <span class="txt-short">← Назад</span>
+      <span class="txt-full">← {{ t("learn.back_to_lessons") }}</span>
+      <span class="txt-short">← {{ t("learn.back") }}</span>
     </a>
     <!-- [ИЗМЕНЕНО v8.16] Показываем имя текущего урока -->
     <span class="pill-btn ghost lesson-pill">
       <span class="lesson-pill-title">{{ lesson_title }}</span>
-      <label class="chk lesson-learned" title="Урок выучен">
-        <input type="checkbox" id="lesson-learned-toggle" data-lesson="{{ lesson_title }}" aria-label="Урок выучен">
+      <label class="chk lesson-learned" title="{{ t('learn.lesson_learned') }}">
+        <input type="checkbox" id="lesson-learned-toggle" data-lesson="{{ lesson_title }}" aria-label="{{ t('learn.lesson_learned') }}">
       </label>
     </span>
     <!-- [ДОБАВЛЕНО v8.17] Раздвижка вправо + кнопка «Следующий урок» -->
     <div class="spacer"></div>
-    <a href="#" id="next-lesson-btn" class="pill-btn" title="Перейти к следующему уроку">
-      <span class="txt-full">Следующий урок →</span>
-      <span class="txt-short">Далее →</span>
+    <a href="#" id="next-lesson-btn" class="pill-btn" title="{{ t('learn.next_lesson') }}">
+      <span class="txt-full">{{ t("learn.next_lesson") }} →</span>
+      <span class="txt-short">{{ t("learn.next_short") }} →</span>
     </a>
   </div>
   <div id="progress" class="center-progress"></div>
   <div class="lang-switch">
-    <button data-lang=""  class="lang-btn">Все</button>
+    <button data-lang=""  class="lang-btn">{{ t("common.all") }}</button>
     <button data-lang="nl" class="lang-btn">Dutch</button>
     <button data-lang="en" class="lang-btn">English</button>
-    <button data-lang="ru" class="lang-btn">Русский</button>
+    <button data-lang="ru" class="lang-btn">{{ t("learn.russian") }}</button>
   </div>
   <div id="word-view" class="card"></div>
   <!-- поле ответа сверху, буквы ниже -->
@@ -40,25 +40,25 @@
         <button id="undo-btn" class="ctrl-btn">↩ Вернуть букву</button>
       </div> -->
       <div class="controls-row center">
-        <button id="check-btn" class="ctrl-btn check-btn">Проверить</button>
+        <button id="check-btn" class="ctrl-btn check-btn">{{ t("learn.check") }}</button>
       </div>
     </div>
     <div class="nav-row">
-      <button id="prev-btn" class="ctrl-btn">← Предыдущее</button>
-      <button id="delete-word-btn" class="ctrl-btn del-word-btn" style="display:none" title="Удалить слово">🗑</button>
-      <button id="next-btn" class="ctrl-btn">Следующее →</button>
+      <button id="prev-btn" class="ctrl-btn">← {{ t("learn.previous_word") }}</button>
+      <button id="delete-word-btn" class="ctrl-btn del-word-btn" style="display:none" title="{{ t('learn.delete_word') }}">🗑</button>
+      <button id="next-btn" class="ctrl-btn">{{ t("learn.next_word") }} →</button>
     </div>
   </div>
 
   <!-- Подтверждение удаления слова -->
   <div id="delete-confirm-modal" class="modal" style="display:none" role="dialog" aria-modal="true">
     <div class="modal-content" style="max-width:320px;text-align:center">
-      <p style="font-size:17px;font-weight:700;margin:0 0 8px">Удалить слово?</p>
+      <p style="font-size:17px;font-weight:700;margin:0 0 8px">{{ t("learn.delete_word_question") }}</p>
       <p id="del-word-name" style="color:#2563eb;font-weight:600;font-size:15px;margin:0 0 8px;word-break:break-word"></p>
-      <p style="color:#64748b;font-size:13px;margin:0 0 20px">Слово будет удалено навсегда.</p>
+      <p style="color:#64748b;font-size:13px;margin:0 0 20px">{{ t("learn.delete_word_note") }}</p>
       <div style="display:flex;gap:10px;justify-content:center">
-        <button id="del-cancel-btn" class="ctrl-btn" style="background:#f1f5f9;color:#0f172a;box-shadow:none">Отмена</button>
-        <button id="del-confirm-btn" class="ctrl-btn" style="background:#ef4444">Удалить</button>
+        <button id="del-cancel-btn" class="ctrl-btn" style="background:#f1f5f9;color:#0f172a;box-shadow:none">{{ t("common.cancel") }}</button>
+        <button id="del-confirm-btn" class="ctrl-btn" style="background:#ef4444">{{ t("common.delete") }}</button>
       </div>
       <p id="del-error-msg" style="color:#dc2626;font-size:13px;margin:10px 0 0;min-height:18px"></p>
     </div>
@@ -69,11 +69,11 @@
     <div class="modal-content" id="modal-content">
       <div class="modal-head">
         <div class="modal-head-actions">
-          <label class="flag-toggle" title="Отметить как сложное">
+          <label class="flag-toggle" title="{{ t('learn.mark_difficult') }}">
             <input type="checkbox" id="difficultToggle">
             <span class="icon">★</span>
           </label>
-          <button id="modal-close" class="close" aria-label="Закрыть">×</button>
+          <button id="modal-close" class="close" aria-label="{{ t('common.close') }}">×</button>
         </div>
       </div>
       <p id="modal-line1"></p>
@@ -84,8 +84,8 @@
       <p id="modal-line2"></p>
       <p id="modal-line3"></p>
       <div class="controls-row center" style="margin-top:12px">
-        <button id="next-word-btn" class="ctrl-btn">Следующее слово</button>
-        <button id="next-lesson-modal-btn" class="ctrl-btn" style="display:none">Следующий урок →</button>
+        <button id="next-word-btn" class="ctrl-btn">{{ t("learn.next_word_button") }}</button>
+        <button id="next-lesson-modal-btn" class="ctrl-btn" style="display:none">{{ t("learn.next_lesson") }} →</button>
       </div>
     </div>
   </div>
@@ -95,11 +95,18 @@
 <script>
   // [ИЗМЕНЕНО v8.18] Гарантируем валидный JS-литерал даже при пустом lesson_title
   window.LESSON_TITLE = {{ lesson_title|default('')|tojson }};
+  window.LEARN_I18N = {
+    lessonNotSelected: {{ t("learn.lesson_not_selected")|tojson }},
+    noWords: {{ t("learn.no_words_in_lesson")|tojson }},
+    loading: {{ t("learn.loading")|tojson }},
+    wordsLoadError: {{ t("learn.words_load_error")|tojson }},
+    networkUnavailable: {{ t("learn.network_unavailable")|tojson }}
+  };
 </script>
 <!-- [ДОБАВЛЕНО v8.6 AUDIO] Глобальный воркер озвучки -->
 <script defer src="{{ url_for('static', filename='audio_worker.js') }}"></script>
 <!-- [НЕ МЕНЯЛОСЬ] основной скрипт -->
-<script defer src="{{ url_for('static', filename='learn.js') }}"></script>
+<script defer src="{{ url_for('static', filename='learn.js', v='20260704-italian-visibility') }}"></script>
 <!-- [ИЗМЕНЕНО v8.5] fallback: уважает флаг __LEARN_BOOTЕД__ -->
 <script>
 (function(){
@@ -118,10 +125,10 @@
     if (window.__LEARN_BOOTED__) return;
     var lesson = pickLessonTitle();
     var box = document.getElementById('word-view');
-    if (!lesson){ if(box) box.textContent='Урок не выбран.'; return; }
+    if (!lesson){ if(box) box.textContent=window.LEARN_I18N.lessonNotSelected; return; }
     function renderItems(items){
       if (window.__LEARN_BOOTED__) return;
-      if(!items || !items.length){ if(box) box.textContent='В этом уроке пока нет слов.'; return; }
+      if(!items || !items.length){ if(box) box.textContent=window.LEARN_I18N.noWords; return; }
       var w = items[0];
       box.innerHTML =
         '<div><b>(nl)</b> ' + (w.translation_nl||'') + '</div>' +
@@ -132,19 +139,19 @@
         '<div style="margin-bottom:8px">' + (w.sentence_ru||'') + '</div>';
     }
     function loadFromServer(){
-      if (box) box.textContent = 'Загрузка...';
+      if (box) box.textContent = window.LEARN_I18N.loading;
       fetch('/api/lesson_words?lesson=' + encodeURIComponent(lesson))
         .then(r=>r.json())
         .then(js=>{
           if (window.__LEARN_BOOTED__) return;
-          if(!js || js.ok===false){ if(box) box.textContent='Ошибка загрузки слов.'; return; }
+          if(!js || js.ok===false){ if(box) box.textContent=window.LEARN_I18N.wordsLoadError; return; }
           var items = js.items||[];
           if (window.LocalDB && items && items.length){
             window.LocalDB.set('words', items, idbKey('lesson:' + lesson)).catch(()=>{});
           }
           renderItems(items);
         })
-        .catch(()=>{ if(!window.__LEARN_BOOTED__ && box) box.textContent='Сеть недоступна.'; });
+        .catch(()=>{ if(!window.__LEARN_BOOTED__ && box) box.textContent=window.LEARN_I18N.networkUnavailable; });
     }
     if (window.LocalDB){
       window.LocalDB.get('words', idbKey('lesson:' + lesson))

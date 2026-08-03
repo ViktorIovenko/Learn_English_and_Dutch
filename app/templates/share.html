@@ -40,33 +40,33 @@
 <div class="share-page">
   {% if error %}
     <div class="share-panel">
-      <h2 class="share-title">Общий урок недоступен</h2>
+      <h2 class="share-title">{{ t("share.unavailable") }}</h2>
       <p class="share-empty">{{ error }}</p>
-      <a class="ghost-btn" href="/upload" style="display:inline-flex;text-decoration:none">Перейти к словам</a>
+      <a class="ghost-btn" href="/upload" style="display:inline-flex;text-decoration:none">{{ t("share.go_to_words") }}</a>
     </div>
   {% elif share %}
     <div class="share-head">
       <div>
         <h2 class="share-title">{{ share.title }}</h2>
         <div class="share-meta">
-          {{ share.lessons_count or 1 }} уроков · {{ share.words_count }} слов{% if share.owner_name %} · поделился {{ share.owner_name }}{% endif %}
+          {{ share.lessons_count or 1 }} {{ t("nav.lessons")|lower }} · {{ t("share.words_count", count=share.words_count) }}{% if share.owner_name %} · {{ t("share.shared_by", name=share.owner_name) }}{% endif %}
         </div>
       </div>
-      <a class="ghost-btn" href="/" style="display:inline-flex;text-decoration:none">Мои уроки</a>
+      <a class="ghost-btn" href="/" style="display:inline-flex;text-decoration:none">{{ t("share.my_lessons") }}</a>
     </div>
 
     <div class="share-panel">
       <div class="share-actions">
-        <button type="button" id="share-import-btn">Импортировать{% if (share.lessons_count or 1) > 1 %} уроки{% else %} урок{% endif %}</button>
+        <button type="button" id="share-import-btn">{% if (share.lessons_count or 1) > 1 %}{{ t("share.import_lessons") }}{% else %}{{ t("share.import_lesson") }}{% endif %}</button>
         <span id="share-status" class="share-status"></span>
       </div>
     </div>
 
     <div class="share-panel">
-      <h3 style="margin-top:0">Предпросмотр</h3>
+      <h3 style="margin-top:0">{{ t("share.preview") }}</h3>
       {% for lesson in share.lessons %}
         <div class="share-lesson-preview">
-          <h4>{{ lesson.lesson }} <span class="share-meta">· {{ lesson.words_count }} слов</span></h4>
+          <h4>{{ lesson.lesson }} <span class="share-meta">· {{ t("share.words_count", count=lesson.words_count) }}</span></h4>
           <div class="share-table-wrap">
             <table class="share-preview">
               <thead>
@@ -101,6 +101,7 @@
   const btn = document.getElementById("share-import-btn");
   const status = document.getElementById("share-status");
   const token = {{ share.token | tojson }};
+  const tr = (key, params) => window.I18N.t(key, params);
   if (!btn || !status) return;
 
   function setStatus(text, kind) {
@@ -111,20 +112,20 @@
 
   btn.addEventListener("click", async () => {
     btn.disabled = true;
-    setStatus("Импортирую урок...", "");
+    setStatus(tr("share.importing"), "");
     try {
       const resp = await apiFetch("/api/share/" + encodeURIComponent(token) + "/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
       const data = await resp.json();
-      if (!data.ok) throw new Error(data.error || "Ошибка импорта");
-      setStatus("Готово: импортировано " + data.count + " слов.", "ok");
-      btn.textContent = "Импортировано";
+      if (!data.ok) throw new Error(data.error || tr("share.import_error"));
+      setStatus(tr("share.import_done", {count: data.count}), "ok");
+      btn.textContent = tr("share.imported");
       setTimeout(() => { window.location.href = "/"; }, 900);
     } catch (e) {
       btn.disabled = false;
-      setStatus("Ошибка: " + e.message, "err");
+      setStatus(tr("common.error") + ": " + e.message, "err");
     }
   });
 })();

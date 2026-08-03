@@ -15,6 +15,12 @@ import traceback
 import sys
 import warnings
 import shutil
+from contextlib import closing
+from app.tts_usage import (
+    TtsUsageLimitExceeded,
+    record_tts_request,
+    reserve_tts_characters,
+)
 
 # pydub для пост-обработки (и ffmpeg в PATH)
 warnings.filterwarnings(
@@ -42,6 +48,7 @@ except Exception:
 APP_DIR = Path(__file__).resolve().parent
 AUDIO_ROOT = APP_DIR / "static" / "audio"
 AUDIO_ROOT.mkdir(parents=True, exist_ok=True)
+SUPPORTED_LANGS = {"nl", "en", "ru", "de", "fr", "es", "it", "pt", "pl", "uk"}
 
 
 def _connect(db_path: str) -> sqlite3.Connection:
@@ -123,17 +130,23 @@ def _maximize_loudness(mp3_path: Path) -> None:
 
 
 def _pick_word_text(row_dict: Dict[str, Any], lang: str) -> str:
-    if lang == "nl":
-        return (row_dict.get("nl") or row_dict.get("translation_nl") or "").strip()
-    if lang == "en":
-        return (row_dict.get("en") or row_dict.get("word_en") or "").strip()
-    if lang == "ru":
-        return (row_dict.get("ru") or row_dict.get("translation_ru") or "").strip()
-    return ""
+    return (row_dict.get(lang) or row_dict.get(f"{lang}_word") or row_dict.get(f"translation_{lang}") or "").strip()
 
 
 def _audio_url(lang: str, lesson_slug: str, fname: str) -> str:
     return f"/static/audio/{lang}/{lesson_slug}/{fname}"
+
+
+def _existing_audio_path(url: str) -> Path | None:
+    """Resolve only an existing URL inside app/static/audio."""
+    raw = str(url or "").split("?", 1)[0].lstrip("/")
+    if not raw.startswith("static/audio/"):
+        return None
+    target = (APP_DIR / raw).resolve()
+    audio_root = AUDIO_ROOT.resolve()
+    if target != audio_root and audio_root not in target.parents:
+        return None
+    return target if target.is_file() and target.stat().st_size > 500 else None
 
 
 def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str], user_id: str | None = None) -> Dict[str, Any]:
@@ -142,18 +155,27 @@ def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str],
     Возвращает { ok: true, items: [ {id, nl, en, ru, ok}, ... ] }
     """
     ids = [int(i) for i in (ids or []) if str(i).isdigit()]
-    langs = [x for x in (langs or ["nl", "en", "ru"]) if x in ("nl", "en", "ru")]
+    langs = [str(x).strip().lower() for x in (langs or ["nl", "en", "ru"]) if str(x).strip().lower() in SUPPORTED_LANGS]
     if not ids or not langs:
         return {"ok": True, "items": []}
 
     items: List[Dict[str, Any]] = []
+    generated = 0
+    skipped = 0
+    blocked = 0
 
     now_ms = int(time.time() * 1000)
-    with _connect(db_path) as c:
+    with closing(_connect(db_path)) as c:
         cols = [r["name"] for r in c.execute("PRAGMA table_info(words)")]
         if "updated_at" not in cols:
             c.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER;")
             c.execute("UPDATE words SET updated_at = (strftime('%s','now') * 1000) WHERE updated_at IS NULL;")
+            cols.append("updated_at")
+        for lang in langs:
+            for col in (lang, f"ex_{lang}", f"audio_{lang}"):
+                if col not in cols:
+                    c.execute(f"ALTER TABLE words ADD COLUMN {col} TEXT;")
+                    cols.append(col)
         qmarks = ",".join("?" * len(ids))
         if user_id:
             where = f"(user_id = ? OR status = 'test') AND id IN ({qmarks})"
@@ -161,13 +183,14 @@ def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str],
         else:
             where = f"id IN ({qmarks})"
             params = ids
+        select_cols = ",\n                   ".join(
+            f"COALESCE({lang},'') AS {lang}, COALESCE(audio_{lang},'') AS audio_{lang}"
+            for lang in langs
+        )
         rows = c.execute(
             f"""
             SELECT id, lesson,
-                   COALESCE(nl,'') AS nl, COALESCE(en,'') AS en, COALESCE(ru,'') AS ru,
-                   COALESCE(audio_nl,'') AS audio_nl,
-                   COALESCE(audio_en,'') AS audio_en,
-                   COALESCE(audio_ru,'') AS audio_ru
+                   {select_cols}
             FROM words WHERE {where}
             """,
             params,
@@ -178,11 +201,8 @@ def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str],
             wid = int(d["id"])
             lesson_slug = _lesson_slug(str(d.get("lesson") or "lesson"))
 
-            out_per_lang = {
-                "nl": d.get("audio_nl") or "",
-                "en": d.get("audio_en") or "",
-                "ru": d.get("audio_ru") or "",
-            }
+            out_per_lang = {lang: d.get(f"audio_{lang}") or "" for lang in langs}
+            row_errors: list[dict[str, Any]] = []
 
             for lang in langs:
                 try:
@@ -191,39 +211,107 @@ def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str],
                         out_per_lang[lang] = ""
                         continue
 
+                    stored_url = str(d.get(f"audio_{lang}") or "")
+                    if _existing_audio_path(stored_url):
+                        out_per_lang[lang] = stored_url
+                        skipped += 1
+                        continue
+
                     fname = _filename_from_text(text, lang)
                     out_dir = AUDIO_ROOT / lang / lesson_slug
                     out_path = out_dir / fname
 
                     if out_path.exists() and out_path.stat().st_size > 500:
                         out_per_lang[lang] = _audio_url(lang, lesson_slug, fname)
+                        skipped += 1
                     else:
+                        reserve_tts_characters(
+                            c,
+                            user_id,
+                            characters=len(text),
+                            timezone_name=Config.TTS_USAGE_TIMEZONE,
+                        )
                         print(f"[TTS] Generate one: id={wid} {lang} -> {out_path}")
-                        _tts_make(text, lang, out_path)
+                        try:
+                            _tts_make(text, lang, out_path)
+                        except Exception:
+                            try:
+                                record_tts_request(
+                                    c,
+                                    user_id,
+                                    successful=False,
+                                    timezone_name=Config.TTS_USAGE_TIMEZONE,
+                                )
+                            except Exception:
+                                print("[TTS][USAGE] failed to record unsuccessful request", file=sys.stderr)
+                                traceback.print_exc()
+                            raise
+                        else:
+                            try:
+                                record_tts_request(
+                                    c,
+                                    user_id,
+                                    successful=True,
+                                    timezone_name=Config.TTS_USAGE_TIMEZONE,
+                                )
+                            except Exception:
+                                print("[TTS][USAGE] failed to record successful request", file=sys.stderr)
+                                traceback.print_exc()
                         # >>> Максимизация громкости
                         _maximize_loudness(out_path)
                         out_per_lang[lang] = _audio_url(lang, lesson_slug, fname)
+                        generated += 1
 
+                except TtsUsageLimitExceeded as exc:
+                    blocked += 1
+                    row_errors.append({
+                        "lang": lang,
+                        "error": "tts_monthly_character_limit_reached",
+                        "scope": exc.scope,
+                        "limit": exc.limit,
+                        "used": exc.used,
+                        "requested": exc.requested,
+                    })
+                    print(
+                        f"[TTS][LIMIT] id={wid} lang={lang} "
+                        f"scope={exc.scope} used={exc.used} limit={exc.limit}",
+                        file=sys.stderr,
+                    )
+                    out_per_lang[lang] = ""
                 except Exception as e:
                     print(f"[TTS][ERROR] id={wid} lang={lang}: {e}", file=sys.stderr)
                     traceback.print_exc()
+                    row_errors.append({"lang": lang, "error": str(e)})
                     out_per_lang[lang] = ""
 
             if user_id:
+                set_clause = ", ".join([f"audio_{lang}=?" for lang in langs] + ["updated_at=?"])
                 c.execute(
-                    "UPDATE words SET audio_nl=?, audio_en=?, audio_ru=?, updated_at=? WHERE id=? AND (user_id=? OR status='test')",
-                    (out_per_lang["nl"], out_per_lang["en"], out_per_lang["ru"], now_ms, wid, str(user_id)),
+                    f"UPDATE words SET {set_clause} WHERE id=? AND (user_id=? OR status='test')",
+                    [out_per_lang.get(lang, "") for lang in langs] + [now_ms, wid, str(user_id)],
                 )
             else:
+                set_clause = ", ".join([f"audio_{lang}=?" for lang in langs] + ["updated_at=?"])
                 c.execute(
-                    "UPDATE words SET audio_nl=?, audio_en=?, audio_ru=?, updated_at=? WHERE id=?",
-                    (out_per_lang["nl"], out_per_lang["en"], out_per_lang["ru"], now_ms, wid),
+                    f"UPDATE words SET {set_clause} WHERE id=?",
+                    [out_per_lang.get(lang, "") for lang in langs] + [now_ms, wid],
                 )
 
-            items.append(
-                {"id": wid, "nl": out_per_lang["nl"], "en": out_per_lang["en"], "ru": out_per_lang["ru"], "ok": True}
-            )
+            items.append({
+                "id": wid,
+                **out_per_lang,
+                "ok": not row_errors,
+                "errors": row_errors,
+            })
 
         c.commit()
 
-    return {"ok": True, "items": items}
+    return {
+        "ok": blocked == 0,
+        "items": items,
+        "generated": generated,
+        "skipped": skipped,
+        "blocked": blocked,
+        "limit_reached": blocked > 0,
+        "error": "tts_monthly_character_limit_reached" if blocked else None,
+    }

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.family-link-card{max-width:560px;margin:36px auto;padding:28px;border:1px solid #dbeafe;border-radius:20px;background:#fff;box-shadow:0 12px 36px rgba(15,23,42,.09);text-align:center}
+.family-link-icon{font-size:58px}.family-link-card h1{font-size:24px;color:#172554;margin:10px 0}.family-link-card p{color:#64748b}.family-link-status{min-height:24px;margin-top:14px}.family-link-status.ok{color:#15803d}.family-link-status.err{color:#dc2626}
+</style>
+<div class="family-link-card">
+  <div class="family-link-icon" aria-hidden="true">👨‍👩‍👧</div>
+  <h1>{{ t("family.link_title") }}</h1>
+  {% if pairing_valid %}
+    <p>{{ t("family.link_note", name=child_name) }}</p>
+    <button type="button" id="family-link-confirm">{{ t("family.link_confirm") }}</button>
+  {% else %}
+    <p>{{ t("family.invalid") }}</p>
+  {% endif %}
+  <div id="family-link-status" class="family-link-status" aria-live="polite"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if pairing_valid %}
+<script>
+(function(){
+  const button = document.getElementById("family-link-confirm");
+  const status = document.getElementById("family-link-status");
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      const response = await window.apiFetch("/api/family/link", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({token: {{ pairing_token | tojson }}}),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        const message = data.error === "parent_limit_reached"
+          ? window.I18N.t("family.parent_limit")
+          : (data.error || "link_failed");
+        throw new Error(message);
+      }
+      status.className = "family-link-status ok";
+      status.textContent = {{ t("family.linked") | tojson }};
+      setTimeout(() => window.location.replace("/settings"), 800);
+    } catch (error) {
+      status.className = "family-link-status err";
+      status.textContent = error.message;
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

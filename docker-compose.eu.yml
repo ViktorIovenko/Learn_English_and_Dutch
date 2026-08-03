@@ -11,8 +11,14 @@ services:
       - ./data/bot_persistence.pkl:/app/bot_persistence.pkl
     networks:
       - family_internal
+      - ai_platform_internal
 
 networks:
   family_internal:
     external: true
     name: family-call_internal
+  # Позволяет вызывать ai-platform-api:8000 для облачной генерации слов
+  # (переключатель Ollama/Облако на странице загрузки слов).
+  ai_platform_internal:
+    external: true
+    name: sfs_internal

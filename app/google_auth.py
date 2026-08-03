@@ -59,8 +59,9 @@ def _find_or_create_google_user(google_id: str, email: str, name: str) -> str | 
             conn.execute(
                 """
                 INSERT INTO users
-                    (user_id, username, first_name, last_name, is_active, auth_provider, google_id)
-                VALUES (?, ?, ?, ?, 1, 'google', ?)
+                    (user_id, username, first_name, last_name, is_active,
+                     auth_provider, google_id, account_type)
+                VALUES (?, ?, ?, ?, 1, 'google', ?, 'pending')
                 ON CONFLICT(user_id) DO UPDATE SET
                     google_id      = excluded.google_id,
                     auth_provider  = 'google',

@@ -28,9 +28,19 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,Segoe
 /* [ДОБАВЛЕНО v5.7] На всякий случай полностью скрываем user-mini, */
 .user-mini{display:none !important}
 /* [ДОБАВЛЕНО v5.2] строка с заголовком слева и локальными вкладками справа */
-.subbar{display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px 0}
-.subtabs{display:flex;gap:16px}
-.subtabs a{color:var(--muted);text-decoration:none;padding:6px 0;border-bottom:2px solid transparent}
+.subbar{margin:10px 0 6px 0;min-width:0}
+.subtabs{
+  display:flex;
+  gap:16px;
+  width:100%;
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  flex-wrap:nowrap;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+}
+.subtabs a{flex:0 0 auto;color:var(--muted);text-decoration:none;padding:6px 0;border-bottom:2px solid transparent;white-space:nowrap}
 .subtabs a:hover{color:var(--fg);border-color:var(--line)}
 .subtabs a.active{color:var(--acc);border-color:var(--acc)}
 /* [ДОБАВЛЕНО v5.5] компактный левый заголовок в subbar */
@@ -134,6 +144,9 @@ a.card:hover .card-title{color:var(--acc-hover);text-decoration:underline}
   border-radius:999px;
   box-shadow:var(--shadow);
   width:max-content;
+}
+.daily-timer[hidden]{
+  display:none !important;
 }
 .daily-timer .dt-label{
   font-size:13px;

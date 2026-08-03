@@ -1,24 +1,28 @@
 <!-- app/templates/base.html -->
 <!doctype html>
-<html lang="ru">
+<html lang="{{ current_ui_language or 'en' }}">
 <head>
   <meta charset="utf-8">
-  <title>{{ title or "Learning words" }}</title>
+  <title>{{ title or t("app.title") }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20260714-learning-modes') }}">
 </head>
 <body>
   <header class="header">
     <!-- [ДОБАВЛЕНО v5.11] Контейнер с 10-минутным таймером -->
     {% if not hide_timer %}<div class="container">
-      <div id="daily-timer" class="daily-timer" role="group" aria-label="10-minute study timer">
-        <span class="dt-label" id="dt_label">Ежедневная цель:</span>
+      <div id="child-daily-goal" class="daily-timer" role="status" aria-live="polite" hidden>
+        <span class="dt-label">{{ t("child_goal.label") }}</span>
+        <span class="dt-time" id="child-goal-count">0 / 25</span>
+        <span class="dt-label" id="child-goal-status"></span>
+      </div>
+      <div id="daily-timer" class="daily-timer" role="group" aria-label="Study timer" hidden>
+        <span class="dt-label">{{ t("timer.daily_goal") }}</span>
         <span class="dt-time" id="dt_time" aria-live="polite">10:00</span>
-        <button id="dt_pause" class="pill-btn small" type="button" aria-pressed="false">Пауза</button>
-        <!-- [ДОБАВЛЕНО v5.13] Кнопка перезапуска -->
-        <button id="dt_restart" class="pill-btn small" type="button" title="Перезапустить таймер">Перезапуск</button>
-        <button id="dt_reset" class="pill-btn small ghost" type="button" style="display:none">Сброс</button>
+        <button id="dt_pause" class="pill-btn small" type="button">{{ t("timer.pause") }}</button>
+        <button id="dt_restart" class="pill-btn small" type="button">{{ t("timer.restart") }}</button>
+        <button id="dt_reset" class="pill-btn small ghost" type="button" style="display:none">{{ t("timer.reset") }}</button>
       </div>
     </div>{% endif %}
     <!-- /[ДОБАВЛЕНО v5.11] -->
@@ -26,25 +30,40 @@
   <div id="termsModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
       <div class="modal-head">
-        <div class="modal-title" id="termsTitle">Условия пользования</div>
+        <div class="modal-title" id="termsTitle">{{ t("terms.title") }}</div>
       </div>
       <div class="modal-body">
-        <p>Добро пожаловать в приложение для запоминания слов на выбранных вами языках.</p>
-        <p>Для использования приложения необходимо согласиться с условиями пользования.</p>
-        <p>Юридическое предупреждение: мы сохраняем cookies на вашем устройстве (телефоне), вы всегда можете их удалить.</p>
+        <p>{{ t("terms.p1") }}</p>
+        <p>{{ t("terms.p2") }}</p>
+        <p>{{ t("terms.p3") }}</p>
       </div>
       <div class="modal-actions">
-        <button id="termsAcceptBtn" type="button" class="pill-btn">Я согласен</button>
+        <button id="termsAcceptBtn" type="button" class="pill-btn">{{ t("terms.accept") }}</button>
       </div>
     </div>
   </div>
-  <div id="floating-timer" class="floating-timer" aria-hidden="true" aria-label="Таймер">
+  {% if not hide_timer %}
+  <div id="floating-timer" class="floating-timer" aria-hidden="true" aria-label="Study timer">
     <span id="floating-time" aria-live="polite">10:00</span>
   </div>
+  {% endif %}
   <main class="container">
     {% block content %}{% endblock %}
   </main>
   <script>
+    window.I18N = {
+      language: {{ (current_ui_language or "en") | tojson }},
+      catalog: {{ i18n_catalog | tojson }},
+      t(key, params) {
+        let text = this.catalog[key] || key;
+        if (params) {
+          Object.keys(params).forEach((name) => {
+            text = text.replaceAll("{" + name + "}", String(params[name]));
+          });
+        }
+        return text;
+      }
+    };
     const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
     if (tg) { try { tg.expand(); tg.enableClosingConfirmation(); } catch(e){} }
     (function putNameInstant(){
@@ -127,7 +146,7 @@
       try{
         const el = document.getElementById("acc_auth");
         const ok = !!val;
-        el.textContent = "auth: " + (ok ? "true" : "false");
+        el.textContent = ok ? window.I18N.t("account.auth_true") : window.I18N.t("account.auth_false");
         el.classList.toggle("ok", ok);
       }catch(e){}
     }
@@ -158,6 +177,12 @@
         const r = await apiFetch("/api/me");
         const me = await r.json();
         if (me && me.ok && me.auth) {
+          document.querySelectorAll("[data-parent-only]").forEach((element) => {
+            element.hidden = !me.is_parent;
+          });
+          document.querySelectorAll("[data-subscription-nav]").forEach((element) => {
+            element.hidden = !!(me.subscription && me.subscription.is_unlimited);
+          });
           _setText("acc_id", String(me.user_id||""));
           _setText("acc_username", me.username ? "@"+me.username : "");
           _setText("acc_first", me.first_name || "");
@@ -173,7 +198,13 @@
           maybeShowTerms(me.user_id || USER_ID);
           try {
             const path = window.location.pathname || "/";
+            if (me.needs_account_type && path !== "/account-type") {
+              window.location.href = "/account-type";
+              return;
+            }
             const skipLanguageSetup =
+              path === "/account-type" ||
+              path === "/family/link" ||
               path === "/settings" ||
               path === "/subscription" ||
               path.startsWith("/admin/") ||
@@ -187,6 +218,8 @@
               return;
             }
             const skipSubscription =
+              path === "/account-type" ||
+              path === "/family/link" ||
               path === "/subscription" ||
               path === "/settings" ||
               path.startsWith("/admin/") ||
@@ -210,7 +243,55 @@
        - НЕ сбрасывается при переходе по страницам
        - Сбрасывается только при полном закрытии WebApp/браузера
        =========================================== */
-    (function attachDailyTimer(){
+    (function attachChildDailyGoal(){
+      const wrap = document.getElementById('child-daily-goal');
+      const count = document.getElementById('child-goal-count');
+      const status = document.getElementById('child-goal-status');
+      if (!wrap || !count || !status) return;
+      const fallbackStatuses = {
+        5: 'Good start 🌱', 10: 'Well done ⭐', 15: 'Great job 🚀',
+        20: 'Hero 🦸', 25: 'Champion of the day 🏆'
+      };
+      let lastData = null;
+      function renderData(data){
+        if (!data?.is_child) { wrap.hidden = true; return; }
+        lastData = data;
+        wrap.hidden = false;
+        count.textContent = `${data.today_count} / ${data.daily_goal}`;
+        const key = `child_goal.status_${data.status_milestone}`;
+        const translated = data.status_milestone ? window.I18N.t(key) : '';
+        status.textContent = translated && translated !== key
+          ? translated : (fallbackStatuses[data.status_milestone] || '');
+        wrap.classList.toggle('done', !!data.goal_complete);
+      }
+      window.updateChildGoalOptimistic = function(){
+        if (!lastData?.is_child || lastData.today_count >= lastData.daily_goal) return;
+        const todayCount = lastData.today_count + 1;
+        const milestone = [5, 10, 15, 20, 25]
+          .filter(value => todayCount >= value).pop() || 0;
+        renderData({
+          ...lastData,
+          today_count: todayCount,
+          status_milestone: milestone,
+          goal_complete: todayCount >= lastData.daily_goal
+        });
+      };
+      async function refresh(){
+        try {
+          const tzOffset = new Date().getTimezoneOffset();
+          const response = await window.apiFetch(`/api/child-learning/status?tz_offset=${tzOffset}`);
+          if (!response.ok) return;
+          const data = await response.json();
+          renderData(data);
+        } catch (e) {}
+      }
+      window.addEventListener('child-progress-updated', () => {
+        window.updateChildGoalOptimistic();
+      });
+      window.addEventListener('learning-progress-synced', refresh);
+      window.addEventListener('load', refresh);
+    })();
+    (async function attachDailyTimer(){
       const wrap    = document.getElementById('daily-timer');
       const timeEl  = document.getElementById('dt_time');
       const pause   = document.getElementById('dt_pause');
@@ -220,32 +301,45 @@
       const floatingTime = document.getElementById('floating-time');
       if (!wrap || !timeEl || !pause || !reset || !restart) return;
 
-      const TOTAL = 10 * 60; // 10 минут
+      let goalData = null;
+      try {
+        const response = await window.apiFetch("/api/daily-goal");
+        goalData = await response.json();
+      } catch(e) { return; }
+      if (!goalData?.ok || goalData.goal_type !== "minutes") return;
+      wrap.hidden = false;
+
+      const TOTAL = Number(goalData.goal_value || 10) * 60;
+      const STORAGE_PREFIX = `daily_timer:${window.USER_ID || "user"}:${goalData.goal_value}:`;
+      const VISIBILITY_PAUSED_KEY = STORAGE_PREFIX + 'visibility_paused';
       const FLOAT_POS_KEY = 'dt_floating_pos';
       const FLOAT_HOLD_MS = 180;
       const FLOAT_SCROLL_THRESHOLD = 20;
 
       function readState(){
-        let remaining = Number(sessionStorage.getItem('dt_remaining'));
-        let running   = sessionStorage.getItem('dt_running');
-        let lastTs    = Number(sessionStorage.getItem('dt_last'));
-        if (!Number.isFinite(remaining) || remaining <= 0 || remaining > TOTAL) remaining = TOTAL;
+        const today = new Date().toLocaleDateString("en-CA");
+        if (localStorage.getItem(STORAGE_PREFIX + 'date') !== today) {
+          localStorage.setItem(STORAGE_PREFIX + 'date', today);
+          localStorage.removeItem(STORAGE_PREFIX + 'remaining');
+          localStorage.removeItem(STORAGE_PREFIX + 'running');
+          localStorage.removeItem(STORAGE_PREFIX + 'last');
+          localStorage.removeItem(VISIBILITY_PAUSED_KEY);
+        }
+        const storedRemaining = localStorage.getItem(STORAGE_PREFIX + 'remaining');
+        let remaining = storedRemaining === null ? TOTAL : Number(storedRemaining);
+        let running   = localStorage.getItem(STORAGE_PREFIX + 'running');
+        let lastTs    = Number(localStorage.getItem(STORAGE_PREFIX + 'last'));
+        if (!Number.isFinite(remaining) || remaining < 0 || remaining > TOTAL) remaining = TOTAL;
         if (running === null) running = '1';
         if (!Number.isFinite(lastTs) || lastTs <= 0) lastTs = Date.now();
-        if (running === '1') {
-          const now = Date.now();
-          const deltaSec = Math.floor((now - lastTs) / 1000);
-          if (deltaSec > 0) {
-            remaining = Math.max(0, remaining - deltaSec);
-            lastTs = now;
-          }
-        }
+        // Время между закрытием/скрытием приложения и новым показом не считается.
+        lastTs = Date.now();
         return { remaining, running: (running === '1'), lastTs };
       }
       function writeState(state){
-        sessionStorage.setItem('dt_remaining', String(state.remaining));
-        sessionStorage.setItem('dt_running',   state.running ? '1' : '0');
-        sessionStorage.setItem('dt_last',      String(state.lastTs));
+        localStorage.setItem(STORAGE_PREFIX + 'remaining', String(state.remaining));
+        localStorage.setItem(STORAGE_PREFIX + 'running', state.running ? '1' : '0');
+        localStorage.setItem(STORAGE_PREFIX + 'last', String(state.lastTs));
       }
 
       let state = readState();
@@ -337,7 +431,7 @@
         reset.style.display  = state.remaining <= 0 ? '' : 'none';
         // restart всегда виден
         restart.style.display = ''; // [ДОБАВЛЕНО v5.13]
-        pause.textContent = state.running ? 'Пауза' : 'Продолжить';
+        pause.textContent = state.running ? window.I18N.t('timer.pause') : window.I18N.t('timer.resume');
         pause.setAttribute('aria-pressed', state.running ? 'false' : 'true');
       }
 
@@ -345,6 +439,7 @@
       function stopTick(){ if (tickId){ clearInterval(tickId); tickId = null; } }
       function startTick(){
         stopTick();
+        if (document.hidden) return;
         tickId = setInterval(()=>{
           if (!state.running || state.remaining <= 0) return;
           const now = Date.now();
@@ -358,21 +453,55 @@
         }, 1000);
       }
 
+      function pauseForHiddenApp(){
+        if (state.running && state.remaining > 0 &&
+            localStorage.getItem(VISIBILITY_PAUSED_KEY) !== '1') {
+          const now = Date.now();
+          const deltaSec = Math.floor((now - state.lastTs) / 1000);
+          if (deltaSec > 0) state.remaining = Math.max(0, state.remaining - deltaSec);
+          state.lastTs = now;
+          localStorage.setItem(VISIBILITY_PAUSED_KEY, '1');
+          writeState(state);
+          render();
+        }
+        stopTick();
+      }
+
+      function resumeAfterHiddenApp(){
+        if (localStorage.getItem(VISIBILITY_PAUSED_KEY) === '1') {
+          localStorage.removeItem(VISIBILITY_PAUSED_KEY);
+          state.lastTs = Date.now();
+          writeState(state);
+        }
+        render();
+        if (state.running && state.remaining > 0) startTick();
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) pauseForHiddenApp();
+        else resumeAfterHiddenApp();
+      });
+      window.addEventListener('pagehide', pauseForHiddenApp);
+      window.addEventListener('pageshow', resumeAfterHiddenApp);
+
       pause.addEventListener('click', ()=>{
         state.running = !state.running;
         state.lastTs  = Date.now();
+        localStorage.removeItem(VISIBILITY_PAUSED_KEY);
         writeState(state);
         render();
-        if (state.running && !tickId) startTick();
+        if (state.running && !document.hidden && !tickId) startTick();
+        else if (!state.running) stopTick();
       });
 
       reset.addEventListener('click', ()=>{
         state.remaining = TOTAL;
         state.running   = true;
         state.lastTs    = Date.now();
+        localStorage.removeItem(VISIBILITY_PAUSED_KEY);
         writeState(state);
         render();
-        startTick();
+        if (!document.hidden) startTick();
       });
 
       // [ДОБАВЛЕНО v5.13] Обработчик «Перезапуск»
@@ -380,9 +509,10 @@
         state.remaining = TOTAL;   // сброс до 10:00
         state.running   = true;    // сразу запустить
         state.lastTs    = Date.now();
+        localStorage.removeItem(VISIBILITY_PAUSED_KEY);
         writeState(state);
         render();
-        startTick();
+        if (!document.hidden) startTick();
       });
 
       let floatDragging = false;
@@ -443,7 +573,7 @@
       setupFloatingVisibility();
 
       window.addEventListener('beforeunload', ()=>{
-        if (state.running){
+        if (state.running && localStorage.getItem(VISIBILITY_PAUSED_KEY) !== '1'){
           const now = Date.now();
           const deltaSec = Math.floor((now - state.lastTs) / 1000);
           if (deltaSec > 0){
@@ -456,7 +586,8 @@
 
       writeState(state);
       render();
-      startTick();
+      if (document.hidden) pauseForHiddenApp();
+      else resumeAfterHiddenApp();
     })();
     /* ===== /Сеансовый таймер ===== */
   </script>

@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.parent-page{max-width:960px;margin:0 auto}.parent-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}.parent-title{margin:0;font-size:24px}.parent-note,.parent-muted{color:#64748b;font-size:14px}.parent-note{margin:4px 0 0}.parent-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.parent-panel{border:1px solid #e2e8f0;border-radius:14px;background:#fff;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(15,23,42,.04)}.parent-panel h3{margin:0 0 12px}.parent-children{display:flex;gap:10px;overflow-x:auto;padding:3px}.parent-child{min-width:260px;border:1px solid #dbeafe;border-radius:12px;background:#f8fafc;padding:12px;cursor:pointer;text-align:left;color:#0f172a}.parent-child:hover{background:#eff6ff}.parent-child.active{border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 2px rgba(37,99,235,.1)}.parent-child-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.parent-child-name{font-weight:750;min-width:0;overflow:hidden;text-overflow:ellipsis}.parent-child-meta{display:block;color:#64748b;font-size:12px;margin-top:5px;white-space:normal}.parent-unlink{padding:5px 9px;font-size:12px;background:#fff;color:#b91c1c;border:1px solid #fecaca;flex:0 0 auto}.parent-unlink:hover{background:#fef2f2}.parent-controls{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}.parent-period{border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a;padding:8px 10px}.parent-periods{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.parent-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.parent-metric{border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc;padding:12px}.parent-metric-label{color:#64748b;font-size:12px}.parent-metric-value{font-size:22px;line-height:1.25;font-weight:800;margin-top:3px}.parent-chart-wrap{overflow-x:auto;padding-bottom:6px}.parent-chart{height:190px;display:flex;align-items:flex-end;gap:5px;border-bottom:1px solid #cbd5e1;padding:8px 4px 0;min-width:100%}.parent-chart-day{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:22px;height:100%}.parent-chart-bars{height:150px;width:14px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:4px 4px 0 0;overflow:hidden}.parent-chart-correct{background:#22c55e}.parent-chart-incorrect{background:#ef4444}.parent-chart-activity{background:#60a5fa}.parent-chart-label{height:17px;font-size:10px;color:#64748b;white-space:nowrap}.parent-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;color:#475569;font-size:12px}.parent-legend span{display:inline-flex;align-items:center;gap:5px}.parent-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}.parent-progress{display:grid;grid-template-columns:1fr auto;gap:8px 16px;align-items:center}.parent-status{min-height:24px;color:#64748b}.parent-status.err{color:#dc2626}.parent-empty{text-align:center;padding:22px;color:#64748b}.parent-hidden{display:none!important}@media(max-width:680px){.parent-head{flex-direction:column}.parent-actions{justify-content:flex-start}.parent-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.parent-child{min-width:245px}}@media(max-width:380px){.parent-metrics{grid-template-columns:1fr}.parent-controls{align-items:stretch}.parent-period{width:100%}}
+.parent-priority{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:12px}.parent-priority select{width:100%}.parent-priority-status{grid-column:1/-1;min-height:20px}
+.parent-history-wrap{overflow-x:auto}.parent-history{width:100%;border-collapse:collapse;font-size:13px}.parent-history th,.parent-history td{padding:9px 8px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap}.parent-history th{color:#64748b;font-size:12px}.parent-history-active{color:#15803d;font-weight:700}
+</style>
+
+<div class="parent-page">
+  <div class="parent-head">
+    <div>
+      <h1 class="parent-title">{{ t("parent.title") }}</h1>
+      <p class="parent-note">{{ t("parent.note") }}</p>
+    </div>
+    <div class="parent-actions">
+      <a href="{{ url_for('web.settings_page') }}#family-panel" class="pill-btn ghost small">{{ t("parent.add_child") }}</a>
+      <a href="{{ url_for('web.home') }}" class="pill-btn ghost small">{{ t("nav.to_lessons") }}</a>
+    </div>
+  </div>
+
+  <div id="parent-status" class="parent-status" aria-live="polite">{{ t("common.loading") }}</div>
+
+  <section id="parent-content" class="parent-hidden">
+    <div class="parent-panel">
+      <h3>{{ t("parent.manage") }}</h3>
+      <div id="parent-children" class="parent-children"></div>
+    </div>
+
+    <div class="parent-panel">
+      <div class="parent-controls">
+        <label>
+          <span class="parent-muted">{{ t("parent.period") }}</span><br>
+          <select id="parent-period" class="parent-period">
+            <option value="7">{{ t("parent.days", count=7) }}</option>
+            <option value="30" selected>{{ t("parent.days", count=30) }}</option>
+            <option value="90">{{ t("parent.days", count=90) }}</option>
+          </select>
+        </label>
+      </div>
+      <div class="parent-priority">
+        <label>
+          <span class="parent-muted">{{ t("parent.priority_lesson") }}</span><br>
+          <select id="parent-priority-lesson" class="parent-period"></select>
+        </label>
+        <button id="parent-priority-save" type="button" class="pill-btn small">{{ t("parent.priority_save") }}</button>
+        <div id="parent-priority-status" class="parent-muted parent-priority-status" aria-live="polite"></div>
+      </div>
+      <div class="parent-metrics">
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.today_progress") }}</div><div id="metric-today-progress" class="parent-metric-value">—</div></div>
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.studied_today") }}</div><div id="metric-studied-today" class="parent-metric-value">—</div></div>
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.time_today") }}</div><div id="metric-time-today" class="parent-metric-value">—</div></div>
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.words") }}</div><div id="metric-words" class="parent-metric-value">—</div></div>
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.lessons") }}</div><div id="metric-lessons" class="parent-metric-value">—</div></div>
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.learning_days") }}</div><div id="metric-days" class="parent-metric-value">—</div></div>
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.learning_streak") }}</div><div id="metric-streak" class="parent-metric-value">🔥 —</div></div>
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.active_lessons") }}</div><div id="metric-active-lessons" class="parent-metric-value">—</div></div>
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.correct_answers") }}</div><div id="metric-correct" class="parent-metric-value">—</div></div>
+        <div class="parent-metric"><div class="parent-metric-label">{{ t("parent.success_rate") }}</div><div id="metric-success" class="parent-metric-value">—</div></div>
+      </div>
+    </div>
+
+    <div class="parent-panel">
+      <h3>{{ t("parent.activity_chart") }}</h3>
+      <p class="parent-note">{{ t("parent.chart_note") }}</p>
+      <div class="parent-chart-wrap"><div id="parent-chart" class="parent-chart" role="img" aria-label="{{ t('parent.activity_chart') }}"></div></div>
+      <div class="parent-legend">
+        <span><i style="background:#22c55e"></i>{{ t("parent.correct") }}</span>
+        <span><i style="background:#ef4444"></i>{{ t("parent.incorrect") }}</span>
+        <span><i style="background:#60a5fa"></i>{{ t("parent.activity") }}</span>
+      </div>
+    </div>
+
+    <div class="parent-panel">
+      <h3>{{ t("parent.latest_progress") }}</h3>
+      <div id="parent-latest" class="parent-progress"></div>
+    </div>
+
+    <div class="parent-panel">
+      <h3>{{ t("parent.priority_history") }}</h3>
+      <div id="parent-priority-history" class="parent-history-wrap"></div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const tr = (key, params) => window.I18N.t(key, params);
+  const statusEl = document.getElementById("parent-status");
+  const contentEl = document.getElementById("parent-content");
+  const childrenEl = document.getElementById("parent-children");
+  const periodSelect = document.getElementById("parent-period");
+  const chartEl = document.getElementById("parent-chart");
+  const latestEl = document.getElementById("parent-latest");
+  const prioritySelect = document.getElementById("parent-priority-lesson");
+  const prioritySave = document.getElementById("parent-priority-save");
+  const priorityStatus = document.getElementById("parent-priority-status");
+  const priorityHistoryEl = document.getElementById("parent-priority-history");
+  let children = [];
+  let selectedChildId = "";
+  let loadRequestId = 0;
+
+  function escapeHtml(value){
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+  }
+
+  function setStatus(text, error){
+    statusEl.textContent = text || "";
+    statusEl.classList.toggle("err", !!error);
+  }
+
+  function dateTime(value){
+    const ts = Number(value || 0);
+    if (!ts) return tr("parent.never");
+    return new Intl.DateTimeFormat(window.I18N.language || undefined, {
+      dateStyle: "medium", timeStyle: "short"
+    }).format(new Date(ts));
+  }
+
+  function learningTime(seconds){
+    const total = Math.max(0, Number(seconds || 0));
+    if (!total) return tr("parent.zero_minutes");
+    if (total < 60) return tr("parent.less_than_minute");
+    const minutes = Math.round(total / 60);
+    if (minutes < 60) return tr("parent.minutes", {count: minutes});
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    return rest ? tr("parent.hours_minutes", {hours, minutes: rest}) : tr("parent.hours", {count: hours});
+  }
+
+  function priorityDuration(seconds){
+    const totalMinutes = Math.max(0, Math.floor(Number(seconds || 0) / 60));
+    if (totalMinutes < 60) return tr("parent.priority_minutes", {count: totalMinutes});
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours < 24) return minutes
+      ? tr("parent.priority_hours_minutes", {hours, minutes})
+      : tr("parent.priority_hours", {count: hours});
+    const days = Math.floor(hours / 24);
+    const restHours = hours % 24;
+    return restHours
+      ? tr("parent.priority_days_hours", {days, hours: restHours})
+      : tr("parent.priority_days", {count: days});
+  }
+
+  function childStatus(milestone){
+    if (!milestone) return "";
+    return tr(`child_goal.status_${milestone}`);
+  }
+
+  function renderChildren(){
+    childrenEl.innerHTML = children.map(child => `
+      <div class="parent-child ${String(child.user_id) === selectedChildId ? "active" : ""}" data-child-id="${escapeHtml(child.user_id)}" role="button" tabindex="0">
+        <div class="parent-child-head">
+          <span class="parent-child-name">${escapeHtml(child.display_name)}</span>
+          <button type="button" class="parent-unlink" data-unlink-id="${escapeHtml(child.user_id)}">${escapeHtml(tr("parent.unlink"))}</button>
+        </div>
+        <span class="parent-child-meta">${escapeHtml(tr("parent.last_activity"))}: ${escapeHtml(dateTime(child.summary.last_activity_ts))}</span>
+        <span class="parent-child-meta">${escapeHtml(tr("parent.today_progress"))}: ${Number(child.summary.today_words || 0)} / ${Number(child.summary.daily_goal || 25)} ${escapeHtml(childStatus(child.summary.today_status_milestone))}</span>
+        <span class="parent-child-meta">${escapeHtml(tr("parent.time_today"))}: ${escapeHtml(learningTime(child.summary.today_learning_seconds))}</span>
+        <span class="parent-child-meta">⭐ ${escapeHtml(tr("parent.priority_lesson"))}: ${escapeHtml(child.priority_lesson || tr("parent.priority_none"))}</span>
+        <span class="parent-child-meta">Языки: ${escapeHtml((child.languages || []).map(language => language.native || language.name || language.code).join(", ") || "—")}</span>
+        <span class="parent-child-meta">${escapeHtml(tr("parent.connected_parents"))}: ${escapeHtml((child.parents || []).map(parent => parent.display_name).join(", ") || "—")}</span>
+      </div>
+    `).join("");
+    childrenEl.querySelectorAll(".parent-child").forEach(card => {
+      const select = () => selectChild(card.dataset.childId);
+      card.addEventListener("click", event => { if (!event.target.closest("[data-unlink-id]")) select(); });
+      card.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); } });
+    });
+    childrenEl.querySelectorAll("[data-unlink-id]").forEach(button => {
+      button.addEventListener("click", () => unlinkChild(button.dataset.unlinkId));
+    });
+  }
+
+  function renderChart(daily){
+    const rows = Array.isArray(daily) ? daily : [];
+    const maxValue = Math.max(1, ...rows.map(day => Number(day.correct || 0) + Number(day.incorrect || 0)));
+    const labelEvery = rows.length <= 7 ? 1 : (rows.length <= 30 ? 5 : 15);
+    chartEl.style.minWidth = `${Math.max(100, rows.length * 27)}px`;
+    chartEl.innerHTML = rows.map((day, index) => {
+      const correct = Number(day.correct || 0);
+      const incorrect = Number(day.incorrect || 0);
+      const answers = correct + incorrect;
+      const correctHeight = answers ? Math.max(correct ? 3 : 0, Math.round(correct / maxValue * 145)) : 0;
+      const incorrectHeight = answers ? Math.max(incorrect ? 3 : 0, Math.round(incorrect / maxValue * 145)) : 0;
+      const activityHeight = !answers && Number(day.events || 0) ? 5 : 0;
+      const date = new Date(`${day.date}T00:00:00`);
+      const shortDate = new Intl.DateTimeFormat(window.I18N.language || undefined, {day:"2-digit", month:"2-digit"}).format(date);
+      const showLabel = index % labelEvery === 0 || index === rows.length - 1;
+      const title = `${shortDate}: ${tr("parent.correct")} ${correct}, ${tr("parent.incorrect")} ${incorrect}`;
+      return `<div class="parent-chart-day" title="${escapeHtml(title)}">
+        <div class="parent-chart-bars">
+          <div class="parent-chart-incorrect" style="height:${incorrectHeight}px"></div>
+          <div class="parent-chart-correct" style="height:${correctHeight}px"></div>
+          <div class="parent-chart-activity" style="height:${activityHeight}px"></div>
+        </div>
+        <div class="parent-chart-label">${showLabel ? escapeHtml(shortDate) : ""}</div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderSelected(){
+    const child = children.find(item => String(item.user_id) === selectedChildId) || children[0];
+    if (!child) return;
+    selectedChildId = String(child.user_id);
+    const summary = child.summary || {};
+    const lessons = Array.isArray(child.available_lessons) ? child.available_lessons : [];
+    prioritySelect.innerHTML = `<option value="">${escapeHtml(tr("parent.priority_none"))}</option>` + lessons.map(item => {
+      const value = String(item.lesson || "");
+      const index = Number(item.lesson_index || 0);
+      const title = String(item.lesson_title || value);
+      return `<option value="${escapeHtml(value)}">${escapeHtml(index > 0 ? `${index}. ${title}` : title)}</option>`;
+    }).join("");
+    prioritySelect.value = String(child.priority_lesson || "");
+    priorityStatus.textContent = child.priority_lesson
+      ? tr("parent.priority_current", {lesson: child.priority_lesson})
+      : tr("parent.priority_not_set");
+    document.getElementById("metric-today-progress").textContent = `${summary.today_words ?? 0} / ${summary.daily_goal ?? 25}${summary.today_status_milestone ? ` · ${childStatus(summary.today_status_milestone)}` : ""}`;
+    document.getElementById("metric-studied-today").textContent = summary.studied_today ? tr("common.yes") : tr("common.no");
+    document.getElementById("metric-time-today").textContent = learningTime(summary.today_learning_seconds);
+    document.getElementById("metric-words").textContent = summary.words_count ?? 0;
+    document.getElementById("metric-lessons").textContent = summary.lessons_count ?? 0;
+    document.getElementById("metric-days").textContent = summary.learning_days ?? 0;
+    document.getElementById("metric-streak").textContent = `🔥 ${summary.learning_streak_days ?? 0}`;
+    document.getElementById("metric-active-lessons").textContent = summary.active_lessons ?? 0;
+    document.getElementById("metric-correct").textContent = summary.correct_answers ?? 0;
+    document.getElementById("metric-success").textContent = `${summary.success_rate ?? 0}%`;
+    renderChart(child.daily);
+    const latest = child.latest_progress;
+    latestEl.innerHTML = latest ? `
+      <div><strong>${escapeHtml(latest.lesson || "—")}</strong><div class="parent-muted">${escapeHtml(tr("parent.last_activity"))}: ${escapeHtml(dateTime(latest.event_ts))}</div></div>
+      <div><strong>${Number(latest.passed || 0)} / ${Number(latest.total || 0)}</strong></div>
+    ` : `<div class="parent-muted">${escapeHtml(tr("parent.no_progress"))}</div>`;
+    const history = Array.isArray(child.priority_history) ? child.priority_history : [];
+    priorityHistoryEl.innerHTML = history.length ? `<table class="parent-history">
+      <thead><tr>
+        <th>${escapeHtml(tr("parent.priority_history_lesson"))}</th>
+        <th>${escapeHtml(tr("parent.priority_history_from"))}</th>
+        <th>${escapeHtml(tr("parent.priority_history_to"))}</th>
+        <th>${escapeHtml(tr("parent.priority_history_duration"))}</th>
+      </tr></thead>
+      <tbody>${history.map(item => `<tr>
+        <td><strong>${escapeHtml(item.lesson || "—")}</strong></td>
+        <td>${escapeHtml(dateTime(item.started_at))}</td>
+        <td class="${item.is_active ? "parent-history-active" : ""}">${item.is_active ? escapeHtml(tr("parent.priority_now")) : escapeHtml(dateTime(item.ended_at))}</td>
+        <td>${escapeHtml(priorityDuration(item.duration_seconds))}</td>
+      </tr>`).join("")}</tbody>
+    </table>` : `<div class="parent-muted">${escapeHtml(tr("parent.priority_history_empty"))}</div>`;
+  }
+
+  function selectChild(childId){
+    selectedChildId = String(childId || "");
+    renderChildren();
+    renderSelected();
+  }
+
+  async function unlinkChild(childId){
+    const child = children.find(item => String(item.user_id) === String(childId));
+    if (!child || !window.confirm(tr("parent.unlink_confirm", {name: child.display_name}))) return;
+    try {
+      const response = await apiFetch(`/api/family/children/${encodeURIComponent(childId)}`, {method: "DELETE"});
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "unlink_failed");
+      if (selectedChildId === String(childId)) selectedChildId = "";
+      await loadDashboard();
+    } catch (error) {
+      setStatus(tr("parent.unlink_failed"), true);
+    }
+  }
+
+  async function savePriorityLesson(){
+    const child = children.find(item => String(item.user_id) === selectedChildId);
+    if (!child) return;
+    prioritySave.disabled = true;
+    priorityStatus.textContent = tr("common.loading");
+    try {
+      const response = await apiFetch(`/api/family/children/${encodeURIComponent(child.user_id)}/priority-lesson`, {
+        method: "PUT",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({lesson: prioritySelect.value})
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "priority_save_failed");
+      await loadDashboard();
+    } catch (_) {
+      priorityStatus.textContent = tr("parent.priority_save_failed");
+    } finally {
+      prioritySave.disabled = false;
+    }
+  }
+
+  async function loadDashboard(){
+    const requestId = ++loadRequestId;
+    setStatus(tr("common.loading"), false);
+    contentEl.classList.add("parent-hidden");
+    const offset = -new Date().getTimezoneOffset();
+    try {
+      const response = await apiFetch(`/api/family/dashboard?days=${periodSelect.value}&tz_offset=${offset}`);
+      const data = await response.json();
+      if (requestId !== loadRequestId) return; // a newer request already resolved
+      if (!response.ok || !data.ok) {
+        const message = response.status === 403 ? tr("parent.access_denied") : tr("parent.load_failed");
+        throw new Error(message);
+      }
+      children = Array.isArray(data.children) ? data.children : [];
+      if (!children.length) {
+        setStatus(tr("parent.no_children"), false);
+        return;
+      }
+      if (!children.some(child => String(child.user_id) === selectedChildId)) {
+        selectedChildId = String(children[0].user_id);
+      }
+      setStatus("", false);
+      contentEl.classList.remove("parent-hidden");
+      renderChildren();
+      renderSelected();
+    } catch (error) {
+      if (requestId !== loadRequestId) return;
+      setStatus(error.message || tr("parent.load_failed"), true);
+    }
+  }
+
+  periodSelect.addEventListener("change", loadDashboard);
+  prioritySave.addEventListener("click", savePriorityLesson);
+  window.setInterval(() => {
+    if (!document.hidden) loadDashboard();
+  }, 30000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) loadDashboard();
+  });
+  loadDashboard();
+})();
+</script>
+{% endblock %}

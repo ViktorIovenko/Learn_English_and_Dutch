@@ -144,7 +144,7 @@ table.preview-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min
   border-color: #bfdbfe; background: #f8fbff; box-shadow: 0 2px 8px rgba(37, 99, 235, .08);
 }
 .share-lesson-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.share-lesson-main { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.share-lesson-main { min-width: 0; display: flex; align-items: center; gap: 8px; flex-wrap:wrap; }
 .share-lesson-main input { width: 18px; height: 18px; flex: 0 0 auto; }
 .share-lesson-name {
   font-size: 14px; color: #0f172a; overflow-wrap: anywhere;
@@ -152,8 +152,12 @@ table.preview-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min
   text-align: left; cursor: pointer; line-height: 1.25; transition: color .15s ease, background-color .15s ease;
 }
 .share-lesson-name:hover { color: #2563eb; background: #eff6ff; }
+.share-lesson-languages { color: #64748b; font-size: 12px; white-space: nowrap; }
 .share-lesson-name:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
 .share-lesson-meta { font-size: 12px; color: #64748b; white-space: nowrap; }
+.share-lesson-side { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+.share-lesson-language-actions { display:flex; align-items:center; justify-content:flex-end; gap:6px; flex-wrap:wrap; }
+.share-add-language-btn { padding:5px 9px; border-radius:8px; font-size:12px; white-space:nowrap; }
 .share-lesson-words {
   display: none; margin: 8px 0 2px 26px; padding-top: 8px;
   border-top: 1px dashed #e2e8f0; color: #334155; font-size: 13px;
@@ -170,6 +174,26 @@ table.preview-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min
 }
 .share-lessons-status { font-size: 13px; color: #64748b; }
 .share-selected-count { font-size: 13px; color: #64748b; }
+.share-language-editor { display:none; position:fixed; inset:0; z-index:1000; background:rgba(15,23,42,.5); padding:24px; overflow:auto; }
+.share-language-editor.open { display:block; }
+.share-language-dialog { max-width:1180px; margin:0 auto; background:#fff; border-radius:14px; box-shadow:0 20px 60px rgba(15,23,42,.3); padding:16px; }
+.share-language-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
+.share-language-controls { display:flex; align-items:end; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+.share-language-controls label { color:#64748b; font-size:12px; }
+.share-language-controls select { display:block; margin-top:4px; min-width:180px; }
+.share-language-table-wrap { overflow:auto; max-height:65vh; border:1px solid #e2e8f0; border-radius:10px; }
+.share-language-table { border-collapse:collapse; width:100%; min-width:760px; font-size:13px; }
+.share-language-table th,.share-language-table td { border:1px solid #e2e8f0; padding:7px; vertical-align:top; }
+.share-language-table th { position:sticky; top:0; z-index:1; background:#f8fafc; white-space:nowrap; }
+.share-language-cell { min-width:170px; }
+.share-language-word,.share-language-sentence { padding:4px 5px; border-radius:5px; min-height:20px; }
+.share-language-sentence { color:#64748b; font-size:12px; margin-top:4px; }
+.share-language-word:focus,.share-language-sentence:focus { outline:2px solid #93c5fd; background:#eff6ff; }
+.share-language-table tr.saving td { opacity:.6; }
+.share-language-table tr.saved td { background:#f0fdf4; }
+.share-language-status { min-height:20px; color:#64748b; font-size:13px; }
+.share-language-warning { display:none; margin-top:10px; padding:10px; border:1px solid #fbbf24; border-radius:9px; background:#fffbeb; color:#92400e; font-size:13px; }
+.share-language-warning.open { display:block; }
 
 table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 700px; }
 .db-tbl th {
@@ -285,6 +309,12 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   .lesson-row input, .lesson-row select { min-width: 80px; }
   .up-tab { padding: 8px 12px; font-size: 13px; }
 }
+@media (max-width: 720px) {
+  .share-lesson-row { align-items:flex-start; flex-wrap:wrap; }
+  .share-lesson-main { flex:1 1 100%; }
+  .share-lesson-side { width:100%; justify-content:space-between; }
+  .share-lesson-language-actions { justify-content:flex-start; }
+}
 </style>
 
 <div class="upload-page">
@@ -356,6 +386,14 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
         transition:background .2s,transform .15s;
         {% if not is_admin %}display:none;{% endif %}
       " onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Управление подписками</a>
+    <a href="/static/downloads/learnwords.apk" download style="
+      display:inline-flex;align-items:center;gap:7px;
+      padding:10px 18px;border-radius:12px;
+      background:#0f766e;color:#fff;
+      font-size:15px;font-weight:600;text-decoration:none;
+      box-shadow:0 3px 10px rgba(15,118,110,.26);
+      transition:background .2s,transform .15s;
+    " onmouseover="this.style.background='#0d5f59'" onmouseout="this.style.background='#0f766e'">⬇ Скачать Android-приложение</a>
     <a href="/" style="
       display:inline-flex;align-items:center;gap:7px;
       padding:10px 20px;border-radius:12px;
@@ -372,15 +410,23 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
     <button class="up-tab"        onclick="switchTab('topic')" id="tab-topic">По теме</button>
     <button class="up-tab"        onclick="switchTab('file')"  id="tab-file">CSV / Excel</button>
     <button class="up-tab"        onclick="switchTab('db')"    id="tab-db">База слов</button>
-    <button class="up-tab"        onclick="switchTab('share')" id="tab-share">Поделиться</button>
+    <button class="up-tab"        onclick="switchTab('share')" id="tab-share">Управление уроками</button>
   </div>
 
   <!-- ── Panel 1: Add words ────────────────────────────────────── -->
   <div class="up-panel active" id="panel-add">
 
     <div class="ollama-bar">
-      <label>Ollama: <input id="ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434"></label>
-      <label>Модель: <input id="ollama-model" value="llama3.1:8b" placeholder="llama3.1:8b"></label>
+      <label>Источник:
+        <select class="ai-source-select">
+          <option value="ollama">🖥 Ollama (локально)</option>
+          <option value="cloud">☁ Облако</option>
+        </select>
+      </label>
+      <span class="ollama-only" style="display:contents">
+        <label>Ollama: <input id="ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434"></label>
+        <label>Модель: <input id="ollama-model" value="llama3.1:8b" placeholder="llama3.1:8b"></label>
+      </span>
       <label>Уровень:
         <select id="cefr-level" style="border:1px solid #d0d7e2;border-radius:7px;padding:4px 8px;font-size:13px;color:#0f172a;background:#fff">
           <option value="A1">A1</option>
@@ -391,8 +437,10 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
           <option value="C2">C2</option>
         </select>
       </label>
-      <button type="button" class="ghost-btn" style="padding:4px 10px;font-size:12px" onclick="checkOllama()">Проверить</button>
-      <span id="ollama-status" class="ollama-status">—</span>
+      <span class="ollama-only" style="display:contents">
+        <button type="button" class="ghost-btn" style="padding:4px 10px;font-size:12px" onclick="checkOllama()">Проверить</button>
+        <span id="ollama-status" class="ollama-status">—</span>
+      </span>
     </div>
 
     <div id="lessons-container"></div>
@@ -409,10 +457,18 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   <div class="up-panel" id="panel-topic">
 
     <div class="ollama-bar">
-      <label>Ollama: <input id="topic-ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434"></label>
-      <label>Модель: <input id="topic-ollama-model" value="llama3.1:8b" placeholder="llama3.1:8b"></label>
-      <button type="button" class="ghost-btn" style="padding:4px 10px;font-size:12px" onclick="checkOllamaTopic()">Проверить</button>
-      <span id="topic-ollama-status" class="ollama-status">—</span>
+      <label>Источник:
+        <select class="ai-source-select">
+          <option value="ollama">🖥 Ollama (локально)</option>
+          <option value="cloud">☁ Облако</option>
+        </select>
+      </label>
+      <span class="ollama-only" style="display:contents">
+        <label>Ollama: <input id="topic-ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434"></label>
+        <label>Модель: <input id="topic-ollama-model" value="llama3.1:8b" placeholder="llama3.1:8b"></label>
+        <button type="button" class="ghost-btn" style="padding:4px 10px;font-size:12px" onclick="checkOllamaTopic()">Проверить</button>
+        <span id="topic-ollama-status" class="ollama-status">—</span>
+      </span>
     </div>
 
     <div class="topic-form">
@@ -495,7 +551,7 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   <div class="up-panel" id="panel-db">
 
     <div class="db-toolbar">
-      <input type="search" class="db-search" id="db-search" placeholder="Поиск по NL, EN, RU, уроку…" oninput="dbSearchDebounced()">
+      <input type="search" class="db-search" id="db-search" placeholder="Поиск по словам и уроку…" oninput="dbSearchDebounced()">
       <span class="db-count" id="db-count"></span>
       <button type="button" class="ghost-btn" style="padding:6px 10px;font-size:12px" onclick="findDuplicateWords()">Поиск дублей</button>
       <label style="font-size:13px;color:#64748b;white-space:nowrap;display:flex;align-items:center;gap:5px">
@@ -526,15 +582,7 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
       <div id="db-loading" style="display:none">⏳ Загрузка…</div>
       <table class="db-tbl" id="db-table" style="display:none">
         <thead>
-          <tr>
-            <th>Урок</th>
-            <th>NL</th>
-            <th>EN</th>
-            <th>RU</th>
-            <th>Аудио</th>
-            <th>⭐</th>
-            <th></th>
-          </tr>
+          <tr id="db-head-row"></tr>
         </thead>
         <tbody id="db-body"></tbody>
       </table>
@@ -549,8 +597,8 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
     <div class="share-lessons-panel">
       <div class="share-lessons-head">
         <div>
-          <div class="share-lessons-title">Поделиться уроками</div>
-          <div class="share-lessons-status">Выберите один или несколько уроков. Нажмите на название, чтобы посмотреть слова.</div>
+          <div class="share-lessons-title">Управление уроками</div>
+          <div class="share-lessons-status">Добавляйте выбранные в настройках языки, просматривайте слова и управляйте передачей уроков.</div>
         </div>
         <button type="button" class="ghost-btn" style="padding:5px 10px;font-size:12px" onclick="shareLessonsLoad(true)">Обновить</button>
       </div>
@@ -560,9 +608,44 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
         <button type="button" id="share-create-btn" onclick="createShareLink()">Создать ссылку</button>
         <span id="share-selected-count" class="share-selected-count"></span>
       </div>
+      <div class="actions-row" id="share-child-actions" style="display:none">
+        <select id="share-child-select" aria-label="Выберите ребёнка"></select>
+        <button type="button" id="share-child-btn" onclick="assignLessonsToChild()">Добавить ребёнку</button>
+      </div>
+      <div id="share-child-status" class="share-lessons-status"></div>
+      <div id="share-language-warning" class="share-language-warning">
+        <div id="share-language-warning-text"></div>
+        <button type="button" id="share-add-missing-btn" style="margin-top:8px" onclick="startMissingLanguageGeneration()">Добавить слова</button>
+      </div>
       <div id="share-link-box" class="share-link-box">
         <input id="share-link-input" type="text" readonly>
         <button type="button" class="ghost-btn" onclick="copyShareLink()">Копировать</button>
+      </div>
+    </div>
+    <div id="share-language-editor" class="share-language-editor" role="dialog" aria-modal="true" aria-labelledby="share-language-title">
+      <div class="share-language-dialog">
+        <div class="share-language-head">
+          <div>
+            <h3 id="share-language-title" style="margin:0"></h3>
+            <div class="share-lessons-status">Измените ячейку и нажмите Enter, чтобы сохранить строку.</div>
+          </div>
+          <button type="button" class="ghost-btn" id="share-language-close-btn" onclick="closeShareLanguageEditor()">Закрыть</button>
+        </div>
+        <div class="share-language-controls">
+          <strong id="share-language-current"></strong>
+          <label>Источник:
+            <select class="ai-source-select">
+              <option value="ollama">🖥 Ollama (локально)</option>
+              <option value="cloud">☁ Облако</option>
+            </select>
+          </label>
+          <button type="button" class="ghost-btn ollama-only" id="share-ollama-check-btn" onclick="checkShareOllama()">Проверить подключение к Ollama</button>
+          <label>Уровень
+            <select id="share-language-level"><option>A1</option><option selected>A2</option><option>B1</option><option>B2</option><option>C1</option></select>
+          </label>
+        </div>
+        <div id="share-language-status" class="share-language-status"></div>
+        <div class="share-language-table-wrap"><table class="share-language-table"><thead id="share-language-head"></thead><tbody id="share-language-body"></tbody></table></div>
       </div>
     </div>
   </div><!-- /panel-share -->

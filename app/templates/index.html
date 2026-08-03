@@ -5,17 +5,20 @@
   display:flex;align-items:center;gap:10px;
   margin:6px 0 2px;font-size:13px;color:#64748b;min-height:24px;
 }
-.account-line .acc-name{font-weight:600;color:#0f172a;}
+.account-line .acc-name{font-weight:600;color:#0f172a;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .account-line .acc-badge{
   font-size:11px;padding:2px 8px;border-radius:999px;
   border:1px solid #94a3b8;color:#334155;background:#fff;
 }
 .account-line .acc-badge.ok{border-color:#22c55e;color:#065f46;background:#ecfdf5;}
-.action-buttons{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 4px;align-items:center;}
+.action-buttons{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(6px,2vw,10px);margin:10px 0 4px;align-items:stretch;
+}
 .action-btn{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:9px 18px;border-radius:12px;
-  font-size:14px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-width:0;min-height:42px;
+  padding:8px clamp(4px,2vw,18px);border-radius:12px;
+  font-family:inherit;font-size:clamp(10px,3.2vw,14px);line-height:1.15;font-weight:600;white-space:nowrap;cursor:pointer;
   border:1px solid transparent;text-decoration:none;
   transition:background .2s,transform .15s;
 }
@@ -28,6 +31,32 @@
 .action-btn.util-btn:hover{background:#f1f5f9;}
 .action-btn.danger-act-btn{background:#fff;color:#dc2626;border-color:#fca5a5;}
 .action-btn.danger-act-btn:hover{background:#fef2f2;}
+.learning-streak{
+  display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding:2px 8px;
+  border:1px solid #fed7aa;border-radius:999px;background:#fff7ed;color:#9a3412;
+  font-size:12px;font-weight:700;white-space:nowrap;flex:0 0 auto;
+}
+.learning-streak-fire{font-size:14px;line-height:1;}
+.lesson-card-grid{display:grid;grid-template-columns:minmax(0,50%) minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;}
+.lesson-main{min-width:0;}
+.lesson-main .card-title{overflow-wrap:anywhere;}
+.lesson-priority-label{display:inline-block;margin:3px 0 5px;padding:2px 7px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;}
+.lesson-word-count{display:inline-block;margin-top:5px;color:#2563eb;font-size:13px;cursor:pointer;}
+.lesson-language-progress{display:grid;grid-template-columns:max-content;align-items:center;justify-content:end;justify-self:end;gap:6px;min-width:0;}
+.lesson-progress-row{display:grid;grid-template-columns:64px auto auto;align-items:center;justify-content:end;gap:2px;min-width:0;font-size:10px;color:#475569;}
+.lesson-progress-language{display:inline;font-weight:750;text-transform:uppercase;white-space:nowrap;}
+.lesson-battery{position:relative;width:59px;height:12px;border:1.5px solid #64748b;border-radius:3px;padding:1px;background:#fff;}
+.lesson-battery::after{content:"";position:absolute;right:-4px;top:3px;width:3px;height:5px;border-radius:0 2px 2px 0;background:#64748b;}
+.lesson-battery-fill{display:block;height:100%;min-width:0;border-radius:1px;background:#22c55e;transition:width .2s;}
+.lesson-progress-count{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:650;}
+.lesson-card-grid .chk{flex:0 0 auto;margin:0;}
+@media(max-width:560px){
+  .lesson-card-grid{gap:7px;grid-template-columns:minmax(0,50%) minmax(0,1fr) auto;}
+  .lesson-language-progress{gap:4px;}
+  .lesson-progress-row{grid-template-columns:48px auto auto;gap:1px;}
+  .lesson-battery{width:43px;}
+  .lesson-progress-count{font-size:9px;}
+}
 </style>
 
 <!-- Hidden spans kept for base.html account scripts -->
@@ -38,24 +67,28 @@
 <div id="accountPanel" class="account-line" aria-live="polite">
   <span id="acc_username" class="acc-name">—</span>
   <span id="acc_auth" class="acc-badge">auth: false</span>
+  <span id="learningStreak" class="learning-streak">
+    <span class="learning-streak-fire" aria-hidden="true">🔥</span>
+    <span id="learningStreakText">0</span>
+  </span>
 </div>
 
 <div id="cacheModal" class="modal-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cacheModalTitle">
     <div class="modal-head">
-      <div class="modal-title" id="cacheModalTitle">Очистка кэша</div>
-      <button type="button" class="modal-close" data-action="close" aria-label="Закрыть">&times;</button>
+      <div class="modal-title" id="cacheModalTitle">{{ t("index.cache_title") }}</div>
+      <button type="button" class="modal-close" data-action="close" aria-label="{{ t('common.close') }}">&times;</button>
     </div>
     <div class="modal-body">
-      <p id="cacheModalText">Точно удалить кэш и локальные данные?</p>
+      <p id="cacheModalText">{{ t("index.cache_confirm") }}</p>
       <div id="cacheModalStatus" class="modal-status" aria-live="polite">
         <span class="spinner" aria-hidden="true"></span>
-        <span class="status-text">Очистка...</span>
+        <span class="status-text">{{ t("index.cache_progress") }}</span>
       </div>
     </div>
     <div class="modal-actions">
-      <button type="button" class="ghost-btn" data-action="cancel">Отмена</button>
-      <button id="cacheConfirmBtn" type="button" class="danger-btn">Удалить</button>
+      <button type="button" class="ghost-btn" data-action="cancel">{{ t("common.cancel") }}</button>
+      <button id="cacheConfirmBtn" type="button" class="danger-btn">{{ t("common.delete") }}</button>
     </div>
   </div>
 </div>
@@ -63,15 +96,15 @@
 <div id="deleteLessonsModal" class="modal-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteLessonsTitle">
     <div class="modal-head">
-      <div class="modal-title" id="deleteLessonsTitle">Удаление уроков пользователя</div>
-      <button type="button" class="modal-close" data-action="close" aria-label="Закрыть">&times;</button>
+      <div class="modal-title" id="deleteLessonsTitle">{{ t("index.delete_user_lessons_title") }}</div>
+      <button type="button" class="modal-close" data-action="close" aria-label="{{ t('common.close') }}">&times;</button>
     </div>
     <div class="modal-body">
-      <p>Выберите уроки пользователя, которые нужно удалить. Удаляются слова и аудио.</p>
+      <p>{{ t("index.delete_user_lessons_note") }}</p>
       <div class="toolbar">
-        <button id="select-all-lessons-btn" type="button" class="ghost-btn">Выбрать все</button>
+        <button id="select-all-lessons-btn" type="button" class="ghost-btn">{{ t("index.select_all") }}</button>
       </div>
-      <div id="deleteLessonsList" class="lesson-list" role="listbox" aria-label="Список уроков"></div>
+      <div id="deleteLessonsList" class="lesson-list" role="listbox" aria-label="{{ t('index.lessons_list') }}"></div>
       <div id="deleteLessonsEmpty" class="modal-empty" aria-live="polite"></div>
       <div id="deleteLessonsStatus" class="modal-status" aria-live="polite">
         <span class="spinner" aria-hidden="true"></span>
@@ -80,35 +113,35 @@
     </div>
     <div class="modal-actions">
       <div class="modal-note" id="deleteLessonsCount"></div>
-      <button type="button" class="ghost-btn" data-action="cancel">Отмена</button>
-      <button id="deleteLessonsConfirmBtn" type="button" class="danger-btn" disabled>Удалить выбранные</button>
+      <button type="button" class="ghost-btn" data-action="cancel">{{ t("common.cancel") }}</button>
+      <button id="deleteLessonsConfirmBtn" type="button" class="danger-btn" disabled>{{ t("index.delete_selected") }}</button>
     </div>
   </div>
 </div>
 
 <div class="subbar">
-  <div class="sub-title">Список уроков</div>
   <div class="subtabs">
-    <a href="{{ url_for('web.home') }}" class="active">Уроки</a>
-    <a class="btn" href="{{ url_for('web.difficult_page') }}">Сложные слова</a>
-    <a class="btn" href="{{ url_for('web.settings_page') }}">Настройки</a>
-    <a class="btn" href="{{ url_for('web.subscription_page') }}">Подписка</a>
+    <a href="{{ url_for('web.home') }}" class="active">{{ t("nav.lessons") }}</a>
+    <a class="btn" href="{{ url_for('web.difficult_page') }}">{{ t("nav.difficult") }}</a>
+    <a class="btn" href="{{ url_for('web.settings_page') }}">{{ t("nav.settings") }}</a>
+    <a class="btn" href="{{ url_for('web.subscription_page') }}" data-subscription-nav>{{ t("nav.subscription") }}</a>
+    <a class="btn" href="{{ url_for('web.parent_dashboard_page') }}" data-parent-only hidden>{{ t("nav.parent") }}</a>
     {% if is_admin %}
-      <a class="btn" href="{{ url_for('web.admin_users_page') }}">Админка</a>
+      <a class="btn" href="{{ url_for('web.admin_users_page') }}">{{ t("nav.admin") }}</a>
     {% endif %}
   </div>
 </div>
 
 <div id="helloLine" class="hello-line" style="margin:6px 0 10px 0;color:#64748b;">
   {% if display_name %}
-    Продуктивного изучения, {{ display_name }}!
+    {{ t("index.hello", name=display_name) }}
   {% endif %}
 </div>
 
 <div class="action-buttons">
-  <a href="/upload" class="action-btn add-words">＋ Добавить слова</a>
-  <button id="clear-cache-btn" type="button" class="action-btn util-btn">Очистить кэш</button>
-  <button id="delete-user-lessons-btn" type="button" class="action-btn danger-act-btn">Удалить уроки</button>
+  <a href="/upload" class="action-btn add-words">＋ {{ t("index.add_words") }}</a>
+  <button id="clear-cache-btn" type="button" class="action-btn util-btn">{{ t("index.clear_cache") }}</button>
+  <button id="delete-user-lessons-btn" type="button" class="action-btn danger-act-btn">{{ t("index.delete_lessons") }}</button>
 </div>
 
 <div id="lessons" class="grid"></div>
@@ -118,6 +151,10 @@
 {% block scripts %}
 <script type="module">
   const apiFetch = window.apiFetch || fetch;
+  const tr = (key, params) => window.I18N.t(key, params);
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
   const IDB = window.LocalDB || null;
   const IDB_PREFIX = window.IDB_KEY_PREFIX || (window.USER_ID ? `uid:${window.USER_ID}:` : "uid:anon:");
   const LESSONS_KEY = IDB_PREFIX + "list";
@@ -165,10 +202,24 @@
   const helloEl = document.getElementById("helloLine");
   function setHello(name){
     const n = (name || "").trim();
-    helloEl.textContent = n ? `Продуктивного изучения, ${n}!` : "";
+    helloEl.textContent = n ? tr("index.hello", {name: n}) : "";
   }
   if (window._HELLO_NAME_) setHello(window._HELLO_NAME_);
   document.addEventListener("hello-name-ready", (e)=> setHello(e.detail||""));
+
+  async function loadLearningStreak(){
+    const textEl = document.getElementById("learningStreakText");
+    if (!textEl) return;
+    try {
+      const offset = -new Date().getTimezoneOffset();
+      const response = await apiFetch(`/api/learning/streak?tz_offset=${offset}`);
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        textEl.textContent = String(Number(data.learning_streak_days || 0));
+      }
+    } catch (_) {}
+  }
+  loadLearningStreak();
 
   const WORDS_CACHE = new Map();
   const root = document.getElementById("lessons");
@@ -239,9 +290,9 @@
     cacheModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
     cacheBusy = false;
-    if (cacheModalText) cacheModalText.textContent = "Точно удалить кэш и локальные данные?";
+    if (cacheModalText) cacheModalText.textContent = tr("index.cache_confirm");
     if (cacheStatus) cacheStatus.classList.remove("is-visible", "success", "error");
-    if (cacheStatusText) cacheStatusText.textContent = "Очистка...";
+    if (cacheStatusText) cacheStatusText.textContent = tr("index.cache_progress");
     cacheModal.querySelectorAll("button").forEach((btn) => { btn.disabled = false; });
     if (cacheConfirmBtn) cacheConfirmBtn.focus();
   }
@@ -290,7 +341,7 @@
     cacheConfirmBtn.addEventListener("click", async () => {
       if (cacheBusy) return;
       setCacheBusy(true);
-      setCacheStatus("loading", "Удаляем кэш и данные...");
+      setCacheStatus("loading", tr("index.cache_deleting"));
       try {
         if ("caches" in window) {
           const keys = await caches.keys();
@@ -309,11 +360,11 @@
         }
         LESSONS_CACHE = null;
         WORDS_CACHE.clear();
-        setCacheStatus("success", "Готово, обновляю страницу...");
+        setCacheStatus("success", tr("index.cache_done"));
         setTimeout(() => { closeCacheModal(); }, 400);
         setTimeout(() => { location.reload(); }, 900);
       } catch (_) {
-        setCacheStatus("error", "Не удалось удалить кэш");
+        setCacheStatus("error", tr("index.cache_failed"));
         setCacheBusy(false);
       }
     });
@@ -357,7 +408,7 @@
     const total = boxes.length;
     const selected = boxes.filter((box) => box.checked).length;
     selectAllLessonsBtn.disabled = deleteLessonsBusy || total === 0;
-    selectAllLessonsBtn.textContent = (total > 0 && selected === total) ? "Снять все" : "Выбрать все";
+    selectAllLessonsBtn.textContent = (total > 0 && selected === total) ? tr("index.unselect_all") : tr("index.select_all");
   }
 
   function updateDeleteLessonsSelection() {
@@ -365,7 +416,7 @@
     const selected = getSelectedDeleteLessons();
     if (deleteLessonsCount) {
       if (deleteLessonsList && deleteLessonsList.children.length) {
-        deleteLessonsCount.textContent = `Выбрано: ${selected.length}`;
+        deleteLessonsCount.textContent = tr("common.selected", {count: selected.length});
       } else {
         deleteLessonsCount.textContent = "";
       }
@@ -379,7 +430,7 @@
     deleteLessonsList.innerHTML = "";
     if (!Array.isArray(lessons) || lessons.length === 0) {
       deleteLessonsList.style.display = "none";
-      deleteLessonsEmpty.textContent = "Нет загруженных уроков.";
+      deleteLessonsEmpty.textContent = tr("index.no_lessons_loaded");
       deleteLessonsEmpty.style.display = "block";
       updateDeleteLessonsSelection();
       return;
@@ -389,7 +440,7 @@
     lessons.forEach((ls) => {
       const titleRaw = (ls.lesson_title && ls.lesson_title.trim())
         ? ls.lesson_title.trim()
-        : (ls.lesson || "Без названия");
+        : (ls.lesson || tr("common.untitled"));
       const idx = Number(ls.lesson_index || 0);
       const title = idx > 0 ? `${idx}. ${titleRaw}` : titleRaw;
       const count = Number(ls.words_count || 0);
@@ -411,7 +462,7 @@
 
       const meta = document.createElement("span");
       meta.className = "lesson-meta";
-      meta.textContent = `Слов: ${count}`;
+      meta.textContent = `${tr("common.words")}: ${count}`;
 
       label.appendChild(checkbox);
       label.appendChild(nameEl);
@@ -431,9 +482,9 @@
     }
     deleteLessonsList.innerHTML = "";
     deleteLessonsList.style.display = "none";
-    deleteLessonsEmpty.textContent = "Загружаю список уроков...";
+    deleteLessonsEmpty.textContent = tr("index.loading_lessons_list");
     deleteLessonsEmpty.style.display = "block";
-    setDeleteLessonsStatus("loading", "Загружаю уроки...");
+    setDeleteLessonsStatus("loading", tr("index.loading_lessons"));
     updateDeleteLessonsSelection();
     try {
       const r = await apiFetch("/api/user_lessons");
@@ -443,8 +494,8 @@
       renderDeleteLessonsList(deleteLessonsCache);
     } catch (_) {
       deleteLessonsCache = null;
-      setDeleteLessonsStatus("error", "Не удалось загрузить список");
-      deleteLessonsEmpty.textContent = "Не удалось загрузить уроки.";
+      setDeleteLessonsStatus("error", tr("index.load_lessons_failed"));
+      deleteLessonsEmpty.textContent = tr("index.load_lessons_failed");
       deleteLessonsEmpty.style.display = "block";
       deleteLessonsList.innerHTML = "";
       deleteLessonsList.style.display = "none";
@@ -511,11 +562,11 @@
       if (deleteLessonsBusy) return;
       const selected = getSelectedDeleteLessons();
       if (!selected.length) {
-        setDeleteLessonsStatus("error", "Выберите уроки для удаления");
+        setDeleteLessonsStatus("error", tr("index.select_lessons_to_delete"));
         return;
       }
       setDeleteLessonsBusy(true);
-      setDeleteLessonsStatus("loading", "Удаляю выбранные уроки...");
+      setDeleteLessonsStatus("loading", tr("index.deleting_lessons"));
       try {
         const resp = await apiFetch("/api/user_lessons/delete", {
           method: "POST",
@@ -525,7 +576,7 @@
         const js = await resp.json();
         if (!resp.ok || !js || !js.ok) throw new Error("server error");
         const deletedCount = Number(js.deleted_lessons || selected.length);
-        setDeleteLessonsStatus("success", `Удалено уроков: ${deletedCount}`);
+        setDeleteLessonsStatus("success", tr("index.deleted_lessons", {count: deletedCount}));
         deleteLessonsCache = null;
         await Promise.all(selected.map(async (lesson) => {
           WORDS_CACHE.delete(lesson);
@@ -536,7 +587,7 @@
         setTimeout(() => { closeDeleteLessonsModal(); }, 400);
         setTimeout(() => { loadLessons(); }, 450);
       } catch (_) {
-        setDeleteLessonsStatus("error", "Не удалось удалить уроки");
+        setDeleteLessonsStatus("error", tr("index.delete_lessons_failed"));
         setDeleteLessonsBusy(false);
       }
     });
@@ -554,7 +605,7 @@
 
   function renderSingleLine(wrap, items){
     if (!items.length){
-      wrap.innerHTML = "<div class='card-sub'>Пока нет слов</div>";
+      wrap.innerHTML = `<div class='card-sub'>${tr("index.no_words")}</div>`;
       return;
     }
     wrap.innerHTML = items.map(w => `
@@ -579,7 +630,7 @@
       return;
     }
 
-    wrap.innerHTML = "<div class='card-sub'>Загрузка...</div>";
+    wrap.innerHTML = `<div class='card-sub'>${tr("index.words_loading")}</div>`;
     try{
       const r = await apiFetch(`/api/lesson_words?lesson=${encodeURIComponent(lessonTitle)}`);
       const js = await r.json();
@@ -588,7 +639,7 @@
       renderSingleLine(wrap, items);
       await writeLessonWordsToIdb(lessonTitle, items);
     }catch(_){
-      wrap.innerHTML = "<div class='card-sub'>Ошибка загрузки</div>";
+      wrap.innerHTML = `<div class='card-sub'>${tr("index.words_load_error")}</div>`;
     }
   }
 
@@ -596,6 +647,8 @@
   function resortLessons() {
     const nodes = Array.from(root.children);
     nodes.sort((a, b) => {
+      const ap = Number(a.dataset.priority || 0), bp = Number(b.dataset.priority || 0);
+      if (ap !== bp) return bp - ap;
       const ah = Number(a.dataset.hidden || 0), bh = Number(b.dataset.hidden || 0);
       if (ah !== bh) return ah - bh;
       const ai = Number(a.dataset.index || 0),  bi = Number(b.dataset.index || 0);
@@ -633,7 +686,7 @@
         lessons = await r.json();
         if (Array.isArray(lessons)) await writeLessonsToIdb(lessons);
       } catch(_) {
-        if (root) root.innerHTML = "<p style='text-align:center;color:#64748b;margin-top:32px;font-size:14px'>Нет соединения. Откройте приложение при наличии сети чтобы загрузить уроки.</p>";
+        if (root) root.innerHTML = `<p style='text-align:center;color:#64748b;margin-top:32px;font-size:14px'>${tr("common.no_connection_lessons")}</p>`;
         return;
       }
     }
@@ -647,24 +700,40 @@
       card.dataset.index  = Number(ls.lesson_index || 0);
       card.dataset.title  = (ls.lesson_title || ls.lesson || "");
       card.dataset.hidden = Number(ls.hidden ? 1 : 0);
+      card.dataset.priority = Number(ls.is_priority ? 1 : 0);
       if (Number(card.dataset.hidden)) card.classList.add("is-hidden");
 
       const titleRaw = (ls.lesson_title && ls.lesson_title.trim())
                         ? ls.lesson_title.trim()
-                        : (ls.lesson || "Без названия");
+                        : (ls.lesson || tr("common.untitled"));
       const idx = Number(ls.lesson_index || 0);
-      const title = idx > 0 ? `${idx}. ${titleRaw}` : titleRaw;
+      const title = `${ls.is_priority ? "⭐ " : ""}${idx > 0 ? `${idx}. ${titleRaw}` : titleRaw}`;
       const cnt = Number(ls.words_count || 0);
+      const languageProgress = Array.isArray(ls.language_progress) ? ls.language_progress : [];
+      const progressHtml = languageProgress.map(item => {
+        const percent = Math.max(0, Math.min(100, Number(item.percent || 0)));
+        const code = String(item.code || "").toUpperCase();
+        const languageName = item.native || item.name || code;
+        const learned = Number(item.learned_words || 0);
+        const total = Number(item.total_words || 0);
+        return `<div class="lesson-progress-row" title="${escapeHtml(languageName)}: ${learned} / ${total}">
+          <span class="lesson-battery" aria-hidden="true"><span class="lesson-battery-fill" style="width:${percent}%"></span></span>
+          <span class="lesson-progress-language">${escapeHtml(code)}</span>
+          <span class="lesson-progress-count">${learned}</span>
+        </div>`;
+      }).join("");
 
       card.innerHTML = `
-        <div class="card-head">
-          <div class="card-title lesson-open" data-lesson="${ls.lesson_title}">${title}</div>
+        <div class="lesson-card-grid">
+          <div class="lesson-main">
+            <div class="card-title lesson-open" data-lesson="${ls.lesson_title}">${title}</div>
+            ${ls.is_priority ? `<span class="lesson-priority-label">${escapeHtml(tr("index.priority_lesson"))}</span>` : ""}
+            <span class="lesson-word-count word-toggle" data-lesson="${ls.lesson_title}">${cnt}</span>
+          </div>
+          <div class="lesson-language-progress">${progressHtml}</div>
           <label class="chk">
             <input type="checkbox" ${ls.hidden ? "checked" : ""} data-lesson="${ls.lesson}">
           </label>
-        </div>
-        <div class="card-sub">
-          <span class="word-toggle" data-lesson="${ls.lesson_title}">Слов: ${cnt}</span>
         </div>
       `;
 
@@ -721,6 +790,7 @@
     if (!skipRefresh) refreshLessonsIfNeeded();
   }
 
+  window.addEventListener("learning-progress-synced", () => refreshLessonsIfNeeded());
   loadLessons();
 
 

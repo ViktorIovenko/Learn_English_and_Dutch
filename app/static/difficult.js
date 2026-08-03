@@ -10,6 +10,7 @@
 (function () {
   const $  = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  const tr = (key, params) => (window.I18N && window.I18N.t) ? window.I18N.t(key, params) : key;
   function escapeHtml(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   async function apiGet(url){ const r = await (window.apiFetch?window.apiFetch(url):fetch(url)); return r.json(); }
   async function apiPost(url, body){
@@ -97,13 +98,14 @@
   const line3        = $("#modal-line3");
   const btnNextWord  = $("#next-word-btn");
   const diffToggle   = $("#difficultToggle");
-  const langButtons  = $$(".lang-switch .lang-btn");
+  let langButtons  = [];
+  let LANGUAGES = [];
 
   // [ДОБАВЛЕНО v8.22] Кнопка аудио в модалке
   let modalAudioBtn = null;
 
   let ITEMS=[], index=0, current=null;
-  let currentLang="nl";
+  let currentLang="all";
   let correct=""; let answer=[]; let pool=[]; let usedFrom=[];
   let fireworksFired=false;
 
@@ -119,10 +121,7 @@
 
   function pickAudioSrc(obj,lang){
     if (!obj) return "";
-    if (lang==="nl") return obj.audio_nl || obj.nl_audio || "";
-    if (lang==="en") return obj.audio_en || obj.en_audio || "";
-    if (lang==="ru") return obj.audio_ru || obj.ru_audio || "";
-    return "";
+    return obj[`audio_${lang}`] || obj[`${lang}_audio`] || "";
   }
   function blip(btn){
     if(!btn) return;
@@ -175,12 +174,16 @@
   }
 
   async function loadDifficult(){
-    wordBox.textContent="Загрузка...";
+    wordBox.textContent=tr("learn.loading");
     try{
       const js = await apiGet("/api/difficult_words_user");
       const items = (js && js.items) ? js.items : [];
+      LANGUAGES = Array.isArray(js?.languages) ? js.languages : [];
+      renderLanguageSwitch();
+      currentLang = LANGUAGES[0]?.code || "all";
+      setLanguage(currentLang);
       if (!items.length){
-        wordBox.textContent="У вас пока нет отмеченных сложных слов.";
+        wordBox.textContent=tr("difficult.none");
         progress.textContent="0 / 0";
         setPracticeVisible(false);
         queueProgressSave("empty");
@@ -193,7 +196,7 @@
       if (currentLang!=="all") ensureAudioForCurrent(currentLang);
     }catch(e){
       console.error(e);
-      wordBox.textContent="Не удалось загрузить список. Проверьте сеть.";
+      wordBox.textContent=tr("difficult.load_failed");
       setPracticeVisible(false);
     }
   }
@@ -213,38 +216,27 @@
   }
 
   function pickByLang(item){
-    const nlW = item.translation_nl || item.nl_word || "";
-    const enW = item.word_en        || item.en_word || "";
-    const ruW = item.translation_ru || item.ru_word || "";
-    const nlS = item.sentence_nl || "";
-    const enS = item.sentence_en || "";
-    const ruS = item.sentence_ru || "";
+    const values = LANGUAGES.map(language => ({
+      code: language.code,
+      word: item[`${language.code}_word`] || item[language.code] || "",
+      sentence: item[`${language.code}_sentence`] || item[`sentence_${language.code}`] || item[`ex_${language.code}`] || "",
+    }));
     if (currentLang === "all"){
-      return { mode:"all", rows:[
-        { head:`(nl) <b>${escapeHtml(nlW)}</b>`, sent:nlS, lang:"nl" },
-        { head:`(en) <b>${escapeHtml(enW)}</b>`, sent:enS, lang:"en" },
-        { head:`(ru) <b>${escapeHtml(ruW)}</b>`, sent:ruS, lang:"ru" },
-      ]};
+      return { mode:"all", rows:values.map(value => ({
+        head:`(${escapeHtml(value.code)}) <b>${escapeHtml(value.word)}</b>`,
+        sent:value.sentence,
+        lang:value.code,
+      }))};
     }
-    if (currentLang === "nl"){
-      const correct = (nlW||"").trim() || (enW||ruW||"");
-      return { mode:"one", correct, rows:[
-        { head:`(en) <b>${escapeHtml(enW)}</b>`, sent:enS, lang:"en" },
-        { head:`(ru) <b>${escapeHtml(ruW)}</b>`, sent:ruS, lang:"ru" },
-      ]};
-    }
-    if (currentLang === "en"){
-      const correct = (enW||"").trim() || (nlW||ruW||"");
-      return { mode:"one", correct, rows:[
-        { head:`(nl) <b>${escapeHtml(nlW)}</b>`, sent:nlS, lang:"nl" },
-        { head:`(ru) <b>${escapeHtml(ruW)}</b>`, sent:ruS, lang:"ru" },
-      ]};
-    }
-    const correct = (ruW||"").trim() || (nlW||enW||"");
-    return { mode:"one", correct, rows:[
-      { head:`(nl) <b>${escapeHtml(nlW)}</b>`, sent:nlS, lang:"nl" },
-      { head:`(en) <b>${escapeHtml(enW)}</b>`, sent:enS, lang:"en" },
-    ]};
+    const target = values.find(value => value.code === currentLang) || values[0] || {word:""};
+    const correct = String(target.word || values.find(value => value.word)?.word || "").trim();
+    return { mode:"one", correct, rows:values
+      .filter(value => value.code !== currentLang)
+      .map(value => ({
+        head:`(${escapeHtml(value.code)}) <b>${escapeHtml(value.word)}</b>`,
+        sent:value.sentence,
+        lang:value.code,
+      }))};
   }
 
   function renderCurrent(){ current = ITEMS[index]; renderWordCard(); }
@@ -261,14 +253,10 @@
       <div style="margin-bottom:8px">${escapeHtml(r.sent||"")}</div>
     `;
 
-    const nlS = current.sentence_nl || "";
-    const enS = current.sentence_en || "";
-    const ruS = current.sentence_ru || "";
-    let sentForModal = "";
-    if (currentLang === "nl") sentForModal = nlS;
-    else if (currentLang === "en") sentForModal = enS;
-    else if (currentLang === "ru") sentForModal = ruS;
-    if (!sentForModal) sentForModal = nlS || enS || ruS || "";
+    const activeSentence = current[`${currentLang}_sentence`] || current[`sentence_${currentLang}`] || current[`ex_${currentLang}`] || "";
+    const sentForModal = activeSentence || LANGUAGES
+      .map(language => current[`${language.code}_sentence`] || current[`sentence_${language.code}`] || current[`ex_${language.code}`] || "")
+      .find(Boolean) || "";
 
     if (view.mode === "all"){
       setPracticeVisible(false);
@@ -294,6 +282,19 @@
     current._sent_for_modal = sentForModal;
   }
 
+  function renderLanguageSwitch(){
+    const switchEl = $("#difficult-language-switch");
+    if (!switchEl) return;
+    switchEl.innerHTML = `
+      <button data-lang="" class="lang-btn">${escapeHtml(tr("common.all"))}</button>
+      ${LANGUAGES.map(language => `
+        <button data-lang="${escapeHtml(language.code)}" class="lang-btn">${escapeHtml(language.native || language.name || language.code.toUpperCase())}</button>
+      `).join("")}
+    `;
+    langButtons = $$(".lang-switch .lang-btn");
+    langButtons.forEach(btn => btn.addEventListener("click", () => setLanguage(btn.dataset.lang || "")));
+  }
+
   function renderSlots(){
     const n = correct.length;
     const filled = answer.join("");
@@ -301,7 +302,7 @@
       .map((_,i)=>{
         const ch = filled[i] || "";
         const filledCls = ch ? " filled clickable" : "";
-        return `<div class="slot${filledCls}" data-pos="${i}" title="${ch ? 'Нажмите, чтобы вернуть букву' : ''}">${escapeHtml(ch)}</div>`;
+        return `<div class="slot${filledCls}" data-pos="${i}" title="${ch ? tr("learn.return_letter") : ''}">${escapeHtml(ch)}</div>`;
       }).join("");
     $$("#answer-slots .slot.filled").forEach(div=>{
       div.addEventListener("click", ()=>{
@@ -359,7 +360,7 @@
         ITEMS = ITEMS.filter(x => String(x.id) !== String(id));
         if (!ITEMS.length){
           closeModal();
-          wordBox.textContent = "Все слова изучены. Список пуст.";
+          wordBox.textContent = tr("difficult.all_done");
           progress.textContent = "0 / 0";
           answerSlots.innerHTML = "";
           lettersPool.innerHTML = "";
@@ -374,7 +375,7 @@
     }catch(e){
       console.error(e);
       diffToggle.checked = !enabled;
-      alert("Не удалось сохранить статус «сложное слово». Повторите позже.");
+      alert(tr("difficult.save_failed"));
     }
   }
 
@@ -388,8 +389,8 @@
     const user = answer.join("");
     const ok = (user === correct);
 
-    line1.textContent = ok ? "Правильно!" : "Неправильно!";
-    line2.innerHTML = `Правильно: <b>${escapeHtml(correct)}</b>`;
+    line1.textContent = ok ? tr("learn.correct") : tr("learn.incorrect");
+    line2.innerHTML = `${tr("learn.correct_label")} <b>${escapeHtml(correct)}</b>`;
 
     // [ДОБАВЛЕНО v8.22] — вставляем кнопку ▶ прямо в строку рядом со словом
     modalAudioBtn = document.createElement("button");
@@ -510,11 +511,6 @@
   line3.addEventListener("click", ()=>advanceToNextOnce());
 
   diffToggle.addEventListener("change", (e)=> setPersonalDifficult(!!e.target.checked));
-  langButtons.forEach(btn=> btn.addEventListener("click", ()=> setLanguage(btn.dataset.lang||"")));
-
-  const btnNl = document.querySelector('.lang-switch .lang-btn[data-lang="nl"]');
-  if (btnNl) btnNl.classList.add("active");
-  currentLang="nl";
 
   loadDifficult();
 })();

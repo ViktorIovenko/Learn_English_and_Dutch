@@ -4,25 +4,50 @@ import json
 import time
 import secrets
 import html
+from contextlib import closing
+from io import BytesIO
 from urllib.parse import urlencode
 from urllib import request as urlrequest
-from flask import Blueprint, request, jsonify, render_template, session, send_from_directory, current_app, redirect
+from flask import Blueprint, request, jsonify, render_template, session, send_file, send_from_directory, current_app, redirect
 import sqlite3
 from typing import Any, List, Dict
 from pathlib import Path
 from config import Config
 from app.telegram_auth import verify_telegram_init_data
 from app.auth_links import verify_auth_token
+from app.account_types import migrate_account_types
+from app.family_tokens import (
+    PAIRING_TOKEN_MAX_AGE_SECONDS,
+    create_pairing_token,
+    verify_pairing_token,
+)
+from app.family_pairing import (
+    MAX_PARENTS_PER_CHILD,
+    create_pairing_code,
+    pairing_code_details,
+)
+from app.i18n import get_catalog, normalize_language, translate
 from app import models
 # [ДОБАВЛЕНО v7.0] генерация аудио
 from app.audio_gen import ensure_audio_for_ids  # ← НОВОЕ
+from app.tts_usage import (
+    get_tts_usage_snapshot,
+    reset_tts_usage,
+    set_tts_character_limit,
+)
+from app.translation_usage import (
+    get_translation_usage_snapshot,
+    record_translation_usage,
+    reset_translation_usage,
+)
+from app import ai_platform
 
 web = Blueprint("web", __name__)
 
 LANGUAGE_OPTIONS = [
-    {"code": "nl", "name": "Nederlands", "native": "Nederlands"},
     {"code": "en", "name": "English", "native": "English"},
     {"code": "ru", "name": "Russian", "native": "Русский"},
+    {"code": "nl", "name": "Dutch", "native": "Nederlands"},
     {"code": "de", "name": "German", "native": "Deutsch"},
     {"code": "fr", "name": "French", "native": "Français"},
     {"code": "es", "name": "Spanish", "native": "Español"},
@@ -30,16 +55,158 @@ LANGUAGE_OPTIONS = [
     {"code": "pt", "name": "Portuguese", "native": "Português"},
     {"code": "pl", "name": "Polish", "native": "Polski"},
     {"code": "uk", "name": "Ukrainian", "native": "Українська"},
-    {"code": "tr", "name": "Turkish", "native": "Türkçe"},
-    {"code": "ar", "name": "Arabic", "native": "العربية"},
 ]
 LANGUAGE_CODES = {item["code"] for item in LANGUAGE_OPTIONS}
+LANGUAGE_META = {item["code"]: item for item in LANGUAGE_OPTIONS}
+BASE_WORD_COLUMNS = {"id", "user_id", "status", "lesson", "number", "difficult", "updated_at"}
+_BOT_USERNAME_CACHE = ""
+
+
+def _telegram_bot_username() -> str:
+    global _BOT_USERNAME_CACHE
+    configured = str(getattr(Config, "BOT_USERNAME", "") or "").strip().lstrip("@")
+    if configured:
+        return configured
+    if _BOT_USERNAME_CACHE:
+        return _BOT_USERNAME_CACHE
+    token = str(getattr(Config, "BOT_TOKEN", "") or "").strip()
+    if not token:
+        return ""
+    try:
+        with urlrequest.urlopen(
+            f"https://api.telegram.org/bot{token}/getMe",
+            timeout=8,
+        ) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        username = str((payload.get("result") or {}).get("username") or "").strip().lstrip("@")
+        if username:
+            _BOT_USERNAME_CACHE = username
+        return username
+    except Exception:
+        return ""
+
+
+def _word_text_col(lang: str) -> str:
+    return lang
+
+
+def _word_sentence_col(lang: str) -> str:
+    return f"ex_{lang}"
+
+
+def _word_audio_col(lang: str) -> str:
+    return f"audio_{lang}"
+
+
+def _language_select_parts(languages: list[str]) -> list[str]:
+    parts: list[str] = []
+    for lang in languages:
+        parts.extend([
+            f"w.{_word_text_col(lang)} AS {lang}_word",
+            f"w.{_word_sentence_col(lang)} AS {lang}_sentence",
+            f"w.{_word_audio_col(lang)} AS {lang}_audio",
+        ])
+    return parts
+
+
+def _ensure_word_language_columns(conn: sqlite3.Connection, languages: list[str] | set[str]) -> None:
+    valid = [str(code).strip().lower() for code in languages if str(code).strip().lower() in LANGUAGE_CODES]
+    if not valid:
+        return
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(words)")}
+    for lang in valid:
+        for col in (_word_text_col(lang), _word_sentence_col(lang), _word_audio_col(lang)):
+            if col not in cols:
+                conn.execute(f"ALTER TABLE words ADD COLUMN {col} TEXT;")
+                cols.add(col)
+
+
+def _existing_word_languages(conn: sqlite3.Connection) -> list[str]:
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(words)")}
+    ordered_codes = [
+        "nl", "en", "ru",
+        *[item["code"] for item in LANGUAGE_OPTIONS if item["code"] not in {"nl", "en", "ru"}],
+    ]
+    return [
+        code for code in ordered_codes
+        if _word_text_col(code) in cols and _word_sentence_col(code) in cols and _word_audio_col(code) in cols
+    ]
+
+
+def _word_payload_from_row(row: sqlite3.Row | dict[str, Any], languages: list[str], user_id: str | None = None) -> dict[str, Any]:
+    d = dict(row)
+    payload = {
+        "id": d.get("id"),
+        "lesson": d.get("lesson", ""),
+        "number": d.get("number", ""),
+        "difficult": bool(d.get("difficult")),
+        "status": d.get("status", "") or "",
+    }
+    for lang in languages:
+        word = d.get(f"{lang}_word", d.get(lang, "")) or ""
+        sentence = d.get(f"{lang}_sentence", d.get(f"ex_{lang}", "")) or ""
+        audio = d.get(f"{lang}_audio", d.get(f"audio_{lang}", "")) or ""
+        payload[f"{lang}_word"] = word
+        payload[f"{lang}_sentence"] = sentence
+        payload[f"{lang}_audio"] = audio
+        payload[lang] = word
+        payload[f"ex_{lang}"] = sentence
+        payload[f"audio_{lang}"] = audio
+        payload[f"sentence_{lang}"] = sentence
+    payload.setdefault("word_en", payload.get("en_word", ""))
+    payload.setdefault("translation_ru", payload.get("ru_word", ""))
+    payload.setdefault("translation_nl", payload.get("nl_word", ""))
+    payload.setdefault("sentence_en", payload.get("en_sentence", ""))
+    payload.setdefault("sentence_ru", payload.get("ru_sentence", ""))
+    payload.setdefault("sentence_nl", payload.get("nl_sentence", ""))
+    payload.setdefault("audio_en", payload.get("en_audio", ""))
+    payload.setdefault("audio_ru", payload.get("ru_audio", ""))
+    payload.setdefault("audio_nl", payload.get("nl_audio", ""))
+    if user_id is not None:
+        payload["editable"] = (d.get("_word_owner") or d.get("user_id") or "") == str(user_id) or d.get("status") == "test"
+    return payload
+
+
+def _lesson_available_languages(rows: list[sqlite3.Row] | list[dict[str, Any]], preferred: list[str], all_languages: list[str]) -> list[dict[str, Any]]:
+    ordered = list(dict.fromkeys(preferred or all_languages))
+    available: list[dict[str, Any]] = []
+    for lang in ordered:
+        has_value = any(
+            str((dict(row).get(f"{lang}_word") or dict(row).get(lang) or "")).strip()
+            for row in rows
+        )
+        if has_value:
+            meta = LANGUAGE_META.get(lang, {"code": lang, "name": lang.upper(), "native": lang.upper()})
+            available.append({"code": lang, "name": meta["name"], "native": meta["native"]})
+    return available
 
 
 def _conn() -> sqlite3.Connection:
     conn = sqlite3.connect(Config.DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _record_translation_request_usage(
+    user_id: str,
+    *,
+    successful: bool,
+    usage: Any = None,
+) -> None:
+    """Persist usage without allowing telemetry failures to break translation."""
+    try:
+        with closing(_conn()) as conn:
+            record_translation_usage(
+                conn,
+                user_id,
+                successful=successful,
+                prompt_tokens=getattr(usage, "prompt_tokens", 0),
+                completion_tokens=getattr(usage, "completion_tokens", 0),
+                total_tokens=getattr(usage, "total_tokens", 0),
+            )
+            conn.commit()
+    except Exception:
+        current_app.logger.exception("Could not record translation token usage")
 
 
 def _admin_ids() -> tuple[int, ...]:
@@ -186,8 +353,10 @@ def _upsert_user(user: dict[str, Any]) -> bool:
     with _conn() as c:
         existed = bool(c.execute("SELECT 1 FROM users WHERE user_id=?", (user_id,)).fetchone())
         c.execute("""
-            INSERT INTO users (user_id, username, first_name, last_name, is_active)
-            VALUES (?, ?, ?, ?, 1)
+            INSERT INTO users (
+                user_id, username, first_name, last_name, is_active, account_type
+            )
+            VALUES (?, ?, ?, ?, 1, 'pending')
             ON CONFLICT(user_id) DO UPDATE SET
               username=excluded.username,
               first_name=excluded.first_name,
@@ -207,8 +376,10 @@ def _upsert_user_minimal(user_id: str) -> bool:
     with _conn() as c:
         existed = bool(c.execute("SELECT 1 FROM users WHERE user_id=?", (str(user_id),)).fetchone())
         c.execute("""
-            INSERT INTO users (user_id, username, first_name, last_name, is_active)
-            VALUES (?, '', '', '', 1)
+            INSERT INTO users (
+                user_id, username, first_name, last_name, is_active, account_type
+            )
+            VALUES (?, '', '', '', 1, 'pending')
             ON CONFLICT(user_id) DO NOTHING
         """, (str(user_id),))
         c.commit()
@@ -219,6 +390,7 @@ def _current_user_id() -> str | None:
     uid = session.get("tg_user_id") or request.headers.get("X-User-Id") or None
     if uid:
         uid = str(uid)
+        _update_detected_ui_language(uid, request.headers.get("X-Device-Language"))
     return uid if uid else None
 
 
@@ -248,6 +420,7 @@ def _ensure_schema() -> None:
         if "updated_at" not in cols:
             c.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER;")
             c.execute("UPDATE words SET updated_at = (strftime('%s','now') * 1000) WHERE updated_at IS NULL;")
+        _ensure_word_language_columns(c, ["nl", "en", "ru"])
         # (2) флаги пользователя для слов из words
         c.execute("""
             CREATE TABLE IF NOT EXISTS user_word_flags (
@@ -277,7 +450,220 @@ def _ensure_progress_schema() -> None:
             CREATE INDEX IF NOT EXISTS idx_progress_events_user_ts
             ON progress_events(user_id, event_ts);
         """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS child_goal_notifications (
+                child_user_id TEXT NOT NULL,
+                parent_user_id TEXT NOT NULL,
+                local_date TEXT NOT NULL,
+                message_id INTEGER,
+                sent_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (child_user_id, parent_user_id, local_date)
+            );
+        """)
+        notification_columns = {
+            str(row["name"]) for row in c.execute(
+                "PRAGMA table_info(child_goal_notifications)"
+            ).fetchall()
+        }
+        if "message_id" not in notification_columns:
+            c.execute(
+                "ALTER TABLE child_goal_notifications ADD COLUMN message_id INTEGER"
+            )
         c.commit()
+
+
+CHILD_DAILY_WORD_GOAL = 25
+CHILD_WORD_MASTERY_COUNT = 10
+STANDARD_DAILY_MINUTES_GOAL = 10
+
+
+def _ensure_daily_goal_schema() -> None:
+    with _conn() as c:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS user_daily_goals (
+                user_id TEXT PRIMARY KEY,
+                goal_value INTEGER NOT NULL,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        c.commit()
+
+
+def _daily_goal_settings(user_id: str) -> Dict[str, Any]:
+    uid = str(user_id or "").strip()
+    account_type = _account_context(uid)["account_type"]
+    goal_type = "words" if account_type == "child" else "minutes"
+    default_value = CHILD_DAILY_WORD_GOAL if goal_type == "words" else STANDARD_DAILY_MINUTES_GOAL
+    _ensure_daily_goal_schema()
+    with _conn() as c:
+        row = c.execute(
+            "SELECT goal_value FROM user_daily_goals WHERE user_id=?", (uid,)
+        ).fetchone()
+    value = int(row["goal_value"]) if row else default_value
+    minimum, maximum = ((5, 100) if goal_type == "words" else (1, 180))
+    return {
+        "goal_type": goal_type,
+        "goal_value": max(minimum, min(maximum, value)),
+        "minimum": minimum,
+        "maximum": maximum,
+    }
+
+
+def _child_learning_stats(
+    user_id: str,
+    timezone_offset_minutes: int = 0,
+    connection=None,
+) -> Dict[str, Any]:
+    """Derive the child's daily goal and per-word mastery from accepted answers."""
+    uid = str(user_id or "").strip()
+    if not uid:
+        return {"today_count": 0, "word_counts": {}, "mastered_word_ids": set()}
+    owns_connection = connection is None
+    if owns_connection:
+        _ensure_progress_schema()
+    c = connection or _conn()
+    try:
+        rows = c.execute("""
+            SELECT event_type, event_ts, payload
+            FROM progress_events
+            WHERE user_id = ? AND scope = 'learn'
+            ORDER BY event_ts ASC, id ASC
+        """, (uid,)).fetchall()
+    finally:
+        if owns_connection:
+            c.close()
+
+    offset_ms = int(timezone_offset_minutes) * 60 * 1000
+    day_ms = 24 * 60 * 60 * 1000
+    today_number = (int(time.time() * 1000) - offset_ms) // day_ms
+    counts: Dict[str, int] = {}
+    today_count = 0
+    for row in rows:
+        try:
+            payload = json.loads(row["payload"] or "{}")
+        except (TypeError, ValueError):
+            continue
+        state = payload.get("state") if isinstance(payload, dict) else None
+        if not isinstance(state, dict):
+            continue
+        reason = str(state.get("reason") or "")
+        if reason != "answer_ok" and str(row["event_type"] or "") != "word_correct":
+            continue
+        word_id = str(state.get("word_id") or "").strip()
+        if not word_id or counts.get(word_id, 0) >= CHILD_WORD_MASTERY_COUNT:
+            continue
+        counts[word_id] = counts.get(word_id, 0) + 1
+        try:
+            event_day = (int(row["event_ts"]) - offset_ms) // day_ms
+        except (TypeError, ValueError):
+            event_day = -1
+        if event_day == today_number:
+            today_count += 1
+    return {
+        "today_count": today_count,
+        "word_counts": counts,
+        "mastered_word_ids": {
+            word_id for word_id, count in counts.items()
+            if count >= CHILD_WORD_MASTERY_COUNT
+        },
+    }
+
+
+def _notify_parents_child_goal(user_id: str, timezone_offset_minutes: int) -> int:
+    """Notify linked Telegram parents once when today's 25-word goal is reached."""
+    uid = str(user_id or "").strip()
+    if not uid or _account_context(uid)["account_type"] != "child":
+        return 0
+    stats = _child_learning_stats(uid, timezone_offset_minutes)
+    goal = _daily_goal_settings(uid)["goal_value"]
+    if stats["today_count"] < goal:
+        return 0
+    token = str(Config.BOT_TOKEN or "").strip()
+    if not token:
+        return 0
+    offset_ms = int(timezone_offset_minutes) * 60 * 1000
+    local_day = (int(time.time() * 1000) - offset_ms) // (24 * 60 * 60 * 1000)
+    local_date = time.strftime("%Y-%m-%d", time.gmtime(local_day * 24 * 60 * 60))
+    with _conn() as c:
+        child = c.execute(
+            "SELECT user_id, username, first_name, last_name FROM users WHERE user_id=?",
+            (uid,),
+        ).fetchone()
+        parents = c.execute("""
+            SELECT u.user_id
+            FROM parent_child_links l
+            JOIN users u ON u.user_id = l.parent_user_id
+            WHERE l.child_user_id = ? AND COALESCE(u.is_active, 1) = 1
+        """, (uid,)).fetchall()
+    child_name = _format_user_name(child) if child else uid
+    text = f"🏆 Ребёнок {child_name or uid} выполнил дневную цель — {goal} слов!"
+    api_url = f"https://api.telegram.org/bot{token}/sendMessage"
+    delete_url = f"https://api.telegram.org/bot{token}/deleteMessage"
+    sent = 0
+    for parent in parents:
+        parent_id = str(parent["user_id"] or "").strip()
+        if not parent_id.isdigit():
+            continue
+        with _conn() as c:
+            previous = c.execute("""
+                SELECT message_id
+                FROM child_goal_notifications
+                WHERE child_user_id=? AND parent_user_id=?
+                  AND message_id IS NOT NULL
+                ORDER BY local_date DESC
+                LIMIT 1
+            """, (uid, parent_id)).fetchone()
+            previous_message_id = int(previous["message_id"]) if previous else None
+            cursor = c.execute("""
+                INSERT OR IGNORE INTO child_goal_notifications
+                    (child_user_id, parent_user_id, local_date)
+                VALUES (?, ?, ?)
+            """, (uid, parent_id, local_date))
+            c.commit()
+            reserved = cursor.rowcount > 0
+        if not reserved:
+            continue
+        payload = urlencode({"chat_id": parent_id, "text": text}).encode("utf-8")
+        try:
+            with urlrequest.urlopen(api_url, data=payload, timeout=4) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            if not result.get("ok"):
+                raise RuntimeError("telegram_send_failed")
+            message_id = int((result.get("result") or {}).get("message_id") or 0)
+            if not message_id:
+                raise RuntimeError("telegram_message_id_missing")
+            with _conn() as c:
+                c.execute("""
+                    UPDATE child_goal_notifications
+                    SET message_id=?, sent_at=CURRENT_TIMESTAMP
+                    WHERE child_user_id=? AND parent_user_id=? AND local_date=?
+                """, (message_id, uid, parent_id, local_date))
+                c.commit()
+            sent += 1
+            if previous_message_id and previous_message_id != message_id:
+                delete_payload = urlencode({
+                    "chat_id": parent_id,
+                    "message_id": str(previous_message_id),
+                }).encode("utf-8")
+                try:
+                    urlrequest.urlopen(delete_url, data=delete_payload, timeout=4).read()
+                except Exception:
+                    current_app.logger.warning(
+                        "Could not delete previous child-goal message %s for parent %s",
+                        previous_message_id,
+                        parent_id,
+                    )
+        except Exception:
+            with _conn() as c:
+                c.execute("""
+                    DELETE FROM child_goal_notifications
+                    WHERE child_user_id=? AND parent_user_id=? AND local_date=?
+                """, (uid, parent_id, local_date))
+                c.commit()
+            current_app.logger.exception(
+                "Failed to notify parent %s about child goal %s", parent_id, uid
+            )
+    return sent
 
 
 def _ensure_user_language_schema() -> None:
@@ -297,6 +683,561 @@ def _ensure_user_language_schema() -> None:
             ON user_language_preferences(user_id, priority);
         """)
         c.commit()
+
+
+def _normalize_supported_language(code: str | None, fallback: str = "en") -> str:
+    raw = str(code or "").strip().lower().split("-", 1)[0].split("_", 1)[0]
+    return raw if raw in LANGUAGE_CODES else fallback
+
+
+def _ensure_user_settings_schema() -> None:
+    with _conn() as c:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS user_settings (
+                user_id TEXT PRIMARY KEY,
+                detected_ui_language TEXT,
+                ui_language_override TEXT,
+                updated_at INTEGER NOT NULL
+            );
+        """)
+        c.commit()
+
+
+def _ensure_family_schema() -> None:
+    with _conn() as c:
+        migrate_account_types(c)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS parent_child_links (
+                parent_user_id TEXT NOT NULL,
+                child_user_id  TEXT NOT NULL,
+                created_at     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (parent_user_id, child_user_id),
+                CHECK (parent_user_id <> child_user_id),
+                FOREIGN KEY (parent_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (child_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            )
+        """)
+        c.execute(
+            "CREATE INDEX IF NOT EXISTS idx_parent_child_links_child "
+            "ON parent_child_links(child_user_id)"
+        )
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS child_lesson_priorities (
+                child_user_id  TEXT PRIMARY KEY,
+                lesson         TEXT NOT NULL,
+                parent_user_id TEXT NOT NULL,
+                updated_at     INTEGER NOT NULL,
+                FOREIGN KEY (child_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (parent_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS child_lesson_priority_history (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                child_user_id     TEXT NOT NULL,
+                lesson            TEXT NOT NULL,
+                parent_user_id    TEXT NOT NULL,
+                started_at        INTEGER NOT NULL,
+                ended_at          INTEGER,
+                FOREIGN KEY (child_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (parent_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            )
+        """)
+        c.execute("""
+            CREATE INDEX IF NOT EXISTS idx_child_priority_history_child_started
+            ON child_lesson_priority_history(child_user_id, started_at DESC)
+        """)
+        c.execute("""
+            INSERT INTO child_lesson_priority_history
+                (child_user_id, lesson, parent_user_id, started_at, ended_at)
+            SELECT p.child_user_id, p.lesson, p.parent_user_id, p.updated_at, NULL
+            FROM child_lesson_priorities p
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM child_lesson_priority_history h
+                WHERE h.child_user_id = p.child_user_id AND h.ended_at IS NULL
+            )
+        """)
+        c.commit()
+
+
+def _child_priority_lesson(child_user_id: str, connection=None) -> str:
+    uid = str(child_user_id or "").strip()
+    if not uid:
+        return ""
+
+    def read(c):
+        row = c.execute(
+            "SELECT lesson FROM child_lesson_priorities WHERE child_user_id=?",
+            (uid,),
+        ).fetchone()
+        return str((row["lesson"] if row else "") or "")
+
+    if connection is not None:
+        return read(connection)
+    _ensure_family_schema()
+    with _conn() as c:
+        return read(c)
+
+
+def _lessons_available_to_child(child_user_id: str) -> List[Dict[str, Any]]:
+    try:
+        return models.get_lessons(Config.DB_PATH, child_user_id)
+    except sqlite3.OperationalError as exc:
+        if "no such column: w.status" not in str(exc):
+            raise
+        return models.get_user_lessons(Config.DB_PATH, child_user_id)
+
+
+def _account_context(user_id: str | None) -> Dict[str, Any]:
+    uid = str(user_id or "").strip()
+    if not uid:
+        return {
+            "account_type": "",
+            "needs_account_type": False,
+            "is_parent": False,
+            "children_count": 0,
+        }
+    _ensure_family_schema()
+    with _conn() as c:
+        row = c.execute(
+            "SELECT account_type FROM users WHERE user_id=?",
+            (uid,),
+        ).fetchone()
+        children_count = int(c.execute(
+            "SELECT COUNT(*) FROM parent_child_links WHERE parent_user_id=?",
+            (uid,),
+        ).fetchone()[0])
+    account_type = str((row["account_type"] if row else "") or "standard")
+    if account_type not in {"pending", "child", "standard"}:
+        account_type = "standard"
+    return {
+        "account_type": account_type,
+        "needs_account_type": account_type == "pending",
+        "is_parent": children_count > 0,
+        "children_count": children_count,
+    }
+
+
+def _family_status(user_id: str) -> Dict[str, Any]:
+    uid = str(user_id or "").strip()
+    account = _account_context(uid)
+    with _conn() as c:
+        children = [dict(row) for row in c.execute("""
+            SELECT u.user_id, u.username, u.first_name, u.last_name, l.created_at
+            FROM parent_child_links l
+            JOIN users u ON u.user_id = l.child_user_id
+            WHERE l.parent_user_id = ?
+            ORDER BY COALESCE(u.first_name, ''), COALESCE(u.username, ''), u.user_id
+        """, (uid,)).fetchall()]
+        parents = [dict(row) for row in c.execute("""
+            SELECT u.user_id, u.username, u.first_name, u.last_name, l.created_at
+            FROM parent_child_links l
+            JOIN users u ON u.user_id = l.parent_user_id
+            WHERE l.child_user_id = ?
+            ORDER BY COALESCE(u.first_name, ''), COALESCE(u.username, ''), u.user_id
+        """, (uid,)).fetchall()]
+    for item in children + parents:
+        item["display_name"] = _format_user_name(item) or item["user_id"]
+    return {**account, "children": children, "parents": parents}
+
+
+def _family_dashboard_data(parent_user_id: str, days: int, timezone_offset_minutes: int) -> Dict[str, Any]:
+    """Build learning statistics only for children linked to this parent."""
+    _ensure_family_schema()
+    _ensure_progress_schema()
+    uid = str(parent_user_id or "").strip()
+    now_ms = int(time.time() * 1000)
+    day_ms = 24 * 60 * 60 * 1000
+    offset_ms = timezone_offset_minutes * 60 * 1000
+    local_today_number = (now_ms + offset_ms) // day_ms
+    first_day_number = local_today_number - days + 1
+    range_start_ms = first_day_number * day_ms - offset_ms
+
+    def day_key(day_number: int) -> str:
+        return time.strftime("%Y-%m-%d", time.gmtime(day_number * 24 * 60 * 60))
+
+    day_keys = [day_key(first_day_number + index) for index in range(days)]
+    with _conn() as c:
+        children = [dict(row) for row in c.execute("""
+            SELECT u.user_id, u.username, u.first_name, u.last_name, l.created_at
+            FROM parent_child_links l
+            JOIN users u ON u.user_id = l.child_user_id
+            WHERE l.parent_user_id = ?
+            ORDER BY COALESCE(u.first_name, ''), COALESCE(u.username, ''), u.user_id
+        """, (uid,)).fetchall()]
+        child_ids = [str(item["user_id"]) for item in children]
+        if not child_ids:
+            return {
+                "days": days,
+                "timezone_offset_minutes": timezone_offset_minutes,
+                "range_start": day_keys[0],
+                "range_end": day_keys[-1],
+                "children": [],
+            }
+
+        placeholders = ",".join("?" for _ in child_ids)
+        parents_by_child: Dict[str, List[Dict[str, Any]]] = {
+            child_id: [] for child_id in child_ids
+        }
+        for row in c.execute(f"""
+            SELECT
+                l.child_user_id,
+                u.user_id,
+                u.username,
+                u.first_name,
+                u.last_name,
+                l.created_at
+            FROM parent_child_links l
+            JOIN users u ON u.user_id = l.parent_user_id
+            WHERE l.child_user_id IN ({placeholders})
+            ORDER BY l.child_user_id,
+                     COALESCE(u.first_name, ''),
+                     COALESCE(u.username, ''),
+                     u.user_id
+        """, child_ids).fetchall():
+            parent = dict(row)
+            child_id = str(parent.pop("child_user_id"))
+            parent["display_name"] = _format_user_name(parent) or str(parent["user_id"])
+            parents_by_child.setdefault(child_id, []).append(parent)
+        events = [dict(row) for row in c.execute(f"""
+            SELECT user_id, event_type, event_ts, payload
+            FROM progress_events
+            WHERE user_id IN ({placeholders}) AND event_ts >= ? AND event_ts <= ?
+            ORDER BY event_ts ASC, id ASC
+        """, [*child_ids, range_start_ms, now_ms]).fetchall()]
+        last_activity = {
+            str(row["user_id"]): int(row["last_event_ts"] or 0)
+            for row in c.execute(f"""
+                SELECT user_id, MAX(event_ts) AS last_event_ts
+                FROM progress_events
+                WHERE user_id IN ({placeholders})
+                GROUP BY user_id
+            """, child_ids).fetchall()
+        }
+        streaks = _learning_streaks(child_ids, timezone_offset_minutes, connection=c)
+        child_learning_stats = {
+            child_id: _child_learning_stats(
+                child_id,
+                -timezone_offset_minutes,
+                connection=c,
+            )
+            for child_id in child_ids
+        }
+        priority_lessons = {
+            child_id: _child_priority_lesson(child_id, connection=c)
+            for child_id in child_ids
+        }
+        priority_history: Dict[str, List[Dict[str, Any]]] = {
+            child_id: [] for child_id in child_ids
+        }
+        for row in c.execute(f"""
+            SELECT child_user_id, lesson, parent_user_id, started_at, ended_at
+            FROM child_lesson_priority_history
+            WHERE child_user_id IN ({placeholders})
+            ORDER BY child_user_id, started_at DESC, id DESC
+        """, child_ids).fetchall():
+            item = dict(row)
+            child_id = str(item.pop("child_user_id"))
+            started_at = int(item.get("started_at") or 0)
+            ended_at = int(item.get("ended_at") or 0)
+            item["started_at"] = started_at
+            item["ended_at"] = ended_at or None
+            item["duration_seconds"] = max(
+                0,
+                ((ended_at or now_ms) - started_at) // 1000,
+            )
+            item["is_active"] = ended_at == 0
+            priority_history.setdefault(child_id, []).append(item)
+        words_table_exists = bool(c.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='words'"
+        ).fetchone())
+        word_stats: Dict[str, Dict[str, int]] = {}
+        if words_table_exists:
+            word_stats = {
+                str(row["user_id"]): {
+                    "words_count": int(row["words_count"] or 0),
+                    "lessons_count": int(row["lessons_count"] or 0),
+                }
+                for row in c.execute(f"""
+                    SELECT user_id,
+                           COUNT(*) AS words_count,
+                           COUNT(DISTINCT NULLIF(TRIM(lesson), '')) AS lessons_count
+                    FROM words
+                    WHERE user_id IN ({placeholders})
+                    GROUP BY user_id
+                """, child_ids).fetchall()
+            }
+
+    stats_by_child: Dict[str, Dict[str, Any]] = {}
+    for child_id in child_ids:
+        stats_by_child[child_id] = {
+            "daily": {
+                key: {"date": key, "correct": 0, "incorrect": 0, "events": 0, "_timestamps": []}
+                for key in day_keys
+            },
+            "correct_answers": 0,
+            "incorrect_answers": 0,
+            "learning_days": set(),
+            "active_lessons": set(),
+            "mastered_words": set(),
+            "word_practice_counts": {},
+            "latest_progress": None,
+            "latest_progress_ts": 0,
+        }
+
+    for event in events:
+        child_id = str(event.get("user_id") or "")
+        child_stats = stats_by_child.get(child_id)
+        event_ts = int(event.get("event_ts") or 0)
+        if not child_stats or event_ts <= 0:
+            continue
+        event_day_number = (event_ts + offset_ms) // day_ms
+        key = day_key(event_day_number)
+        daily = child_stats["daily"].get(key)
+        if not daily:
+            continue
+        daily["events"] += 1
+        daily["_timestamps"].append(event_ts)
+        child_stats["learning_days"].add(key)
+        try:
+            payload = json.loads(event.get("payload") or "{}")
+        except (TypeError, ValueError):
+            payload = {}
+        state = payload.get("state") if isinstance(payload, dict) else {}
+        if not isinstance(state, dict):
+            state = {}
+        lesson = str(state.get("lesson") or "").strip()
+        if lesson:
+            child_stats["active_lessons"].add(lesson)
+        reason = str(state.get("reason") or "")
+        android_event_type = str(event.get("event_type") or "")
+        if reason == "answer_wrong":
+            # Older Android builds sent "answer_wrong" instead of "answer_fail".
+            reason = "answer_fail"
+        elif not reason:
+            if android_event_type == "word_correct":
+                reason = "answer_ok"
+            elif android_event_type == "word_wrong":
+                reason = "answer_fail"
+        if reason == "answer_ok":
+            word_id = state.get("word_id")
+            word_key = str(word_id) if word_id is not None else ""
+            practice_counts = child_stats["word_practice_counts"]
+            if word_key and practice_counts.get(word_key, 0) >= CHILD_WORD_MASTERY_COUNT:
+                continue
+            if word_key:
+                practice_counts[word_key] = practice_counts.get(word_key, 0) + 1
+            daily["correct"] += 1
+            child_stats["correct_answers"] += 1
+            if word_key and practice_counts[word_key] >= CHILD_WORD_MASTERY_COUNT:
+                child_stats["mastered_words"].add(word_key)
+        elif reason == "answer_fail":
+            daily["incorrect"] += 1
+            child_stats["incorrect_answers"] += 1
+        if event_ts >= child_stats["latest_progress_ts"]:
+            child_stats["latest_progress_ts"] = event_ts
+            child_stats["latest_progress"] = {
+                "lesson": lesson,
+                "passed": int(state.get("passed") or 0),
+                "total": int(state.get("total") or 0),
+                "event_ts": event_ts,
+            }
+
+    result_children = []
+    for child in children:
+        child_id = str(child["user_id"])
+        stats = stats_by_child[child_id]
+        correct = int(stats["correct_answers"])
+        incorrect = int(stats["incorrect_answers"])
+        answers = correct + incorrect
+        stored = word_stats.get(child_id, {})
+        today = stats["daily"][day_keys[-1]]
+        today_timestamps = today["_timestamps"]
+        today_learning_seconds = 0
+        if today_timestamps:
+            today_learning_seconds = 30
+            for previous, current in zip(today_timestamps, today_timestamps[1:]):
+                gap_seconds = max(0, (current - previous) // 1000)
+                if gap_seconds <= 5 * 60:
+                    today_learning_seconds += gap_seconds
+        lifetime_learning = child_learning_stats[child_id]
+        child_goal = _daily_goal_settings(child_id)["goal_value"]
+        today_words = min(int(lifetime_learning["today_count"]), child_goal)
+        today_milestone = max(
+            (value for value in (5, 10, 15, 20, 25) if today_words >= value),
+            default=0,
+        )
+        public_daily = []
+        for daily_item in stats["daily"].values():
+            public_daily.append({
+                key: value for key, value in daily_item.items()
+                if not key.startswith("_")
+            })
+        result_children.append({
+            **child,
+            "display_name": _format_user_name(child) or child_id,
+            "languages": _get_user_languages(child_id),
+            "parents": parents_by_child.get(child_id, []),
+            "priority_lesson": priority_lessons.get(child_id, ""),
+            "priority_history": priority_history.get(child_id, []),
+            "available_lessons": [
+                {
+                    "lesson": str(item.get("lesson") or ""),
+                    "lesson_title": str(item.get("lesson_title") or item.get("lesson") or ""),
+                    "lesson_index": int(item.get("lesson_index") or 0),
+                    "words_count": int(item.get("words_count") or item.get("word_count") or 0),
+                }
+                for item in _lessons_available_to_child(child_id)
+                if str(item.get("lesson") or "").strip()
+            ],
+            "summary": {
+                "words_count": int(stored.get("words_count", 0)),
+                "lessons_count": int(stored.get("lessons_count", 0)),
+                "learning_days": len(stats["learning_days"]),
+                "learning_streak_days": streaks.get(child_id, 0),
+                "active_lessons": len(stats["active_lessons"]),
+                "correct_answers": correct,
+                "incorrect_answers": incorrect,
+                "answers_count": answers,
+                "success_rate": round(correct * 100 / answers) if answers else 0,
+                "mastered_words": len(lifetime_learning["mastered_word_ids"]),
+                "last_activity_ts": last_activity.get(child_id, 0),
+                "studied_today": bool(today["events"]),
+                "today_words": today_words,
+                "daily_goal": child_goal,
+                "today_goal_complete": today_words >= child_goal,
+                "today_status_milestone": today_milestone,
+                "today_learning_seconds": today_learning_seconds,
+                "today_first_activity_ts": today_timestamps[0] if today_timestamps else 0,
+                "today_last_activity_ts": today_timestamps[-1] if today_timestamps else 0,
+            },
+            "latest_progress": stats["latest_progress"],
+            "daily": public_daily,
+        })
+
+    return {
+        "days": days,
+        "timezone_offset_minutes": timezone_offset_minutes,
+        "range_start": day_keys[0],
+        "range_end": day_keys[-1],
+        "children": result_children,
+    }
+
+
+def _learning_streaks(
+    user_ids: List[str],
+    timezone_offset_minutes: int,
+    connection=None,
+) -> Dict[str, int]:
+    """Return current consecutive learning-day streaks in the user's local time."""
+    ids = [str(user_id).strip() for user_id in user_ids if str(user_id).strip()]
+    if not ids:
+        return {}
+    _ensure_progress_schema()
+    offset_ms = int(timezone_offset_minutes) * 60 * 1000
+    day_ms = 24 * 60 * 60 * 1000
+    today = (int(time.time() * 1000) + offset_ms) // day_ms
+    placeholders = ",".join("?" for _ in ids)
+
+    def read_rows(c):
+        return c.execute(f"""
+            SELECT user_id, event_ts
+            FROM progress_events
+            WHERE user_id IN ({placeholders})
+            ORDER BY event_ts DESC
+        """, ids).fetchall()
+
+    if connection is None:
+        with _conn() as c:
+            rows = read_rows(c)
+    else:
+        rows = read_rows(connection)
+
+    days_by_user = {user_id: set() for user_id in ids}
+    for row in rows:
+        event_ts = int(row["event_ts"] or 0)
+        if event_ts > 0:
+            days_by_user[str(row["user_id"])].add((event_ts + offset_ms) // day_ms)
+
+    result: Dict[str, int] = {}
+    for user_id, learning_days in days_by_user.items():
+        cursor = today if today in learning_days else today - 1
+        streak = 0
+        while cursor in learning_days:
+            streak += 1
+            cursor -= 1
+        result[user_id] = streak
+    return result
+
+
+def _update_detected_ui_language(user_id: str | None, language_code: str | None) -> None:
+    uid = str(user_id or "").strip()
+    if not uid:
+        return
+    lang = _normalize_supported_language(language_code, fallback="")
+    if not lang:
+        return
+    _ensure_user_settings_schema()
+    now_ms = int(time.time() * 1000)
+    with _conn() as c:
+        c.execute("""
+            INSERT INTO user_settings (user_id, detected_ui_language, ui_language_override, updated_at)
+            VALUES (?, ?, NULL, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                detected_ui_language=excluded.detected_ui_language,
+                updated_at=excluded.updated_at
+        """, (uid, lang, now_ms))
+        c.commit()
+
+
+def _get_ui_language(user_id: str | None) -> Dict[str, Any]:
+    uid = str(user_id or "").strip()
+    fallback = "en"
+    if not uid:
+        return {"ui_language": fallback, "detected_ui_language": fallback, "ui_language_override": None}
+    _ensure_user_settings_schema()
+    with _conn() as c:
+        row = c.execute("""
+            SELECT detected_ui_language, ui_language_override
+            FROM user_settings
+            WHERE user_id = ?
+        """, (uid,)).fetchone()
+    detected = _normalize_supported_language(row["detected_ui_language"] if row else None, fallback=fallback)
+    override = row["ui_language_override"] if row and row["ui_language_override"] else None
+    override = _normalize_supported_language(override, fallback="") or None
+    return {
+        "ui_language": override or detected,
+        "detected_ui_language": detected,
+        "ui_language_override": override,
+    }
+
+
+def _current_ui_language() -> str:
+    uid = _current_user_id()
+    if uid:
+        return str(_get_ui_language(uid).get("ui_language") or "en")
+    return normalize_language(
+        request.headers.get("X-Device-Language")
+        or request.accept_languages.best_match(list(LANGUAGE_CODES))
+        or "en"
+    )
+
+
+def _save_ui_language_override(user_id: str, language_code: str | None) -> Dict[str, Any]:
+    _ensure_user_settings_schema()
+    override = _normalize_supported_language(language_code, fallback="") or None
+    now_ms = int(time.time() * 1000)
+    with _conn() as c:
+        c.execute("""
+            INSERT INTO user_settings (user_id, detected_ui_language, ui_language_override, updated_at)
+            VALUES (?, NULL, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                ui_language_override=excluded.ui_language_override,
+                updated_at=excluded.updated_at
+        """, (str(user_id), override, now_ms))
+        c.commit()
+    return _get_ui_language(user_id)
 
 
 def _ensure_subscription_schema() -> None:
@@ -368,6 +1309,12 @@ def _get_subscription(user_id: str | None) -> Dict[str, Any]:
     trial_active = status == "trial" and trial_ends_at > now_ms
     paid_active = status == "active" and (period_ends_at is None or period_ends_at > now_ms)
     access = bool(trial_active or paid_active)
+    unlimited_threshold_ms = now_ms + 10 * 365 * 24 * 60 * 60 * 1000
+    is_unlimited = bool(
+        paid_active
+        and period_ends_at is not None
+        and period_ends_at > unlimited_threshold_ms
+    )
     days_left = 0
     if access:
         ends_at = trial_ends_at if trial_active else period_ends_at
@@ -391,6 +1338,7 @@ def _get_subscription(user_id: str | None) -> Dict[str, Any]:
         "cancel_at_period_end": bool(row["cancel_at_period_end"]),
         "provider": row["provider"] or "",
         "days_left": days_left,
+        "is_unlimited": is_unlimited,
     }
 
 
@@ -420,7 +1368,38 @@ def _get_user_languages(user_id: str | None) -> List[Dict[str, Any]]:
 
 def _languages_configured(user_id: str | None) -> bool:
     count = len(_get_user_languages(user_id))
-    return 3 <= count <= 4
+    return 3 <= count <= 5
+
+
+def _word_missing_language_summary(user_id: str, languages: list[str]) -> dict[str, Any]:
+    uid = str(user_id or "").strip()
+    if not uid:
+        return {"total_words": 0, "missing": [], "missing_total": 0}
+    valid = [code for code in dict.fromkeys(languages) if code in LANGUAGE_CODES]
+    with _conn() as c:
+        _ensure_word_language_columns(c, valid)
+        c.commit()
+        total_words = int(c.execute(
+            "SELECT COUNT(*) FROM words WHERE user_id=? AND COALESCE(lesson,'') != ''",
+            (uid,),
+        ).fetchone()[0] or 0)
+        missing = []
+        missing_total = 0
+        for code in valid:
+            col = _word_text_col(code)
+            sentence_col = _word_sentence_col(code)
+            count = int(c.execute(f"""
+                SELECT COUNT(*)
+                FROM words
+                WHERE user_id=?
+                  AND COALESCE(lesson,'') != ''
+                  AND (COALESCE({col}, '') = '' OR COALESCE({sentence_col}, '') = '')
+            """, (uid,)).fetchone()[0] or 0)
+            if count:
+                meta = LANGUAGE_META.get(code, {"code": code, "name": code.upper(), "native": code.upper()})
+                missing.append({"code": code, "name": meta["name"], "native": meta["native"], "count": count})
+                missing_total += count
+    return {"total_words": total_words, "missing": missing, "missing_total": missing_total}
 
 
 def _ensure_share_schema() -> None:
@@ -609,6 +1588,50 @@ def settings_page():
     )
 
 
+@web.route("/account-type")
+def account_type_page():
+    return render_template(
+        "account_type.html",
+        title="Account type",
+        hide_timer=True,
+    )
+
+
+@web.route("/family/link")
+def family_link_page():
+    token = str(request.args.get("token") or "").strip()
+    child_user_id = verify_pairing_token(token)
+    child_name = ""
+    if child_user_id:
+        with _conn() as c:
+            child = c.execute(
+                "SELECT user_id, username, first_name, last_name, account_type "
+                "FROM users WHERE user_id=?",
+                (child_user_id,),
+            ).fetchone()
+        if not child or child["account_type"] != "child":
+            child_user_id = ""
+        else:
+            child_name = _format_user_name(child) or child_user_id
+    return render_template(
+        "family_link.html",
+        title="Link child account",
+        hide_timer=True,
+        pairing_token=token if child_user_id else "",
+        child_name=child_name,
+        pairing_valid=bool(child_user_id),
+    )
+
+
+@web.route("/parent")
+def parent_dashboard_page():
+    return render_template(
+        "parent_dashboard.html",
+        title=translate(_current_ui_language(), "parent.title"),
+        hide_timer=True,
+    )
+
+
 @web.route("/subscription")
 def subscription_page():
     return render_template("subscription.html", title="Подписка", hide_timer=True)
@@ -641,9 +1664,11 @@ def admin_users_page():
     _ensure_schema()
     _ensure_subscription_schema()
     _ensure_progress_schema()
+    _ensure_family_schema()
     with _conn() as c:
         users = [dict(r) for r in c.execute("""
-            SELECT user_id, username, first_name, last_name, is_active, created_at
+            SELECT user_id, username, first_name, last_name, is_active,
+                   account_type, created_at
             FROM users
             ORDER BY datetime(created_at) DESC, user_id DESC
         """).fetchall()]
@@ -682,6 +1707,59 @@ def admin_users_page():
                 FROM user_subscriptions
             """).fetchall()
         }
+        family_links = [dict(r) for r in c.execute("""
+            SELECT
+                l.parent_user_id,
+                l.child_user_id,
+                l.created_at,
+                p.username AS parent_username,
+                p.first_name AS parent_first_name,
+                p.last_name AS parent_last_name,
+                ch.username AS child_username,
+                ch.first_name AS child_first_name,
+                ch.last_name AS child_last_name
+            FROM parent_child_links l
+            JOIN users p ON p.user_id = l.parent_user_id
+            JOIN users ch ON ch.user_id = l.child_user_id
+            ORDER BY l.created_at DESC
+        """).fetchall()]
+        tts_usage = get_tts_usage_snapshot(
+            c,
+            timezone_name=Config.TTS_USAGE_TIMEZONE,
+        )
+        translation_usage = get_translation_usage_snapshot(c)
+
+    family_relations: Dict[str, List[Dict[str, Any]]] = {}
+    for link in family_links:
+        parent_id = str(link["parent_user_id"])
+        child_id = str(link["child_user_id"])
+        parent_name = _format_user_name({
+            "username": link.get("parent_username"),
+            "first_name": link.get("parent_first_name"),
+            "last_name": link.get("parent_last_name"),
+        }) or parent_id
+        child_name = _format_user_name({
+            "username": link.get("child_username"),
+            "first_name": link.get("child_first_name"),
+            "last_name": link.get("child_last_name"),
+        }) or child_id
+        common = {
+            "parent_user_id": parent_id,
+            "child_user_id": child_id,
+            "created_at": link.get("created_at") or "",
+        }
+        family_relations.setdefault(parent_id, []).append({
+            **common,
+            "direction": "parent_of",
+            "counterpart_name": child_name,
+            "description": f"Взрослый {parent_name} → ребёнок {child_name}",
+        })
+        family_relations.setdefault(child_id, []).append({
+            **common,
+            "direction": "child_of",
+            "counterpart_name": parent_name,
+            "description": f"Взрослый {parent_name} → ребёнок {child_name}",
+        })
 
     rows = []
     now_ms = int(time.time() * 1000)
@@ -721,6 +1799,21 @@ def admin_users_page():
             "subscription_active": bool(is_unlimited or (access_until and access_until > now_ms)),
             "is_unlimited": is_unlimited,
             "is_admin": is_admin_user,
+            "account_type": str(u.get("account_type") or "standard"),
+            "account_type_label": "Детский" if u.get("account_type") == "child" else "Обычный",
+            "family_relations": family_relations.get(uid, []),
+            "tts_successful_requests": tts_usage["by_user"].get(uid, {}).get("successful_requests", 0),
+            "tts_failed_requests": tts_usage["by_user"].get(uid, {}).get("failed_requests", 0),
+            "tts_total_requests": tts_usage["by_user"].get(uid, {}).get("total_requests", 0),
+            "tts_characters": tts_usage["by_user"].get(uid, {}).get("characters", 0),
+            "tts_blocked_requests": tts_usage["by_user"].get(uid, {}).get("blocked_requests", 0),
+            "tts_character_limit": tts_usage["by_user"].get(uid, {}).get("character_limit"),
+            "tts_characters_remaining": tts_usage["by_user"].get(uid, {}).get("characters_remaining"),
+            "translation_successful_requests": translation_usage["by_user"].get(uid, {}).get("successful_requests", 0),
+            "translation_failed_requests": translation_usage["by_user"].get(uid, {}).get("failed_requests", 0),
+            "translation_prompt_tokens": translation_usage["by_user"].get(uid, {}).get("prompt_tokens", 0),
+            "translation_completion_tokens": translation_usage["by_user"].get(uid, {}).get("completion_tokens", 0),
+            "translation_total_tokens": translation_usage["by_user"].get(uid, {}).get("total_tokens", 0),
         })
 
     return render_template(
@@ -731,6 +1824,8 @@ def admin_users_page():
         access_denied=False,
         users=rows,
         admin_user_id=admin_user_id,
+        tts_usage_summary=tts_usage,
+        translation_usage_summary=translation_usage,
     )
 
 
@@ -884,9 +1979,22 @@ def api_share_source_lessons():
         return jsonify({"ok": False, "error": "unauthorized"}), 401
     _ensure_schema()
 
+    _ensure_family_schema()
+    preferred_languages = [item["code"] for item in _get_user_languages(str(user_id))]
     with _conn() as c:
-        rows = c.execute("""
-            SELECT lesson, number, nl, en, ru
+        languages = _existing_word_languages(c)
+        languages = [
+            *[code for code in preferred_languages if code in languages],
+            *[code for code in languages if code not in preferred_languages],
+        ]
+        visible_languages = preferred_languages or languages
+        language_columns = []
+        for lang in languages:
+            language_columns.extend([_word_text_col(lang), _word_sentence_col(lang)])
+        word_columns = ", ".join(f'"{column}"' for column in language_columns)
+        select_languages = f", {word_columns}" if word_columns else ""
+        rows = c.execute(f"""
+            SELECT id, lesson, number{select_languages}
             FROM words
             WHERE (user_id = ? OR status = 'test') AND COALESCE(lesson, '') != ''
             ORDER BY lesson, number
@@ -894,20 +2002,137 @@ def api_share_source_lessons():
 
     grouped: Dict[str, List[Dict[str, Any]]] = {}
     for r in rows:
-        grouped.setdefault(r["lesson"], []).append({
-            "nl": r["nl"] or "",
-            "en": r["en"] or "",
-            "ru": r["ru"] or "",
-        })
+        word = {"id": r["id"], "number": r["number"] or ""}
+        for lang in languages:
+            word[lang] = r[_word_text_col(lang)] or ""
+            word[f"ex_{lang}"] = r[_word_sentence_col(lang)] or ""
+        grouped.setdefault(r["lesson"], []).append(word)
 
     lessons = [
-        {"lesson": lesson, "words_count": len(words), "words": words}
+        {
+            "lesson": lesson,
+            "words_count": len(words),
+            "words": words,
+            "languages": [
+                {
+                    "code": lang,
+                    "name": LANGUAGE_META.get(lang, {}).get("name", lang.upper()),
+                    "native": LANGUAGE_META.get(lang, {}).get("native", lang.upper()),
+                }
+                for lang in visible_languages
+                if any(str(word.get(lang) or "").strip() for word in words)
+            ],
+        }
         for lesson, words in grouped.items()
     ]
     lessons.sort(key=lambda item: item["lesson"] or "")
     if request.headers.get("X-Client") == "android":
         return jsonify(lessons)
-    return jsonify({"ok": True, "lessons": lessons})
+    children = _family_status(str(user_id)).get("children", [])
+    for child in children:
+        child["languages"] = _get_user_languages(str(child.get("user_id") or ""))
+    return jsonify({
+        "ok": True,
+        "lessons": lessons,
+        "children": children,
+        "language_options": LANGUAGE_OPTIONS,
+        "preferred_languages": _get_user_languages(str(user_id)),
+    })
+
+
+@web.post("/api/share/assign_child")
+def api_share_assign_child():
+    parent_user_id = _current_user_id()
+    if not parent_user_id:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    _ensure_schema()
+    _ensure_family_schema()
+
+    data = request.get_json(silent=True) or {}
+    child_user_id = str(data.get("child_user_id") or "").strip()
+    raw_lessons = data.get("lessons") or []
+    if isinstance(raw_lessons, str):
+        raw_lessons = [raw_lessons]
+    lessons = list(dict.fromkeys(
+        str(item or "").strip() for item in raw_lessons if str(item or "").strip()
+    )) if isinstance(raw_lessons, list) else []
+    if not child_user_id:
+        return jsonify({"ok": False, "error": "child_required"}), 400
+    if not lessons:
+        return jsonify({"ok": False, "error": "lessons_required"}), 400
+
+    with _conn() as c:
+        linked_child = c.execute("""
+            SELECT u.user_id
+            FROM parent_child_links l
+            JOIN users u ON u.user_id = l.child_user_id
+            WHERE l.parent_user_id = ? AND l.child_user_id = ? AND u.account_type = 'child'
+        """, (str(parent_user_id), child_user_id)).fetchone()
+        if not linked_child:
+            return jsonify({"ok": False, "error": "child_not_linked"}), 403
+
+        columns = {row["name"] for row in c.execute("PRAGMA table_info(words)")}
+        copy_columns = ["lesson", "number", "difficult"]
+        for lang in _existing_word_languages(c):
+            copy_columns.extend([
+                _word_text_col(lang), _word_sentence_col(lang), _word_audio_col(lang)
+            ])
+        copy_columns = [column for column in copy_columns if column in columns]
+        qmarks = ",".join("?" * len(lessons))
+        quoted = ", ".join(f'"{column}"' for column in copy_columns)
+        source_rows = c.execute(f"""
+            SELECT {quoted}
+            FROM words
+            WHERE (user_id = ? OR status = 'test') AND lesson IN ({qmarks})
+            ORDER BY lesson, number, id
+        """, [str(parent_user_id), *lessons]).fetchall()
+        if not source_rows:
+            return jsonify({"ok": False, "error": "lessons_not_found"}), 404
+
+        max_row = c.execute("""
+            SELECT MAX(CAST(SUBSTR(number, 1,
+                CASE WHEN INSTR(number, '.') > 0 THEN INSTR(number, '.') - 1
+                     ELSE LENGTH(number) END) AS INTEGER))
+            FROM words WHERE user_id = ?
+        """, (child_user_id,)).fetchone()
+        next_lesson_num = int(max_row[0] or 0) + 1
+        lesson_numbers = {lesson: next_lesson_num + index for index, lesson in enumerate(lessons)}
+        per_lesson_index: Dict[str, int] = {}
+        insert_columns = ["user_id", "status", *copy_columns]
+        if "updated_at" in columns:
+            insert_columns.append("updated_at")
+        insert_sql = (
+            f"INSERT INTO words ({', '.join(insert_columns)}) "
+            f"VALUES ({','.join('?' * len(insert_columns))})"
+        )
+        now_ms = int(time.time() * 1000)
+        inserted = 0
+        assigned_lessons = set()
+        for source in source_rows:
+            lesson = str(source["lesson"] or "").strip()
+            if lesson not in lesson_numbers:
+                continue
+            per_lesson_index[lesson] = per_lesson_index.get(lesson, 0) + 1
+            values: List[Any] = [child_user_id, "user"]
+            for column in copy_columns:
+                if column == "number":
+                    values.append(f"{lesson_numbers[lesson]}.{per_lesson_index[lesson]}")
+                else:
+                    values.append(source[column])
+            if "updated_at" in columns:
+                values.append(now_ms)
+            c.execute(insert_sql, values)
+            inserted += 1
+            assigned_lessons.add(lesson)
+        c.commit()
+
+    return jsonify({
+        "ok": True,
+        "count": inserted,
+        "lessons_count": len(assigned_lessons),
+        "lessons": sorted(assigned_lessons),
+        "child_user_id": child_user_id,
+    })
 
 
 @web.post("/api/share/<token>/import")
@@ -1078,7 +2303,14 @@ def api_get_words():
     page     = max(1, int(request.args.get("page", 1) or 1))
     per_page = min(100, max(10, int(request.args.get("per_page", 50) or 50)))
     offset   = (page - 1) * per_page
+    preferred = _get_user_languages(str(user_id))
+    display_languages = [item["code"] for item in preferred] or ["nl", "en", "ru"]
     with _conn() as c:
+        _ensure_word_language_columns(c, display_languages)
+        c.commit()
+        existing_languages = _existing_word_languages(c)
+        select_languages = list(dict.fromkeys(["nl", "en", "ru", *display_languages]))
+        select_languages = [code for code in select_languages if code in existing_languages]
         include_test = request.headers.get("X-Client") == "android"
         if include_test:
             base = "FROM words WHERE (user_id=? OR status='test')"
@@ -1086,13 +2318,22 @@ def api_get_words():
             base = "FROM words WHERE user_id=?"
         params: list = [str(user_id)]
         if q:
-            base  += " AND (nl LIKE ? OR en LIKE ? OR ru LIKE ? OR lesson LIKE ?)"
+            search_columns = [*[_word_text_col(code) for code in display_languages], "lesson"]
+            base += " AND (" + " OR ".join(f'"{column}" LIKE ?' for column in search_columns) + ")"
             p      = f"%{q}%"
-            params += [p, p, p, p]
+            params += [p] * len(search_columns)
         total = c.execute(f"SELECT COUNT(*) {base}", params).fetchone()[0]
+        word_columns = []
+        for code in select_languages:
+            word_columns.extend([
+                _word_text_col(code),
+                _word_sentence_col(code),
+                _word_audio_col(code),
+            ])
+        selected_word_columns = ",".join(f'"{column}"' for column in word_columns)
         rows  = c.execute(
-            f"SELECT id,lesson,number,nl,en,ru,ex_nl,ex_en,ex_ru,"
-            f"audio_nl,audio_en,audio_ru,difficult,status,user_id {base} ORDER BY id DESC LIMIT ? OFFSET ?",
+            f"SELECT id,lesson,number,{selected_word_columns},difficult,status,user_id "
+            f"{base} ORDER BY id DESC LIMIT ? OFFSET ?",
             params + [per_page, offset]
         ).fetchall()
     words = []
@@ -1102,7 +2343,11 @@ def api_get_words():
         d["editable"] = (d.get("user_id") or "") == str(user_id) or d.get("status") == "test"
         d.pop("user_id", None)
         words.append(d)
-    return jsonify({"ok": True, "words": words,
+    display_meta = [
+        LANGUAGE_META.get(code, {"code": code, "name": code.upper(), "native": code.upper()})
+        for code in display_languages
+    ]
+    return jsonify({"ok": True, "words": words, "languages": display_meta,
                     "total": total, "page": page,
                     "pages": max(1, (total + per_page - 1) // per_page)})
 
@@ -1113,19 +2358,40 @@ def api_update_word(word_id: int):
     if not user_id:
         return jsonify({"ok": False, "error": "Not authenticated"}), 401
     data    = request.get_json(silent=True) or {}
-    allowed = {"lesson", "number", "nl", "en", "ru", "ex_nl", "ex_en", "ex_ru", "difficult"}
+    payload_langs = set()
+    for key in data:
+        raw = str(key or "").strip().lower()
+        if raw in LANGUAGE_CODES:
+            payload_langs.add(raw)
+        elif raw.startswith("ex_") and raw[3:] in LANGUAGE_CODES:
+            payload_langs.add(raw[3:])
+        elif raw.startswith("audio_") and raw[6:] in LANGUAGE_CODES:
+            payload_langs.add(raw[6:])
+
+    with _conn() as c:
+        _ensure_word_language_columns(c, payload_langs)
+        c.commit()
+
+    with _conn() as c:
+        languages = _existing_word_languages(c)
+
+    dynamic_allowed = set()
+    for lang in languages:
+        dynamic_allowed.update({_word_text_col(lang), _word_sentence_col(lang), _word_audio_col(lang)})
+    allowed = {"lesson", "number", "difficult"} | dynamic_allowed
     updates = {k: v for k, v in data.items() if k in allowed}
     if not updates:
         return jsonify({"ok": False, "error": "No valid fields"}), 400
 
     # When a translated text field changes, clear its audio URL and delete the old file
-    TEXT_AUDIO_MAP = {"nl": "audio_nl", "en": "audio_en", "ru": "audio_ru"}
+    TEXT_AUDIO_MAP = {_word_text_col(lang): _word_audio_col(lang) for lang in languages}
     old_audio_urls: List[str] = []
 
     with _conn() as c:
+        old_select_cols = ", ".join(dict.fromkeys([*TEXT_AUDIO_MAP.keys(), *TEXT_AUDIO_MAP.values()]))
         old = c.execute(
-            """
-            SELECT nl, en, ru, audio_nl, audio_en, audio_ru
+            f"""
+            SELECT {old_select_cols}
             FROM words
             WHERE id=? AND (user_id=? OR status='test')
             """,
@@ -1152,12 +2418,13 @@ def api_update_word(word_id: int):
         )
         c.commit()
 
-        row = c.execute("""
+        select_cols = ",\n                   ".join(_language_select_parts(languages))
+        row = c.execute(f"""
             SELECT w.id, w.lesson, w.number,
-                   w.nl AS nl_word, w.en AS en_word, w.ru AS ru_word,
-                   w.ex_nl AS nl_sentence, w.ex_en AS en_sentence, w.ex_ru AS ru_sentence,
-                   w.audio_nl AS nl_audio, w.audio_en AS en_audio, w.audio_ru AS ru_audio,
-                   COALESCE(uf.difficult, 0) AS difficult
+                   {select_cols},
+                   COALESCE(uf.difficult, 0) AS difficult,
+                   w.status AS status,
+                   w.user_id AS _word_owner
             FROM words w
             LEFT JOIN user_word_flags uf ON uf.word_id = w.id AND uf.user_id = ?
             WHERE w.id = ?
@@ -1169,28 +2436,7 @@ def api_update_word(word_id: int):
     if not row:
         return jsonify({"ok": True})
 
-    d = dict(row)
-    d["nl"] = d.get("nl_word", "")
-    d["en"] = d.get("en_word", "")
-    d["ru"] = d.get("ru_word", "")
-    d["ex_nl"] = d.get("nl_sentence", "")
-    d["ex_en"] = d.get("en_sentence", "")
-    d["ex_ru"] = d.get("ru_sentence", "")
-    d["audio_nl"] = d.get("nl_audio", "")
-    d["audio_en"] = d.get("en_audio", "")
-    d["audio_ru"] = d.get("ru_audio", "")
-    d["difficult"] = bool(d.get("difficult"))
-    d.setdefault("status", "")
-    d.setdefault("word_en",        d.get("en_word", ""))
-    d.setdefault("translation_ru", d.get("ru_word", ""))
-    d.setdefault("translation_nl", d.get("nl_word", ""))
-    d.setdefault("audio_en", d.get("en_audio", ""))
-    d.setdefault("audio_ru", d.get("ru_audio", ""))
-    d.setdefault("audio_nl", d.get("nl_audio", ""))
-    d.setdefault("sentence_en", d.get("en_sentence", ""))
-    d.setdefault("sentence_ru", d.get("ru_sentence", ""))
-    d.setdefault("sentence_nl", d.get("nl_sentence", ""))
-    d["editable"] = True
+    d = _word_payload_from_row(row, languages, str(user_id))
     return jsonify({"ok": True, "word": d})
 
 
@@ -1406,6 +2652,7 @@ def login_webapp():
         return jsonify({"ok": False, "error": "telegram_name_or_username_required"}), 403
     if _upsert_user(user):
         _notify_admins_new_user(user)
+    _update_detected_ui_language(str(user.get("id") or ""), user.get("language_code"))
     session["tg_user_id"]    = str(user.get("id") or "")
     session["tg_username"]   = user.get("username") or ""
     session["tg_first_name"] = user.get("first_name") or ""
@@ -1431,10 +2678,12 @@ def api_me():
             "username": session.get("tg_username"),
             "first_name": session.get("tg_first_name") or "",
             "last_name": session.get("tg_last_name") or "",
-            "languages_configured": 3 <= len(language_preferences) <= 4,
+            "languages_configured": 3 <= len(language_preferences) <= 5,
             "language_preferences": language_preferences,
             "subscription": subscription,
             "is_admin": _is_admin_user_id(uid),
+            **_account_context(uid),
+            **_get_ui_language(uid),
         })
     uid = request.headers.get("X-User-Id")
     if uid:
@@ -1450,13 +2699,294 @@ def api_me():
                 "username": row["username"] or "",
                 "first_name": row["first_name"] or "",
                 "last_name": row["last_name"] or "",
-                "languages_configured": 3 <= len(language_preferences) <= 4,
+                "languages_configured": 3 <= len(language_preferences) <= 5,
                 "language_preferences": language_preferences,
                 "subscription": subscription,
                 "is_admin": _is_admin_user_id(uid),
+                **_account_context(str(uid)),
+                **_get_ui_language(str(uid)),
             })
         return jsonify({"ok": False, "auth": False, "error": "open_telegram_bot_first"}), 401
     return jsonify({"ok": False, "auth": False})
+
+
+@web.post("/api/account/type")
+def api_account_type_save():
+    user_id = _current_user_id()
+    if not user_id or not _user_exists(user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    data = request.get_json(silent=True) or {}
+    account_type = str(data.get("account_type") or "").strip().lower()
+    if account_type not in {"child", "standard"}:
+        return jsonify({"ok": False, "error": "invalid_account_type"}), 400
+    _ensure_family_schema()
+    with _conn() as c:
+        row = c.execute(
+            "SELECT account_type FROM users WHERE user_id=?",
+            (str(user_id),),
+        ).fetchone()
+        if not row:
+            return jsonify({"ok": False, "error": "user_not_found"}), 404
+        current_type = str(row["account_type"] or "standard")
+        if current_type not in {"pending", account_type}:
+            return jsonify({"ok": False, "error": "account_type_locked"}), 409
+        c.execute(
+            "UPDATE users SET account_type=? WHERE user_id=?",
+            (account_type, str(user_id)),
+        )
+        c.commit()
+    return jsonify({"ok": True, **_account_context(str(user_id))})
+
+
+@web.get("/api/family")
+def api_family_status():
+    user_id = _current_user_id()
+    if not user_id or not _user_exists(user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    return jsonify({"ok": True, **_family_status(str(user_id))})
+
+
+@web.get("/api/learning/streak")
+def api_learning_streak():
+    user_id = _current_user_id()
+    if not user_id or not _user_exists(user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    try:
+        timezone_offset_minutes = int(request.args.get("tz_offset") or 0)
+    except (TypeError, ValueError):
+        timezone_offset_minutes = 0
+    timezone_offset_minutes = max(-14 * 60, min(14 * 60, timezone_offset_minutes))
+    streak = _learning_streaks([str(user_id)], timezone_offset_minutes)
+    return jsonify({
+        "ok": True,
+        "learning_streak_days": streak.get(str(user_id), 0),
+        "timezone_offset_minutes": timezone_offset_minutes,
+    })
+
+
+@web.get("/api/family/dashboard")
+def api_family_dashboard():
+    user_id = _current_user_id()
+    if not user_id or not _user_exists(user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    account = _account_context(str(user_id))
+    if not account["is_parent"]:
+        return jsonify({"ok": False, "error": "parent_account_required"}), 403
+    try:
+        days = int(request.args.get("days") or 30)
+    except (TypeError, ValueError):
+        days = 30
+    if days not in {7, 30, 90}:
+        return jsonify({"ok": False, "error": "invalid_period"}), 400
+    try:
+        timezone_offset_minutes = int(request.args.get("tz_offset") or 0)
+    except (TypeError, ValueError):
+        timezone_offset_minutes = 0
+    timezone_offset_minutes = max(-14 * 60, min(14 * 60, timezone_offset_minutes))
+    return jsonify({
+        "ok": True,
+        **_family_dashboard_data(str(user_id), days, timezone_offset_minutes),
+    })
+
+
+@web.put("/api/family/children/<child_user_id>/priority-lesson")
+def api_family_set_priority_lesson(child_user_id: str):
+    parent_user_id = _current_user_id()
+    if not parent_user_id or not _user_exists(parent_user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    _ensure_family_schema()
+    child_id = str(child_user_id or "").strip()
+    with _conn() as c:
+        linked = c.execute(
+            "SELECT 1 FROM parent_child_links WHERE parent_user_id=? AND child_user_id=?",
+            (str(parent_user_id), child_id),
+        ).fetchone()
+    if not linked:
+        return jsonify({"ok": False, "error": "family_link_not_found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    lesson = str(data.get("lesson") or "").strip()
+    if lesson:
+        available = {
+            str(item.get("lesson") or "").strip()
+            for item in _lessons_available_to_child(child_id)
+        }
+        if lesson not in available:
+            return jsonify({"ok": False, "error": "lesson_not_available"}), 400
+
+    now_ms = int(time.time() * 1000)
+    with _conn() as c:
+        current = c.execute(
+            "SELECT lesson FROM child_lesson_priorities WHERE child_user_id=?",
+            (child_id,),
+        ).fetchone()
+        current_lesson = str((current["lesson"] if current else "") or "")
+        if current_lesson == lesson:
+            if lesson:
+                models.set_lesson_hidden(Config.DB_PATH, child_id, lesson, 0)
+            return jsonify({"ok": True, "child_user_id": child_id, "priority_lesson": lesson})
+        c.execute("""
+            UPDATE child_lesson_priority_history
+            SET ended_at=?
+            WHERE child_user_id=? AND ended_at IS NULL
+        """, (now_ms, child_id))
+        if lesson:
+            c.execute("""
+                INSERT INTO child_lesson_priorities
+                    (child_user_id, lesson, parent_user_id, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(child_user_id) DO UPDATE SET
+                    lesson=excluded.lesson,
+                    parent_user_id=excluded.parent_user_id,
+                    updated_at=excluded.updated_at
+            """, (child_id, lesson, str(parent_user_id), now_ms))
+            c.execute("""
+                INSERT INTO child_lesson_priority_history
+                    (child_user_id, lesson, parent_user_id, started_at, ended_at)
+                VALUES (?, ?, ?, ?, NULL)
+            """, (child_id, lesson, str(parent_user_id), now_ms))
+        else:
+            c.execute(
+                "DELETE FROM child_lesson_priorities WHERE child_user_id=?",
+                (child_id,),
+            )
+        c.commit()
+    if lesson:
+        models.set_lesson_hidden(Config.DB_PATH, child_id, lesson, 0)
+    return jsonify({"ok": True, "child_user_id": child_id, "priority_lesson": lesson})
+
+
+def _pairing_payload(user_id: str) -> tuple[Dict[str, Any] | None, tuple | None]:
+    account = _account_context(user_id)
+    if account["account_type"] != "child":
+        return None, (jsonify({"ok": False, "error": "child_account_required"}), 403)
+    bot_username = _telegram_bot_username()
+    if not bot_username:
+        return None, (jsonify({"ok": False, "error": "telegram_bot_username_unavailable"}), 503)
+    token = create_pairing_token(user_id)
+    code = create_pairing_code(Config.DB_PATH, user_id)
+    pairing_url = f"https://t.me/{bot_username}?start=family_{code}"
+    return {
+        "ok": True,
+        "token": token,
+        "code": code,
+        "pairing_url": pairing_url,
+        "expires_in": PAIRING_TOKEN_MAX_AGE_SECONDS,
+    }, None
+
+
+@web.get("/api/family/pairing-code")
+def api_family_pairing_code():
+    user_id = _current_user_id()
+    if not user_id or not _user_exists(user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    payload, error = _pairing_payload(str(user_id))
+    if error:
+        return error
+    return jsonify(payload)
+
+
+@web.get("/api/family/pairing-qr.png")
+def api_family_pairing_qr():
+    user_id = _current_user_id()
+    if not user_id or not _user_exists(user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    code = str(request.args.get("code") or "").strip()
+    if code:
+        details = pairing_code_details(Config.DB_PATH, code)
+        if not details or details["child_user_id"] != str(user_id):
+            return jsonify({"ok": False, "error": "invalid_or_expired_pairing_code"}), 400
+        bot_username = _telegram_bot_username()
+        if not bot_username:
+            return jsonify({"ok": False, "error": "telegram_bot_username_unavailable"}), 503
+        pairing_url = f"https://t.me/{bot_username}?start=family_{code}"
+    else:
+        payload, error = _pairing_payload(str(user_id))
+        if error:
+            return error
+        pairing_url = payload["pairing_url"]
+    import qrcode
+
+    image = qrcode.make(pairing_url)
+    output = BytesIO()
+    image.save(output, format="PNG")
+    output.seek(0)
+    response = send_file(output, mimetype="image/png", download_name="parent-link.png")
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
+
+@web.post("/api/family/link")
+def api_family_link():
+    parent_user_id = _current_user_id()
+    if not parent_user_id or not _user_exists(parent_user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    parent_account = _account_context(str(parent_user_id))
+    if parent_account["account_type"] == "pending":
+        return jsonify({"ok": False, "error": "account_type_required"}), 409
+    if parent_account["account_type"] != "standard":
+        return jsonify({"ok": False, "error": "child_cannot_be_parent"}), 403
+    data = request.get_json(silent=True) or {}
+    token = str(data.get("token") or "").strip()
+    child_user_id = verify_pairing_token(token)
+    if not child_user_id:
+        return jsonify({"ok": False, "error": "invalid_or_expired_pairing_code"}), 400
+    if child_user_id == str(parent_user_id):
+        return jsonify({"ok": False, "error": "cannot_link_self"}), 400
+    _ensure_family_schema()
+    with _conn() as c:
+        c.execute("BEGIN IMMEDIATE")
+        child = c.execute(
+            "SELECT user_id, username, first_name, last_name, account_type "
+            "FROM users WHERE user_id=?",
+            (child_user_id,),
+        ).fetchone()
+        if not child or child["account_type"] != "child":
+            return jsonify({"ok": False, "error": "child_account_not_found"}), 404
+        existing = c.execute(
+            """
+            SELECT 1 FROM parent_child_links
+            WHERE parent_user_id=? AND child_user_id=?
+            """,
+            (str(parent_user_id), child_user_id),
+        ).fetchone()
+        parents_count = int(c.execute(
+            "SELECT COUNT(*) FROM parent_child_links WHERE child_user_id=?",
+            (child_user_id,),
+        ).fetchone()[0])
+        if not existing and parents_count >= MAX_PARENTS_PER_CHILD:
+            return jsonify({"ok": False, "error": "parent_limit_reached"}), 409
+        c.execute("""
+            INSERT INTO parent_child_links (parent_user_id, child_user_id)
+            VALUES (?, ?)
+            ON CONFLICT(parent_user_id, child_user_id) DO NOTHING
+        """, (str(parent_user_id), child_user_id))
+        c.commit()
+    return jsonify({
+        "ok": True,
+        "child": {
+            "user_id": child_user_id,
+            "display_name": _format_user_name(child) or child_user_id,
+        },
+        **_account_context(str(parent_user_id)),
+    })
+
+
+@web.delete("/api/family/children/<child_user_id>")
+def api_family_unlink_child(child_user_id: str):
+    parent_user_id = _current_user_id()
+    if not parent_user_id or not _user_exists(parent_user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    _ensure_family_schema()
+    with _conn() as c:
+        cursor = c.execute(
+            "DELETE FROM parent_child_links WHERE parent_user_id=? AND child_user_id=?",
+            (str(parent_user_id), str(child_user_id)),
+        )
+        c.commit()
+    if cursor.rowcount == 0:
+        return jsonify({"ok": False, "error": "family_link_not_found"}), 404
+    return jsonify({"ok": True, **_account_context(str(parent_user_id))})
 
 
 @web.get("/api/subscription")
@@ -1558,6 +3088,8 @@ def api_verify_purchase():
 
 @web.get("/api/language-options")
 def api_language_options():
+    if request.headers.get("X-Client") == "android":
+        return jsonify(LANGUAGE_OPTIONS)
     return jsonify({"ok": True, "languages": LANGUAGE_OPTIONS})
 
 
@@ -1567,9 +3099,11 @@ def api_user_languages_get():
     if not user_id:
         return jsonify({"ok": False, "error": "unauthorized"}), 401
     languages = _get_user_languages(user_id)
+    if request.headers.get("X-Client") == "android":
+        return jsonify(languages)
     return jsonify({
         "ok": True,
-        "configured": 3 <= len(languages) <= 4,
+        "configured": 3 <= len(languages) <= 5,
         "languages": languages,
         "options": LANGUAGE_OPTIONS,
     })
@@ -1598,11 +3132,12 @@ def api_user_languages_save():
         cleaned.append(code)
         seen.add(code)
 
-    if len(cleaned) < 3 or len(cleaned) > 4:
-        return jsonify({"ok": False, "error": "choose_3_or_4_languages"}), 400
+    if len(cleaned) < 3 or len(cleaned) > 5:
+        return jsonify({"ok": False, "error": "choose_3_to_5_languages"}), 400
 
     now_ms = int(time.time() * 1000)
     with _conn() as c:
+        _ensure_word_language_columns(c, cleaned)
         c.execute("DELETE FROM user_language_preferences WHERE user_id = ?", (str(user_id),))
         c.executemany("""
             INSERT INTO user_language_preferences (user_id, priority, lang_code, updated_at)
@@ -1611,10 +3146,167 @@ def api_user_languages_save():
         c.commit()
 
     languages = _get_user_languages(user_id)
-    return jsonify({"ok": True, "configured": True, "languages": languages})
+    missing = _word_missing_language_summary(str(user_id), cleaned)
+    return jsonify({"ok": True, "configured": True, "languages": languages, "generation": missing})
+
+
+@web.get("/api/user-languages/missing-words")
+def api_user_languages_missing_words():
+    user_id = _current_user_id()
+    if not user_id:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    raw = request.args.get("languages") or request.args.get("lang") or ""
+    requested = [x.strip().lower() for x in raw.split(",") if x.strip()]
+    if not requested:
+        requested = [item["code"] for item in _get_user_languages(user_id)]
+    requested = [code for code in dict.fromkeys(requested) if code in LANGUAGE_CODES]
+    if not requested:
+        return jsonify({"ok": False, "error": "bad_languages"}), 400
+    with _conn() as c:
+        _ensure_word_language_columns(c, requested)
+        existing_languages = _existing_word_languages(c)
+        select_cols = ",\n                   ".join(_language_select_parts(existing_languages))
+        rows = c.execute(f"""
+            SELECT w.id, w.lesson, w.number,
+                   {select_cols}
+            FROM words w
+            WHERE w.user_id = ?
+              AND COALESCE(w.lesson, '') != ''
+              AND ({' OR '.join([f"(COALESCE(w.{_word_text_col(code)}, '') = '' OR COALESCE(w.{_word_sentence_col(code)}, '') = '')" for code in requested])})
+            ORDER BY w.lesson, w.number
+        """, (str(user_id),)).fetchall()
+    items = []
+    for row in rows:
+        item = _word_payload_from_row(row, existing_languages)
+        item["missing_languages"] = [
+            code for code in requested
+            if not str(item.get(f"{code}_word") or "").strip()
+            or not str(item.get(f"{code}_sentence") or "").strip()
+        ]
+        if item["missing_languages"]:
+            items.append(item)
+    return jsonify({"ok": True, "items": items, "languages": requested})
+
+
+@web.get("/api/ui-language")
+def api_ui_language_get():
+    user_id = _current_user_id()
+    if not user_id:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    payload = _get_ui_language(user_id)
+    return jsonify({"ok": True, "options": LANGUAGE_OPTIONS, **payload})
+
+
+@web.post("/api/ui-language")
+def api_ui_language_save():
+    user_id = _current_user_id()
+    if not user_id:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    data = request.get_json(silent=True) or {}
+    language_code = data.get("ui_language")
+    payload = _save_ui_language_override(user_id, language_code)
+    return jsonify({"ok": True, "options": LANGUAGE_OPTIONS, **payload})
 
 
 # --- API уроков/слов (ИЗМЕНЕНО: difficult берём из user_word_flags) ---
+def _lesson_language_progress(user_id: str, lesson_titles: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+    """Count distinct correctly assembled words per lesson and practice language."""
+    _ensure_progress_schema()
+    lessons = [str(title).strip() for title in lesson_titles if str(title).strip()]
+    if not lessons:
+        return {}
+    ui_language = str(_get_ui_language(user_id).get("ui_language") or "en")
+    target_languages = [
+        item for item in _get_user_languages(user_id)
+        if str(item.get("code") or "") != ui_language
+    ]
+    if not target_languages:
+        return {lesson: [] for lesson in lessons}
+
+    codes = [str(item["code"]) for item in target_languages]
+    placeholders = ",".join("?" for _ in lessons)
+    available_word_ids: Dict[tuple[str, str], set[int]] = {
+        (lesson, code): set() for lesson in lessons for code in codes
+    }
+    lesson_word_ids: Dict[str, set[int]] = {lesson: set() for lesson in lessons}
+    with _conn() as c:
+        _ensure_word_language_columns(c, codes)
+        language_columns = ", ".join(f'"{_word_text_col(code)}"' for code in codes)
+        rows = c.execute(f"""
+            SELECT id, lesson, {language_columns}
+            FROM words
+            WHERE (user_id = ? OR status = 'test') AND lesson IN ({placeholders})
+        """, [str(user_id), *lessons]).fetchall()
+        for row in rows:
+            lesson = str(row["lesson"])
+            lesson_word_ids[lesson].add(int(row["id"]))
+            for code in codes:
+                if str(row[_word_text_col(code)] or "").strip():
+                    available_word_ids[(lesson, code)].add(int(row["id"]))
+
+        event_rows = c.execute("""
+            SELECT payload
+            FROM progress_events
+            WHERE user_id = ? AND scope = 'learn'
+            ORDER BY event_ts ASC, id ASC
+        """, (str(user_id),)).fetchall()
+
+    learned_word_ids: Dict[tuple[str, str], set[int]] = {
+        key: set() for key in available_word_ids
+    }
+    for row in event_rows:
+        try:
+            payload = json.loads(row["payload"] or "{}")
+        except (TypeError, ValueError):
+            continue
+        state = payload.get("state") if isinstance(payload, dict) else None
+        if not isinstance(state, dict) or state.get("reason") != "answer_ok":
+            continue
+        lesson = str(state.get("lesson") or "").strip()
+        code = str(state.get("lang") or "").strip().lower()
+        try:
+            word_id = int(state.get("word_id"))
+        except (TypeError, ValueError):
+            continue
+        key = (lesson, code)
+        if word_id in available_word_ids.get(key, set()):
+            learned_word_ids[key].add(word_id)
+
+    result: Dict[str, List[Dict[str, Any]]] = {}
+    for lesson in lessons:
+        result[lesson] = []
+        for language in target_languages:
+            code = str(language["code"])
+            total = len(available_word_ids[(lesson, code)])
+            # Не показываем прогресс языка, пока перевод не добавлен
+            # для каждого слова урока. Иначе появляется бесполезный IT0.
+            if total == 0 or total != len(lesson_word_ids[lesson]):
+                continue
+            learned = len(learned_word_ids[(lesson, code)])
+            result[lesson].append({
+                **language,
+                "learned_words": learned,
+                "total_words": total,
+                "percent": round(learned * 100 / total) if total else 0,
+            })
+    return result
+
+
+def _completed_lessons(user_id: str, lesson_titles: List[str]) -> List[str]:
+    progress = _lesson_language_progress(user_id, lesson_titles)
+    completed: List[str] = []
+    for lesson, languages in progress.items():
+        languages_with_words = [
+            item for item in languages if int(item.get("total_words") or 0) > 0
+        ]
+        if languages_with_words and all(
+            int(item.get("learned_words") or 0) >= int(item.get("total_words") or 0)
+            for item in languages_with_words
+        ):
+            completed.append(lesson)
+    return completed
+
+
 @web.get("/api/lessons")
 def api_lessons():
     user_id = _current_user_id()
@@ -1622,6 +3314,26 @@ def api_lessons():
         return jsonify({"ok": False, "error": "unauthorized"}), 401
     _ensure_schema()
     lessons = models.get_lessons(Config.DB_PATH, user_id)
+    priority_lesson = ""
+    if _account_context(str(user_id))["account_type"] == "child":
+        priority_lesson = _child_priority_lesson(str(user_id))
+    for lesson in lessons:
+        lesson["is_priority"] = bool(
+            priority_lesson and str(lesson.get("lesson") or "") == priority_lesson
+        )
+    lessons.sort(key=lambda item: (
+        not bool(item.get("is_priority")),
+        bool(item.get("hidden")),
+        int(item.get("lesson_index") or 0),
+        str(item.get("lesson") or ""),
+    ))
+    progress = _lesson_language_progress(
+        str(user_id),
+        [str(item.get("lesson_title") or item.get("lesson") or "") for item in lessons],
+    )
+    for lesson in lessons:
+        title = str(lesson.get("lesson_title") or lesson.get("lesson") or "")
+        lesson["language_progress"] = progress.get(title, [])
     return jsonify(lessons)
 
 
@@ -1729,11 +3441,12 @@ def api_lesson_words_by_title():
     if not uid:
         return jsonify({"ok": False, "error": "unauthorized"}), 401
     with _conn() as c:
+        preferred = [item["code"] for item in _get_user_languages(uid)]
+        languages = _existing_word_languages(c)
+        select_cols = ",\n                   ".join(_language_select_parts(languages))
         rows = c.execute(f"""
             SELECT w.id, w.lesson, w.number,
-                   w.nl AS nl_word, w.en AS en_word, w.ru AS ru_word,
-                   w.ex_nl AS nl_sentence, w.ex_en AS en_sentence, w.ex_ru AS ru_sentence,
-                   w.audio_nl AS nl_audio, w.audio_en AS en_audio, w.audio_ru AS ru_audio,
+                   {select_cols},
                    COALESCE(uf.difficult, 0) AS difficult,
                    w.status AS status,
                    w.user_id AS _word_owner
@@ -1743,35 +3456,80 @@ def api_lesson_words_by_title():
             WHERE (w.user_id = ? OR w.status = 'test') AND w.lesson = ?
             ORDER BY w.number
         """, (uid, uid, lesson)).fetchall()
-    items = []
-    for r in rows:
-        d = dict(r)
-        d["nl"] = d.get("nl_word", "")
-        d["en"] = d.get("en_word", "")
-        d["ru"] = d.get("ru_word", "")
-        d["ex_nl"] = d.get("nl_sentence", "")
-        d["ex_en"] = d.get("en_sentence", "")
-        d["ex_ru"] = d.get("ru_sentence", "")
-        d["audio_nl"] = d.get("nl_audio", "")
-        d["audio_en"] = d.get("en_audio", "")
-        d["audio_ru"] = d.get("ru_audio", "")
-        d["difficult"] = bool(d.get("difficult"))
-        d["status"] = d.get("status", "") or ""
-        d.setdefault("word_en",        d.get("en_word", ""))
-        d.setdefault("translation_ru", d.get("ru_word", ""))
-        d.setdefault("translation_nl", d.get("nl_word", ""))
-        d.setdefault("audio_en", d.get("en_audio", ""))
-        d.setdefault("audio_ru", d.get("ru_audio", ""))
-        d.setdefault("audio_nl", d.get("nl_audio", ""))
-        d.setdefault("sentence_en", d.get("en_sentence", ""))
-        d.setdefault("sentence_ru", d.get("ru_sentence", ""))
-        d.setdefault("sentence_nl", d.get("nl_sentence", ""))
-        d["editable"] = (d.get("_word_owner") or "") == uid or d.get("status") == "test"
-        d.pop("_word_owner", None)
-        items.append(d)
+    available_languages = _lesson_available_languages(rows, preferred, languages)
+    items = [_word_payload_from_row(r, languages, uid) for r in rows]
+    if _account_context(uid)["account_type"] == "child":
+        stats = _child_learning_stats(uid)
+        counts = stats["word_counts"]
+        for item in items:
+            practice_count = counts.get(str(item.get("id")), 0)
+            item["practice_count"] = practice_count
+            item["learned"] = practice_count >= CHILD_WORD_MASTERY_COUNT
     if request.headers.get("X-Client") == "android":
         return jsonify(items)
-    return jsonify({"ok": True, "items": items})
+    return jsonify({"ok": True, "items": items, "languages": available_languages})
+
+
+@web.get("/api/child-learning/status")
+def api_child_learning_status():
+    uid = _current_user_id()
+    if not uid:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    account = _account_context(uid)
+    if account["account_type"] != "child":
+        return jsonify({"ok": True, "is_child": False})
+    try:
+        timezone_offset = int(request.args.get("tz_offset") or 0)
+    except (TypeError, ValueError):
+        timezone_offset = 0
+    timezone_offset = max(-14 * 60, min(14 * 60, timezone_offset))
+    stats = _child_learning_stats(uid, timezone_offset)
+    goal = _daily_goal_settings(uid)["goal_value"]
+    today_count = min(stats["today_count"], goal)
+    milestone = max((value for value in (5, 10, 15, 20, 25) if today_count >= value), default=0)
+    return jsonify({
+        "ok": True,
+        "is_child": True,
+        "today_count": today_count,
+        "daily_goal": goal,
+        "goal_complete": stats["today_count"] >= goal,
+        "mastery_count": CHILD_WORD_MASTERY_COUNT,
+        "mastered_words": len(stats["mastered_word_ids"]),
+        "status_milestone": milestone,
+    })
+
+
+@web.get("/api/daily-goal")
+def api_daily_goal_get():
+    uid = _current_user_id()
+    if not uid:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    return jsonify({"ok": True, **_daily_goal_settings(uid)})
+
+
+@web.post("/api/daily-goal")
+def api_daily_goal_save():
+    uid = _current_user_id()
+    if not uid:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    settings = _daily_goal_settings(uid)
+    data = request.get_json(silent=True) or {}
+    try:
+        value = int(data.get("goal_value"))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "invalid_goal"}), 400
+    if value < settings["minimum"] or value > settings["maximum"]:
+        return jsonify({"ok": False, "error": "goal_out_of_range"}), 400
+    with _conn() as c:
+        c.execute("""
+            INSERT INTO user_daily_goals(user_id, goal_value, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                goal_value=excluded.goal_value,
+                updated_at=CURRENT_TIMESTAMP
+        """, (uid, value))
+        c.commit()
+    return jsonify({"ok": True, **_daily_goal_settings(uid)})
 
 
 @web.get("/api/lessons/<int:lesson_id>/words")
@@ -1821,14 +3579,19 @@ def api_difficult_words_user():
     uid = _current_user_id()
     if not uid:
         return jsonify({"ok": False, "error": "unauthorized"}), 401
+    language_meta = _get_user_languages(uid)
+    languages = [item["code"] for item in language_meta] or ["nl", "en", "ru"]
     with _conn() as c:
-        preset = c.execute("""
-            SELECT w.id,
-                   w.nl AS nl_word, w.en AS en_word, w.ru AS ru_word,
-                   w.ex_nl AS nl_sentence, w.ex_en AS en_sentence, w.ex_ru AS ru_sentence,
-                   w.audio_nl AS nl_audio, w.audio_en AS en_audio, w.audio_ru AS ru_audio,
+        _ensure_word_language_columns(c, languages)
+        c.commit()
+        select_languages = ",\n                   ".join(_language_select_parts(languages))
+        preset = c.execute(f"""
+            SELECT w.id, w.lesson, w.number,
+                   {select_languages},
                    1 AS difficult,
-                   'preset' AS kind
+                   'preset' AS kind,
+                   w.status AS status,
+                   w.user_id AS _word_owner
             FROM words w
             JOIN user_word_flags uf
               ON uf.word_id = w.id AND uf.user_id = ? AND COALESCE(uf.difficult,0)=1
@@ -1837,15 +3600,8 @@ def api_difficult_words_user():
         """, (uid, uid)).fetchall()
     items: List[Dict[str, Any]] = []
     for r in preset:
-        d = dict(r)
-        d.setdefault("word_en",        d.get("en_word", ""))
-        d.setdefault("translation_ru", d.get("ru_word", ""))
-        d.setdefault("translation_nl", d.get("nl_word", ""))
-        d.setdefault("sentence_en", d.get("en_sentence", ""))
-        d.setdefault("sentence_ru", d.get("ru_sentence", ""))
-        d.setdefault("sentence_nl", d.get("nl_sentence", ""))
-        items.append(d)
-    return jsonify({"ok": True, "items": items})
+        items.append(_word_payload_from_row(r, languages, uid))
+    return jsonify({"ok": True, "items": items, "languages": language_meta or [LANGUAGE_META[code] for code in languages]})
 
 
 @web.post("/api/difficult/user_set")
@@ -1898,6 +3654,8 @@ def api_progress_sync():
 
     user_id = _current_user_id() or ""
     rows = []
+    affected_lessons = set()
+    child_goal_offsets = []
     for ev in events:
         payload = ev if isinstance(ev, dict) else {"value": ev}
         scope = str(payload.get("scope") or "")
@@ -1908,6 +3666,21 @@ def api_progress_sync():
         except Exception:
             event_ts = None
         rows.append((user_id, scope, event_type, event_ts, json.dumps(payload, ensure_ascii=False)))
+        state = payload.get("state") if isinstance(payload, dict) else None
+        if (
+            scope == "learn"
+            and isinstance(state, dict)
+            and state.get("reason") == "answer_ok"
+            and str(state.get("lesson") or "").strip()
+        ):
+            affected_lessons.add(str(state["lesson"]).strip())
+        if scope == "learn" and isinstance(state, dict):
+            reason = str(state.get("reason") or "")
+            if reason == "answer_ok" or event_type == "word_correct":
+                try:
+                    child_goal_offsets.append(int(state.get("tz_offset") or 0))
+                except (TypeError, ValueError):
+                    child_goal_offsets.append(0)
 
     if rows:
         with _conn() as c:
@@ -1916,7 +3689,17 @@ def api_progress_sync():
                 VALUES (?, ?, ?, ?, ?)
             """, rows)
             c.commit()
-    return jsonify({"ok": True, "stored": len(rows)})
+    completed_lessons = _completed_lessons(user_id, sorted(affected_lessons)) if user_id else []
+    for lesson in completed_lessons:
+        models.set_lesson_hidden(Config.DB_PATH, user_id, lesson, 1)
+    if user_id and child_goal_offsets:
+        offset = max(-14 * 60, min(14 * 60, child_goal_offsets[-1]))
+        _notify_parents_child_goal(user_id, offset)
+    return jsonify({
+        "ok": True,
+        "stored": len(rows),
+        "completed_lessons": completed_lessons,
+    })
 
 
 @web.get("/api/sync/updates")
@@ -2029,7 +3812,7 @@ def api_audio_ensure():
     langs = data.get("langs") or ["nl", "en", "ru"]
     try:
         result = ensure_audio_for_ids(Config.DB_PATH, ids, langs, user_id=user_id)
-        return jsonify(result)
+        return jsonify(result), (429 if result.get("limit_reached") else 200)
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
@@ -2051,13 +3834,45 @@ def api_next_lesson():
     if not nxt:
         return jsonify({"ok": False})
     return jsonify({"ok": True, "next": nxt})
+
+
+@web.get("/api/prev_lesson")
+def api_prev_lesson():
+    """
+    Возвращает предыдущий ВИДИМЫЙ урок относительно текущего названия.
+    Query: ?current=<lesson_title>
+    Ответ: { ok: true, prev: "<lesson>" } или { ok: false }
+    """
+    _ensure_schema()
+    current = (request.args.get("current") or "").strip()
+    user_id = _current_user_id()
+    if not user_id:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    prv = models.get_prev_lesson_title(Config.DB_PATH, current, user_id)
+    if not prv:
+        return jsonify({"ok": False})
+    return jsonify({"ok": True, "prev": prv})
 # ------------------------------------------------------------------
 
 
 # ─── Admin helpers ───────────────────────────────────────────────────────────
 
-def _require_admin() -> tuple:
+def _require_admin(*, allow_platform: bool = False) -> tuple:
     uid = _session_admin_user_id()
+    if not uid and allow_platform:
+        configured_token = str(Config.AI_PLATFORM_ADMIN_TOKEN or "").strip()
+        authorization = str(request.headers.get("Authorization") or "").strip()
+        supplied_token = (
+            authorization[7:].strip()
+            if authorization.lower().startswith("bearer ")
+            else ""
+        )
+        if (
+            configured_token
+            and supplied_token
+            and secrets.compare_digest(supplied_token, configured_token)
+        ):
+            uid = "ai-platform"
     if not uid:
         return None, (jsonify({"ok": False, "error": "unauthorized"}), 401)
     return uid, None
@@ -2066,22 +3881,51 @@ def _require_admin() -> tuple:
 @web.get("/api/admin/users")
 def api_admin_users():
     """Список всех пользователей с их статусом подписки. Только для админов."""
-    uid, err = _require_admin()
+    uid, err = _require_admin(allow_platform=True)
     if err:
         return err
     _ensure_subscription_schema()
+    _ensure_family_schema()
     now_ms = int(time.time() * 1000)
     # 10 лет в мс — порог для определения «безлимитного» доступа
     ten_years_ms = 10 * 365 * 24 * 60 * 60 * 1000
     with _conn() as c:
         rows = c.execute("""
             SELECT
-                u.user_id, u.username, u.first_name, u.last_name,
+                u.user_id, u.username, u.first_name, u.last_name, u.account_type,
                 s.status, s.current_period_ends_at, s.trial_ends_at, s.provider
             FROM users u
             LEFT JOIN user_subscriptions s ON u.user_id = s.user_id
             ORDER BY u.user_id
         """).fetchall()
+        family_rows = c.execute("""
+            SELECT l.parent_user_id, l.child_user_id,
+                   p.username AS parent_username, p.first_name AS parent_first_name,
+                   ch.username AS child_username, ch.first_name AS child_first_name
+            FROM parent_child_links l
+            JOIN users p ON p.user_id = l.parent_user_id
+            JOIN users ch ON ch.user_id = l.child_user_id
+            ORDER BY l.created_at DESC
+        """).fetchall()
+        tts_usage = get_tts_usage_snapshot(
+            c,
+            timezone_name=Config.TTS_USAGE_TIMEZONE,
+        )
+        translation_usage = get_translation_usage_snapshot(c)
+    family_relations = {}
+    for link in family_rows:
+        parent_id = str(link["parent_user_id"])
+        child_id = str(link["child_user_id"])
+        parent_name = str(link["parent_first_name"] or link["parent_username"] or parent_id)
+        child_name = str(link["child_first_name"] or link["child_username"] or child_id)
+        family_relations.setdefault(parent_id, []).append({
+            "direction": "parent_of", "parent_user_id": parent_id,
+            "child_user_id": child_id, "display_name": child_name,
+        })
+        family_relations.setdefault(child_id, []).append({
+            "direction": "child_of", "parent_user_id": parent_id,
+            "child_user_id": child_id, "display_name": parent_name,
+        })
     users = []
     for r in rows:
         status = r["status"] or "no_sub"
@@ -2104,8 +3948,137 @@ def api_admin_users():
             "provider": r["provider"] or "",
             "is_unlimited": is_unlimited,
             "is_admin": _is_admin_user_id(r["user_id"]),
+            "account_type": str(r["account_type"] or "standard"),
+            "family_relations": family_relations.get(str(r["user_id"]), []),
+            "tts_successful_requests": tts_usage["by_user"].get(str(r["user_id"]), {}).get("successful_requests", 0),
+            "tts_failed_requests": tts_usage["by_user"].get(str(r["user_id"]), {}).get("failed_requests", 0),
+            "tts_total_requests": tts_usage["by_user"].get(str(r["user_id"]), {}).get("total_requests", 0),
+            "tts_characters": tts_usage["by_user"].get(str(r["user_id"]), {}).get("characters", 0),
+            "tts_blocked_requests": tts_usage["by_user"].get(str(r["user_id"]), {}).get("blocked_requests", 0),
+            "tts_character_limit": tts_usage["by_user"].get(str(r["user_id"]), {}).get("character_limit"),
+            "tts_characters_remaining": tts_usage["by_user"].get(str(r["user_id"]), {}).get("characters_remaining"),
+            "translation_successful_requests": translation_usage["by_user"].get(str(r["user_id"]), {}).get("successful_requests", 0),
+            "translation_failed_requests": translation_usage["by_user"].get(str(r["user_id"]), {}).get("failed_requests", 0),
+            "translation_prompt_tokens": translation_usage["by_user"].get(str(r["user_id"]), {}).get("prompt_tokens", 0),
+            "translation_completion_tokens": translation_usage["by_user"].get(str(r["user_id"]), {}).get("completion_tokens", 0),
+            "translation_total_tokens": translation_usage["by_user"].get(str(r["user_id"]), {}).get("total_tokens", 0),
         })
-    return jsonify({"ok": True, "users": users})
+    return jsonify({
+        "ok": True,
+        "users": users,
+        "tts_usage": {key: value for key, value in tts_usage.items() if key != "by_user"},
+        "translation_usage": {key: value for key, value in translation_usage.items() if key != "by_user"},
+    })
+
+
+@web.post("/api/admin/tts_usage/limit")
+def api_admin_set_tts_usage_limit():
+    """Sets the global or per-user monthly TTS character limit."""
+    uid, err = _require_admin(allow_platform=True)
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    target_uid = str(data.get("user_id") or "").strip() or None
+    raw_limit = data.get("monthly_character_limit")
+    if target_uid is None and raw_limit is None:
+        return jsonify({"ok": False, "error": "global limit cannot be unlimited"}), 400
+    try:
+        limit = None if raw_limit in (None, "") else int(raw_limit)
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "monthly_character_limit must be an integer"}), 400
+
+    with _conn() as c:
+        if target_uid is not None and not c.execute(
+            "SELECT 1 FROM users WHERE user_id = ?", (target_uid,)
+        ).fetchone():
+            return jsonify({"ok": False, "error": "user not found"}), 404
+        try:
+            set_tts_character_limit(
+                c,
+                user_id=target_uid,
+                monthly_character_limit=limit,
+            )
+        except ValueError as exc:
+            return jsonify({"ok": False, "error": str(exc)}), 400
+        c.commit()
+        snapshot = get_tts_usage_snapshot(
+            c,
+            timezone_name=Config.TTS_USAGE_TIMEZONE,
+        )
+
+    return jsonify({
+        "ok": True,
+        "user_id": target_uid,
+        "monthly_character_limit": limit,
+        "tts_usage": {key: value for key, value in snapshot.items() if key != "by_user"},
+    })
+
+
+@web.post("/api/admin/tts_usage/reset")
+def api_admin_reset_tts_usage():
+    """Сбрасывает месячный Google TTS-счётчик одного пользователя или всех пользователей."""
+    uid, err = _require_admin(allow_platform=True)
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    target_uid = str(data.get("user_id") or "").strip() or None
+
+    with _conn() as c:
+        if target_uid is not None:
+            exists = c.execute(
+                "SELECT 1 FROM users WHERE user_id = ?",
+                (target_uid,),
+            ).fetchone()
+            if not exists:
+                return jsonify({"ok": False, "error": "user not found"}), 404
+        reset_rows = reset_tts_usage(
+            c,
+            user_id=target_uid,
+            timezone_name=Config.TTS_USAGE_TIMEZONE,
+        )
+        c.commit()
+        snapshot = get_tts_usage_snapshot(
+            c,
+            timezone_name=Config.TTS_USAGE_TIMEZONE,
+        )
+
+    return jsonify({
+        "ok": True,
+        "user_id": target_uid,
+        "reset_rows": reset_rows,
+        "tts_usage": {key: value for key, value in snapshot.items() if key != "by_user"},
+    })
+
+
+@web.post("/api/admin/translation_usage/reset")
+def api_admin_reset_translation_usage():
+    """Сбрасывает накопительную статистику токенов одного пользователя или всех."""
+    uid, err = _require_admin(allow_platform=True)
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    target_uid = str(data.get("user_id") or "").strip() or None
+
+    with _conn() as c:
+        if target_uid is not None:
+            exists = c.execute(
+                "SELECT 1 FROM users WHERE user_id = ?",
+                (target_uid,),
+            ).fetchone()
+            if not exists:
+                return jsonify({"ok": False, "error": "user not found"}), 404
+        reset_rows = reset_translation_usage(c, user_id=target_uid)
+        c.commit()
+        snapshot = get_translation_usage_snapshot(c)
+
+    return jsonify({
+        "ok": True,
+        "user_id": target_uid,
+        "reset_rows": reset_rows,
+        "translation_usage": {
+            key: value for key, value in snapshot.items() if key != "by_user"
+        },
+    })
 
 
 @web.post("/api/admin/grant_access")
@@ -2167,6 +4140,36 @@ def api_admin_revoke_access():
     return jsonify({"ok": True, "user_id": target_uid})
 
 
+@web.post("/api/admin/unlink_family")
+def api_admin_unlink_family():
+    """Remove one exact adult-child relationship. Only for admins."""
+    uid, err = _require_admin()
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    parent_user_id = str(data.get("parent_user_id") or "").strip()
+    child_user_id = str(data.get("child_user_id") or "").strip()
+    if not parent_user_id or not child_user_id:
+        return jsonify({"ok": False, "error": "parent_user_id and child_user_id required"}), 400
+    _ensure_family_schema()
+    with _conn() as c:
+        cursor = c.execute(
+            """
+            DELETE FROM parent_child_links
+            WHERE parent_user_id=? AND child_user_id=?
+            """,
+            (parent_user_id, child_user_id),
+        )
+        c.commit()
+    if cursor.rowcount == 0:
+        return jsonify({"ok": False, "error": "family_link_not_found"}), 404
+    return jsonify({
+        "ok": True,
+        "parent_user_id": parent_user_id,
+        "child_user_id": child_user_id,
+    })
+
+
 @web.post("/api/admin/delete_user")
 def api_admin_delete_user():
     """Полностью удаляет пользователя и его данные, чтобы он мог зарегистрироваться заново."""
@@ -2195,13 +4198,42 @@ def api_admin_delete_user():
             marks = ",".join("?" * len(word_ids))
             c.execute(f"DELETE FROM user_word_flags WHERE word_id IN ({marks})", word_ids)
 
+        try:
+            c.execute(
+                "DELETE FROM parent_child_links "
+                "WHERE parent_user_id=? OR child_user_id=?",
+                (target_uid, target_uid),
+            )
+        except sqlite3.OperationalError:
+            pass
+        try:
+            c.execute(
+                "DELETE FROM child_lesson_priorities "
+                "WHERE child_user_id=? OR parent_user_id=?",
+                (target_uid, target_uid),
+            )
+        except sqlite3.OperationalError:
+            pass
+        try:
+            c.execute(
+                "DELETE FROM child_lesson_priority_history "
+                "WHERE child_user_id=? OR parent_user_id=?",
+                (target_uid, target_uid),
+            )
+        except sqlite3.OperationalError:
+            pass
+
         deletes = [
             ("words", "user_id"),
             ("user_word_flags", "user_id"),
             ("user_lessons", "user_id"),
             ("progress_events", "user_id"),
             ("user_language_preferences", "user_id"),
+            ("user_settings", "user_id"),
             ("user_subscriptions", "user_id"),
+            ("google_tts_usage_monthly", "user_id"),
+            ("google_tts_budget_monthly", "user_id"),
+            ("translation_token_usage", "user_id"),
             ("reminder_state", "user_id"),
             ("shared_word_sets", "owner_user_id"),
             ("users", "user_id"),
@@ -2211,56 +4243,121 @@ def api_admin_delete_user():
                 c.execute(f"DELETE FROM {table} WHERE {column}=?", (target_uid,))
             except sqlite3.OperationalError:
                 pass
+        try:
+            c.execute(
+                "DELETE FROM google_tts_limits WHERE scope = ?",
+                (f"user:{target_uid}",),
+            )
+        except sqlite3.OperationalError:
+            pass
         c.commit()
 
     return jsonify({"ok": True, "user_id": target_uid})
 
 
-# ─── AI заглушки (Ollama-прокси) ────────────────────────────────────────────
-# В веб-версии браузер обращается к Ollama напрямую (localhost:11434).
-# В Android-приложении то же — OllamaService обращается напрямую к IP машины.
-# Эти эндпоинты — заглушки для будущего проксирования через Flask,
-# если нужно скрыть Ollama за сервером или добавить кеш переводов.
+# ─── AI: облачная генерация слов через AI Platform ─────────────────────────
+# Альтернатива локальной Ollama (браузер/Android дергают её напрямую).
+# Эти эндпоинты используются, когда пользователь переключает источник
+# генерации на "Облако" — ключи AI Platform целиком остаются на сервере.
+
+@web.get("/api/ai/status")
+def api_ai_status():
+    user_id = _current_user_id()
+    if not user_id:
+        return jsonify({"ok": False, "error": "Not authenticated"}), 401
+    return jsonify({"ok": True, "cloud_available": ai_platform.is_configured()})
+
 
 @web.post("/api/translate/word")
 def api_translate_word():
-    """
-    ЗАГЛУШКА. Прямой вызов Ollama предпочтителен.
-    Для прокси: настроить OLLAMA_URL и OLLAMA_MODEL в .env и раскомментировать код ниже.
-    """
-    # TODO: реализовать прокси при необходимости
-    # import os, requests as req
-    # data = request.get_json(silent=True) or {}
-    # word = data.get('word', '')
-    # from_lang = data.get('from_lang', 'nl')
-    # level = data.get('level', 'A2')
-    # ollama_url = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
-    # ollama_model = os.environ.get('OLLAMA_MODEL', 'llama3.1:8b')
-    # prompt = build_translate_prompt(word, from_lang, level)  # TODO: перенести промпт сюда
-    # r = req.post(f'{ollama_url}/api/chat', json={...}, timeout=60)
-    # return jsonify(r.json()['message']['content'])
-    return jsonify({"ok": False, "error": "Not implemented — use Ollama directly"}), 501
+    user_id = _current_user_id()
+    if not user_id:
+        return jsonify({"ok": False, "error": "Not authenticated"}), 401
+
+    data = request.get_json(silent=True) or {}
+    word = str(data.get("word", "")).strip()
+    from_lang = str(data.get("from_lang", "nl"))
+    level = str(data.get("level", "A2"))
+    known_ru = data.get("known_ru")
+    if not word:
+        return jsonify({"ok": False, "error": "word required"}), 400
+
+    try:
+        item, usage = ai_platform.translate_word(word, from_lang, level, known_ru)
+    except ai_platform.AiPlatformError as exc:
+        _record_translation_request_usage(
+            user_id,
+            successful=False,
+            usage=exc.usage,
+        )
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+    _record_translation_request_usage(user_id, successful=True, usage=usage)
+
+    return jsonify({"ok": True, **item})
 
 
 @web.post("/api/generate/topic")
 def api_generate_topic():
-    """
-    ЗАГЛУШКА. Прямой вызов Ollama предпочтителен.
-    Для прокси: настроить OLLAMA_URL и OLLAMA_MODEL в .env и раскомментировать код ниже.
-    """
-    # TODO: реализовать прокси при необходимости
-    # import os, requests as req
-    # data = request.get_json(silent=True) or {}
-    # topic = data.get('topic', '')
-    # level = data.get('level', 'A2')
-    # count = data.get('count', 10)
-    # languages = data.get('languages', ['nl', 'en', 'ru'])
-    # ollama_url = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
-    # ollama_model = os.environ.get('OLLAMA_MODEL', 'llama3.1:8b')
-    # prompt = build_generate_topic_prompt(topic, level, count, languages)  # TODO: перенести промпт сюда
-    # r = req.post(f'{ollama_url}/api/chat', json={...}, timeout=120)
-    # return jsonify(r.json()['message']['content'])
-    return jsonify({"ok": False, "error": "Not implemented — use Ollama directly"}), 501
+    user_id = _current_user_id()
+    if not user_id:
+        return jsonify({"ok": False, "error": "Not authenticated"}), 401
+
+    data = request.get_json(silent=True) or {}
+    topic = str(data.get("topic", "")).strip()
+    lang = str(data.get("lang", "nl"))
+    level = str(data.get("level", "A2"))
+    count = int(data.get("count") or 10)
+    existing_words = data.get("existing_words") or []
+    if not topic:
+        return jsonify({"ok": False, "error": "topic required"}), 400
+
+    try:
+        words, usage = ai_platform.suggest_topic_words(
+            topic, lang, level, count, existing_words
+        )
+    except ai_platform.AiPlatformError as exc:
+        _record_translation_request_usage(
+            user_id,
+            successful=False,
+            usage=exc.usage,
+        )
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+    _record_translation_request_usage(user_id, successful=True, usage=usage)
+
+    return jsonify({"ok": True, "words": words})
+
+
+@web.post("/api/translate/language")
+def api_translate_language():
+    user_id = _current_user_id()
+    if not user_id:
+        return jsonify({"ok": False, "error": "Not authenticated"}), 401
+
+    data = request.get_json(silent=True) or {}
+    source_word = str(data.get("source_word", "")).strip()
+    source_sentence = str(data.get("source_sentence", ""))
+    source_lang_name = str(data.get("source_lang_name", ""))
+    target_lang_name = str(data.get("target_lang_name", ""))
+    if not source_word or not target_lang_name:
+        return jsonify({"ok": False, "error": "source_word and target_lang_name required"}), 400
+
+    try:
+        result, usage = ai_platform.translate_language(
+            source_word, source_sentence, source_lang_name, target_lang_name
+        )
+    except ai_platform.AiPlatformError as exc:
+        _record_translation_request_usage(
+            user_id,
+            successful=False,
+            usage=exc.usage,
+        )
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+    _record_translation_request_usage(user_id, successful=True, usage=usage)
+
+    return jsonify({"ok": True, **result})
 
 
 # --- отладка ---
@@ -2282,6 +4379,17 @@ def api_debug_whoami():
 
 
 def init_app(app):
+    _ensure_family_schema()
+
+    @app.context_processor
+    def inject_i18n():
+        language = _current_ui_language()
+        return {
+            "current_ui_language": language,
+            "i18n_catalog": get_catalog(language),
+            "t": lambda key, **kwargs: translate(language, key, **kwargs),
+        }
+
     app.register_blueprint(web)
     from app.google_auth import google_bp, init_google_oauth
     app.register_blueprint(google_bp)

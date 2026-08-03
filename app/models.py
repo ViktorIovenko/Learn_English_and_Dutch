@@ -192,4 +192,23 @@ def get_next_lesson_title(db_path: str, current_lesson: str, user_id: Optional[s
         return visible[0]["lesson"]
     nxt = (i + 1) % len(visible)
     return visible[nxt]["lesson"]
+
+
+# [ДОБАВЛЕНО] Предыдущий видимый урок по «текущему» названию (зеркало get_next_lesson_title)
+def get_prev_lesson_title(db_path: str, current_lesson: str, user_id: Optional[str]) -> Optional[str]:
+    """
+    Возвращает название ПРЕДЫДУЩЕГО ВИДИМОГО урока (hidden=0) в том же порядке,
+    что и на главной. С «закольцовкой»: для первого урока вернёт последний.
+    Если current_lesson не найден — вернёт первый видимый. Если видимых нет — None.
+    """
+    lessons = get_lessons(db_path, user_id)
+    visible = [x for x in lessons if int(x.get("hidden", 0)) == 0]
+    if not visible:
+        return None
+    try:
+        i = next(i for i, x in enumerate(visible) if (x.get("lesson") or "") == (current_lesson or ""))
+    except StopIteration:
+        return visible[0]["lesson"]
+    prv = (i - 1) % len(visible)
+    return visible[prv]["lesson"]
 # -------------------------------------------------------------------

@@ -5,6 +5,11 @@
 #   .\deploy.ps1              — full deploy (code + nginx + rebuild container)
 #   .\deploy.ps1 -SkipBuild   — upload code only, skip container rebuild
 #   .\deploy.ps1 -SkipNginx   — skip nginx config step
+#
+# For normal code-only updates, prefer:
+#   .\deploy-changed.ps1 -WhatIf     — preview files that differ from the VPS
+#   .\deploy-changed.ps1             — upload only differences and restart
+# Add -IncludeInfrastructure only when Dockerfile, Compose or .env must change.
 
 param(
     [switch]$SkipBuild,
@@ -15,7 +20,9 @@ $Key  = "$HOME\Desktop\id_ed25519"
 $EU   = "root@204.168.186.69"
 $Dest = "/opt/learn-words"
 $Src  = $PSScriptRoot
-$SSH  = @("-i", $Key, "-o", "StrictHostKeyChecking=accept-new", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15")
+$SSH  = @("-i", $Key, "-o", "StrictHostKeyChecking=accept-new", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
+          # Keep-alive: abort a stalled connection after ~30s instead of hanging forever.
+          "-o", "ServerAliveInterval=10", "-o", "ServerAliveCountMax=3")
 
 Write-Host "=== Deploy Learn-Words -> EU (code only) ===" -ForegroundColor Cyan
 
@@ -40,7 +47,11 @@ foreach ($item in @("bot", "config.py", "db_init.py", "requirements.txt", "run.p
 # Upload app/ but skip static/audio (lives in a Docker volume on the server)
 Write-Host "   -> app/ (excluding static/audio)"
 & ssh @SSH $EU "mkdir -p ${Dest}/app"
-foreach ($sub in @("templates", "static", "__init__.py", "audio_gen.py", "auth_links.py", "google_auth.py", "models.py", "routes.py")) {
+foreach ($sub in @(
+    "templates", "static", "__init__.py", "audio_gen.py", "audio_service.py",
+    "auth_links.py", "family_tokens.py", "forms.py", "google_auth.py", "i18n.py",
+    "models.py", "routes.py", "telegram_auth.py"
+)) {
     $local = "$Src\app\$sub"
     if (Test-Path $local) {
         if ($sub -eq "static") {
@@ -60,13 +71,23 @@ foreach ($sub in @("templates", "static", "__init__.py", "audio_gen.py", "auth_l
 & scp @SSH "$Src\.env.eu"               "${EU}:${Dest}/.env"
 
 # Upload Android APK if it was built locally.
+# Pick the NEWEST apk across all build locations (release, debug outputs, and the
+# intermediates/ folder that Android Studio's "Run" button writes to).
 $ApkCandidates = @(
+    "$Src\android\app\build\outputs\apk\release\app-release.apk",
     "$Src\android\app\build\outputs\apk\debug\app-debug.apk",
-    "$Src\android\app\build\outputs\apk\release\app-release.apk"
+    "$Src\android\app\build\intermediates\apk\release\app-release.apk",
+    "$Src\android\app\build\intermediates\apk\debug\app-debug.apk"
 )
-$Apk = $ApkCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+$Apk = $ApkCandidates |
+    Where-Object { Test-Path $_ } |
+    Get-Item |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1 -ExpandProperty FullName
 if ($Apk) {
-    Write-Host "   -> Android APK /static/downloads/learnwords.apk"
+    $ApkAge = (Get-Item $Apk).LastWriteTime
+    Write-Host "   -> Android APK /static/downloads/learnwords.apk  (built $ApkAge)"
+    Write-Host "      $Apk" -ForegroundColor DarkGray
     & ssh @SSH $EU "mkdir -p ${Dest}/app/static/downloads"
     & scp @SSH $Apk "${EU}:${Dest}/app/static/downloads/learnwords.apk"
 } else {
@@ -80,9 +101,9 @@ Write-Host "   OK" -ForegroundColor Green
 # ── 3: Deploy nginx config ────────────────────────────────────────
 if (-not $SkipNginx) {
     Write-Host "[3/4] Deploying nginx config (HTTPS)..."
-    & scp @SSH "$Src\nginx\learn.conf" "${EU}:/opt/family-call/nginx/conf.d/learn.conf"
-    & ssh @SSH $EU "cd /opt/family-call && docker compose exec -T nginx nginx -t && docker compose restart nginx"
-    Write-Host "   Nginx restarted." -ForegroundColor Green
+    & scp @SSH "$Src\nginx\learn.conf" "${EU}:/opt/proxy/nginx/conf.d/learn.conf"
+    & ssh @SSH $EU "docker exec proxy-nginx nginx -t && docker exec proxy-nginx nginx -s reload"
+    Write-Host "   Nginx reloaded." -ForegroundColor Green
 } else {
     Write-Host "[3/4] Nginx skipped (-SkipNginx)."
 }

@@ -11,6 +11,7 @@
   const MAX_DELAY_MS = 60000;
 
   let syncInFlight = false;
+  let syncRequested = false;
   let retryTimer = null;
   let retryDelay = BASE_DELAY_MS;
 
@@ -60,7 +61,7 @@
 
   async function pushOutboxOnce() {
     const entries = await readOutboxEntries();
-    if (!entries || entries.length === 0) return;
+    if (!entries || entries.length === 0) return false;
     const payload = entries.map((item) => item.value);
     const resp = await postBatch(payload);
     if (!resp || !resp.ok) throw new Error("bad response");
@@ -69,6 +70,7 @@
     if (js && js.ok === false) throw new Error("server rejected");
     const keys = entries.map((item) => item.key);
     await clearOutboxKeys(keys);
+    return true;
   }
 
   async function getLastSync() {
@@ -170,17 +172,26 @@
   }
 
   async function syncAll() {
-    if (!IDB || syncInFlight) return;
+    if (!IDB) return;
+    if (syncInFlight) {
+      syncRequested = true;
+      return;
+    }
     if (typeof navigator !== "undefined" && navigator.onLine === false) return;
     syncInFlight = true;
     try {
-      await pushOutboxOnce();
+      const progressPushed = await pushOutboxOnce();
       await syncUpdatesOnce();
+      if (progressPushed) window.dispatchEvent(new CustomEvent("learning-progress-synced"));
       retryDelay = BASE_DELAY_MS;
     } catch (_) {
       scheduleRetry();
     } finally {
       syncInFlight = false;
+      if (syncRequested) {
+        syncRequested = false;
+        queueMicrotask(() => syncAll().catch(() => {}));
+      }
     }
   }
 
@@ -189,6 +200,7 @@
   }
 
   window.addEventListener("online", () => kickSync());
+  window.addEventListener("learning-progress-queued", () => kickSync());
   if (document.readyState === "complete") {
     kickSync();
   } else {

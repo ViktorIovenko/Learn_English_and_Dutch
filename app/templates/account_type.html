@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.account-choice{max-width:760px;margin:28px auto;text-align:center}
+.account-choice h1{font-size:30px;margin:0;color:#172554}
+.account-choice-note{max-width:600px;margin:10px auto 24px;color:#64748b;font-size:16px}
+.account-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.account-card{border:2px solid #dbeafe;border-radius:22px;background:linear-gradient(145deg,#fff,#eff6ff);padding:26px 20px;cursor:pointer;box-shadow:0 10px 30px rgba(37,99,235,.08);transition:.18s transform,.18s border-color}
+.account-card:hover{transform:translateY(-3px);border-color:#60a5fa}
+.account-card.child{background:linear-gradient(145deg,#fff7ed,#fef3c7);border-color:#fed7aa}
+.account-card.child:hover{border-color:#fb923c}
+.account-icon{font-size:54px;display:block;margin-bottom:10px}
+.account-card h2{margin:0 0 8px;font-size:22px;color:#172554}
+.account-card p{margin:0;color:#475569;line-height:1.45}
+.account-status{min-height:24px;margin-top:18px;color:#64748b}
+.account-status.err{color:#dc2626}
+@media(max-width:620px){.account-choice-grid{grid-template-columns:1fr}.account-choice{margin-top:12px}.account-choice h1{font-size:25px}}
+</style>
+
+<div class="account-choice">
+  <h1>{{ t("account_type.title") }}</h1>
+  <p class="account-choice-note">{{ t("account_type.note") }}</p>
+  <div class="account-choice-grid">
+    <button type="button" class="account-card child" data-account-type="child">
+      <span class="account-icon" aria-hidden="true">🧒</span>
+      <h2>{{ t("account_type.child") }}</h2>
+      <p>{{ t("account_type.child_note") }}</p>
+    </button>
+    <button type="button" class="account-card" data-account-type="standard">
+      <span class="account-icon" aria-hidden="true">👤</span>
+      <h2>{{ t("account_type.standard") }}</h2>
+      <p>{{ t("account_type.standard_note") }}</p>
+    </button>
+  </div>
+  <div id="account-choice-status" class="account-status" aria-live="polite"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const status = document.getElementById("account-choice-status");
+  const buttons = Array.from(document.querySelectorAll("[data-account-type]"));
+  async function choose(accountType){
+    buttons.forEach(btn => btn.disabled = true);
+    status.className = "account-status";
+    status.textContent = {{ t("account_type.saving") | tojson }};
+    try {
+      const response = await apiFetch("/api/account/type", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({account_type: accountType}),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "save_failed");
+      window.location.replace("/settings");
+    } catch (error) {
+      status.className = "account-status err";
+      status.textContent = error.message;
+      buttons.forEach(btn => btn.disabled = false);
+    }
+  }
+  buttons.forEach(btn => btn.addEventListener("click", () => choose(btn.dataset.accountType)));
+})();
+</script>
+{% endblock %}

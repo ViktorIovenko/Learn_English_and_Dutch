@@ -25,6 +25,7 @@ class Config:
 
     # Telegram / Web
     BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "")
     PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:5000")
 
     # DB
@@ -37,6 +38,15 @@ class Config:
     # Google OAuth
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+
+    # AI Platform (облачная генерация слов — альтернатива локальной Ollama)
+    AI_PLATFORM_BASE_URL = os.getenv("AI_PLATFORM_BASE_URL", "")
+    AI_PLATFORM_API_KEY_TRANSLATE_WORD = os.getenv("AI_PLATFORM_API_KEY_TRANSLATE_WORD", "")
+    AI_PLATFORM_API_KEY_SUGGEST_TOPIC_WORDS = os.getenv("AI_PLATFORM_API_KEY_SUGGEST_TOPIC_WORDS", "")
+    AI_PLATFORM_API_KEY_TRANSLATE_LANGUAGE = os.getenv("AI_PLATFORM_API_KEY_TRANSLATE_LANGUAGE", "")
+    AI_PLATFORM_TIMEOUT_SECONDS = float(os.getenv("AI_PLATFORM_TIMEOUT_SECONDS", "60"))
+    # Отдельный общий секрет для серверного чтения админской статистики из AI Platform.
+    AI_PLATFORM_ADMIN_TOKEN = os.getenv("AI_PLATFORM_ADMIN_TOKEN", "")
 
     # -------------------- AUDIO (громкость) --------------------
     # [ДОБАВЛЕНО v3.5] Максимизация громкости:
@@ -55,3 +65,6 @@ class Config:
 
     # Экспорт
     AUDIO_MP3_BITRATE = os.getenv("AUDIO_MP3_BITRATE", "256k")  # чем выше, тем лучше качество
+
+    # Месячные счётчики фактических обращений к Google TTS.
+    TTS_USAGE_TIMEZONE = os.getenv("TTS_USAGE_TIMEZONE", "Europe/Amsterdam")
