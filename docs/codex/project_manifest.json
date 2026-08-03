@@ -1,0 +1,1135 @@
+{
+  "format_version": 1,
+  "generated_at": "2026-08-03T13:21:59+00:00",
+  "local_git_commit": "849046dfe54e80c25d6fa3b72e4e893c0f3b330e",
+  "production_git_commit": "unavailable",
+  "production_project_path": "/opt/learn-words",
+  "entrypoints": [
+    "android/app/src/main/AndroidManifest.xml",
+    "app/routes.py",
+    "run.py"
+  ],
+  "components": [
+    "Flask backend",
+    "Telegram bot",
+    "Telegram Mini App",
+    "SQLite",
+    "offline IndexedDB",
+    "Android client",
+    "Docker/Nginx production"
+  ],
+  "main_files": [
+    "android/app/src/main/java/com/learnwords/app/data/api/ApiClient.kt",
+    "android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt",
+    "app/audio_gen.py",
+    "app/models.py",
+    "app/routes.py",
+    "app/static/idb.js",
+    "app/static/sw.js",
+    "app/static/sync.js",
+    "app/telegram_auth.py",
+    "bot/auth.py",
+    "bot/reminder.py",
+    "bot/upload.py",
+    "config.py",
+    "db_init.py",
+    "run.py"
+  ],
+  "tables": [
+    "android_contracts",
+    "app_schema_migrations",
+    "child_goal_notifications",
+    "child_lesson_priorities",
+    "child_lesson_priority_history",
+    "database_tables",
+    "database_usage",
+    "deployment_routes",
+    "docs",
+    "environment_snapshots",
+    "family_pairing_codes",
+    "files",
+    "frontend_links",
+    "google_tts_budget_monthly",
+    "google_tts_limits",
+    "google_tts_usage_monthly",
+    "imports",
+    "kb_capabilities",
+    "parent_child_links",
+    "progress_events",
+    "reminder_state",
+    "routes",
+    "services",
+    "shared_word_sets",
+    "symbols",
+    "task_routes",
+    "translation_token_usage",
+    "user_daily_goals",
+    "user_language_preferences",
+    "user_lessons",
+    "user_settings",
+    "user_subscriptions",
+    "user_word_flags",
+    "users",
+    "users_new",
+    "words"
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "url": "/auth/google",
+      "handler": "login",
+      "file_path": "app/google_auth.py",
+      "line_number": 93
+    },
+    {
+      "method": "GET",
+      "url": "/auth/google/callback",
+      "handler": "callback",
+      "file_path": "app/google_auth.py",
+      "line_number": 103
+    },
+    {
+      "method": "POST",
+      "url": "/api/auth/google/verify",
+      "handler": "verify_android_token",
+      "file_path": "app/google_auth.py",
+      "line_number": 132
+    },
+    {
+      "method": "GET",
+      "url": "/sw.js",
+      "handler": "service_worker",
+      "file_path": "app/routes.py",
+      "line_number": 1511
+    },
+    {
+      "method": "GET",
+      "url": "/",
+      "handler": "home",
+      "file_path": "app/routes.py",
+      "line_number": 1519
+    },
+    {
+      "method": "GET",
+      "url": "/lessons",
+      "handler": "lessons_alias",
+      "file_path": "app/routes.py",
+      "line_number": 1531
+    },
+    {
+      "method": "GET",
+      "url": "/lesson/<int:lesson_id>",
+      "handler": "lesson_page",
+      "file_path": "app/routes.py",
+      "line_number": 1543
+    },
+    {
+      "method": "GET",
+      "url": "/learn",
+      "handler": "learn_page",
+      "file_path": "app/routes.py",
+      "line_number": 1548
+    },
+    {
+      "method": "GET",
+      "url": "/difficult",
+      "handler": "difficult_page",
+      "file_path": "app/routes.py",
+      "line_number": 1559
+    },
+    {
+      "method": "GET",
+      "url": "/upload",
+      "handler": "upload_page",
+      "file_path": "app/routes.py",
+      "line_number": 1564
+    },
+    {
+      "method": "GET",
+      "url": "/settings",
+      "handler": "settings_page",
+      "file_path": "app/routes.py",
+      "line_number": 1581
+    },
+    {
+      "method": "GET",
+      "url": "/account-type",
+      "handler": "account_type_page",
+      "file_path": "app/routes.py",
+      "line_number": 1591
+    },
+    {
+      "method": "GET",
+      "url": "/family/link",
+      "handler": "family_link_page",
+      "file_path": "app/routes.py",
+      "line_number": 1600
+    },
+    {
+      "method": "GET",
+      "url": "/parent",
+      "handler": "parent_dashboard_page",
+      "file_path": "app/routes.py",
+      "line_number": 1626
+    },
+    {
+      "method": "GET",
+      "url": "/subscription",
+      "handler": "subscription_page",
+      "file_path": "app/routes.py",
+      "line_number": 1635
+    },
+    {
+      "method": "GET",
+      "url": "/admin/users",
+      "handler": "admin_users_page",
+      "file_path": "app/routes.py",
+      "line_number": 1640
+    },
+    {
+      "method": "GET",
+      "url": "/share/<token>",
+      "handler": "share_page",
+      "file_path": "app/routes.py",
+      "line_number": 1832
+    },
+    {
+      "method": "POST",
+      "url": "/api/share/create",
+      "handler": "api_share_create",
+      "file_path": "app/routes.py",
+      "line_number": 1896
+    },
+    {
+      "method": "GET",
+      "url": "/api/share/source_lessons",
+      "handler": "api_share_source_lessons",
+      "file_path": "app/routes.py",
+      "line_number": 1975
+    },
+    {
+      "method": "POST",
+      "url": "/api/share/assign_child",
+      "handler": "api_share_assign_child",
+      "file_path": "app/routes.py",
+      "line_number": 2043
+    },
+    {
+      "method": "POST",
+      "url": "/api/share/<token>/import",
+      "handler": "api_share_import",
+      "file_path": "app/routes.py",
+      "line_number": 2138
+    },
+    {
+      "method": "POST",
+      "url": "/api/import-words",
+      "handler": "api_import_words",
+      "file_path": "app/routes.py",
+      "line_number": 2242
+    },
+    {
+      "method": "GET",
+      "url": "/api/words",
+      "handler": "api_get_words",
+      "file_path": "app/routes.py",
+      "line_number": 2297
+    },
+    {
+      "method": "PUT",
+      "url": "/api/words/<int:word_id>",
+      "handler": "api_update_word",
+      "file_path": "app/routes.py",
+      "line_number": 2355
+    },
+    {
+      "method": "DELETE",
+      "url": "/api/words/<int:word_id>",
+      "handler": "api_delete_word",
+      "file_path": "app/routes.py",
+      "line_number": 2443
+    },
+    {
+      "method": "GET",
+      "url": "/api/words/nl-list",
+      "handler": "api_words_nl_list",
+      "file_path": "app/routes.py",
+      "line_number": 2457
+    },
+    {
+      "method": "GET",
+      "url": "/api/words/duplicates",
+      "handler": "api_words_duplicates",
+      "file_path": "app/routes.py",
+      "line_number": 2471
+    },
+    {
+      "method": "POST",
+      "url": "/api/parse-file",
+      "handler": "api_parse_file",
+      "file_path": "app/routes.py",
+      "line_number": 2509
+    },
+    {
+      "method": "POST",
+      "url": "/api/auth/login_android",
+      "handler": "login_android",
+      "file_path": "app/routes.py",
+      "line_number": 2609
+    },
+    {
+      "method": "POST",
+      "url": "/api/auth/login_android_token",
+      "handler": "login_android_token",
+      "file_path": "app/routes.py",
+      "line_number": 2620
+    },
+    {
+      "method": "GET",
+      "url": "/android-auth",
+      "handler": "android_auth_redirect",
+      "file_path": "app/routes.py",
+      "line_number": 2632
+    },
+    {
+      "method": "POST",
+      "url": "/api/auth/login_webapp",
+      "handler": "login_webapp",
+      "file_path": "app/routes.py",
+      "line_number": 2643
+    },
+    {
+      "method": "GET",
+      "url": "/api/me",
+      "handler": "api_me",
+      "file_path": "app/routes.py",
+      "line_number": 2669
+    },
+    {
+      "method": "POST",
+      "url": "/api/account/type",
+      "handler": "api_account_type_save",
+      "file_path": "app/routes.py",
+      "line_number": 2713
+    },
+    {
+      "method": "GET",
+      "url": "/api/family",
+      "handler": "api_family_status",
+      "file_path": "app/routes.py",
+      "line_number": 2741
+    },
+    {
+      "method": "GET",
+      "url": "/api/learning/streak",
+      "handler": "api_learning_streak",
+      "file_path": "app/routes.py",
+      "line_number": 2749
+    },
+    {
+      "method": "GET",
+      "url": "/api/family/dashboard",
+      "handler": "api_family_dashboard",
+      "file_path": "app/routes.py",
+      "line_number": 2767
+    },
+    {
+      "method": "PUT",
+      "url": "/api/family/children/<child_user_id>/priority-lesson",
+      "handler": "api_family_set_priority_lesson",
+      "file_path": "app/routes.py",
+      "line_number": 2792
+    },
+    {
+      "method": "GET",
+      "url": "/api/family/pairing-code",
+      "handler": "api_family_pairing_code",
+      "file_path": "app/routes.py",
+      "line_number": 2878
+    },
+    {
+      "method": "GET",
+      "url": "/api/family/pairing-qr.png",
+      "handler": "api_family_pairing_qr",
+      "file_path": "app/routes.py",
+      "line_number": 2889
+    },
+    {
+      "method": "POST",
+      "url": "/api/family/link",
+      "handler": "api_family_link",
+      "file_path": "app/routes.py",
+      "line_number": 2919
+    },
+    {
+      "method": "DELETE",
+      "url": "/api/family/children/<child_user_id>",
+      "handler": "api_family_unlink_child",
+      "file_path": "app/routes.py",
+      "line_number": 2975
+    },
+    {
+      "method": "GET",
+      "url": "/api/subscription",
+      "handler": "api_subscription_get",
+      "file_path": "app/routes.py",
+      "line_number": 2992
+    },
+    {
+      "method": "POST",
+      "url": "/api/subscription/verify_purchase",
+      "handler": "api_verify_purchase",
+      "file_path": "app/routes.py",
+      "line_number": 3022
+    },
+    {
+      "method": "GET",
+      "url": "/api/language-options",
+      "handler": "api_language_options",
+      "file_path": "app/routes.py",
+      "line_number": 3089
+    },
+    {
+      "method": "GET",
+      "url": "/api/user-languages",
+      "handler": "api_user_languages_get",
+      "file_path": "app/routes.py",
+      "line_number": 3096
+    },
+    {
+      "method": "POST",
+      "url": "/api/user-languages",
+      "handler": "api_user_languages_save",
+      "file_path": "app/routes.py",
+      "line_number": 3112
+    },
+    {
+      "method": "GET",
+      "url": "/api/user-languages/missing-words",
+      "handler": "api_user_languages_missing_words",
+      "file_path": "app/routes.py",
+      "line_number": 3153
+    },
+    {
+      "method": "GET",
+      "url": "/api/ui-language",
+      "handler": "api_ui_language_get",
+      "file_path": "app/routes.py",
+      "line_number": 3191
+    },
+    {
+      "method": "POST",
+      "url": "/api/ui-language",
+      "handler": "api_ui_language_save",
+      "file_path": "app/routes.py",
+      "line_number": 3200
+    },
+    {
+      "method": "GET",
+      "url": "/api/lessons",
+      "handler": "api_lessons",
+      "file_path": "app/routes.py",
+      "line_number": 3310
+    },
+    {
+      "method": "GET",
+      "url": "/api/user_lessons",
+      "handler": "api_user_lessons",
+      "file_path": "app/routes.py",
+      "line_number": 3340
+    },
+    {
+      "method": "POST",
+      "url": "/api/user_lessons/delete",
+      "handler": "api_user_lessons_delete",
+      "file_path": "app/routes.py",
+      "line_number": 3350
+    },
+    {
+      "method": "POST",
+      "url": "/api/lessons/set_hidden",
+      "handler": "api_lessons_set_hidden",
+      "file_path": "app/routes.py",
+      "line_number": 3420
+    },
+    {
+      "method": "GET",
+      "url": "/api/lesson_words",
+      "handler": "api_lesson_words_by_title",
+      "file_path": "app/routes.py",
+      "line_number": 3434
+    },
+    {
+      "method": "GET",
+      "url": "/api/child-learning/status",
+      "handler": "api_child_learning_status",
+      "file_path": "app/routes.py",
+      "line_number": 3473
+    },
+    {
+      "method": "GET",
+      "url": "/api/daily-goal",
+      "handler": "api_daily_goal_get",
+      "file_path": "app/routes.py",
+      "line_number": 3502
+    },
+    {
+      "method": "POST",
+      "url": "/api/daily-goal",
+      "handler": "api_daily_goal_save",
+      "file_path": "app/routes.py",
+      "line_number": 3510
+    },
+    {
+      "method": "GET",
+      "url": "/api/lessons/<int:lesson_id>/words",
+      "handler": "api_lesson_words",
+      "file_path": "app/routes.py",
+      "line_number": 3535
+    },
+    {
+      "method": "GET",
+      "url": "/api/difficult_words_user",
+      "handler": "api_difficult_words_user",
+      "file_path": "app/routes.py",
+      "line_number": 3571
+    },
+    {
+      "method": "POST",
+      "url": "/api/difficult/user_set",
+      "handler": "api_difficult_user_set",
+      "file_path": "app/routes.py",
+      "line_number": 3607
+    },
+    {
+      "method": "POST",
+      "url": "/api/progress/sync",
+      "handler": "api_progress_sync",
+      "file_path": "app/routes.py",
+      "line_number": 3645
+    },
+    {
+      "method": "GET",
+      "url": "/api/sync/updates",
+      "handler": "api_sync_updates",
+      "file_path": "app/routes.py",
+      "line_number": 3705
+    },
+    {
+      "method": "POST",
+      "url": "/api/audio/ensure",
+      "handler": "api_audio_ensure",
+      "file_path": "app/routes.py",
+      "line_number": 3799
+    },
+    {
+      "method": "GET",
+      "url": "/api/next_lesson",
+      "handler": "api_next_lesson",
+      "file_path": "app/routes.py",
+      "line_number": 3821
+    },
+    {
+      "method": "GET",
+      "url": "/api/prev_lesson",
+      "handler": "api_prev_lesson",
+      "file_path": "app/routes.py",
+      "line_number": 3839
+    },
+    {
+      "method": "GET",
+      "url": "/api/admin/users",
+      "handler": "api_admin_users",
+      "file_path": "app/routes.py",
+      "line_number": 3881
+    },
+    {
+      "method": "POST",
+      "url": "/api/admin/tts_usage/limit",
+      "handler": "api_admin_set_tts_usage_limit",
+      "file_path": "app/routes.py",
+      "line_number": 3974
+    },
+    {
+      "method": "POST",
+      "url": "/api/admin/tts_usage/reset",
+      "handler": "api_admin_reset_tts_usage",
+      "file_path": "app/routes.py",
+      "line_number": 4017
+    },
+    {
+      "method": "POST",
+      "url": "/api/admin/translation_usage/reset",
+      "handler": "api_admin_reset_translation_usage",
+      "file_path": "app/routes.py",
+      "line_number": 4053
+    },
+    {
+      "method": "POST",
+      "url": "/api/admin/grant_access",
+      "handler": "api_admin_grant_access",
+      "file_path": "app/routes.py",
+      "line_number": 4084
+    },
+    {
+      "method": "POST",
+      "url": "/api/admin/revoke_access",
+      "handler": "api_admin_revoke_access",
+      "file_path": "app/routes.py",
+      "line_number": 4117
+    },
+    {
+      "method": "POST",
+      "url": "/api/admin/unlink_family",
+      "handler": "api_admin_unlink_family",
+      "file_path": "app/routes.py",
+      "line_number": 4143
+    },
+    {
+      "method": "POST",
+      "url": "/api/admin/delete_user",
+      "handler": "api_admin_delete_user",
+      "file_path": "app/routes.py",
+      "line_number": 4173
+    },
+    {
+      "method": "GET",
+      "url": "/api/ai/status",
+      "handler": "api_ai_status",
+      "file_path": "app/routes.py",
+      "line_number": 4263
+    },
+    {
+      "method": "POST",
+      "url": "/api/translate/word",
+      "handler": "api_translate_word",
+      "file_path": "app/routes.py",
+      "line_number": 4271
+    },
+    {
+      "method": "POST",
+      "url": "/api/generate/topic",
+      "handler": "api_generate_topic",
+      "file_path": "app/routes.py",
+      "line_number": 4300
+    },
+    {
+      "method": "POST",
+      "url": "/api/translate/language",
+      "handler": "api_translate_language",
+      "file_path": "app/routes.py",
+      "line_number": 4332
+    },
+    {
+      "method": "GET",
+      "url": "/api/debug/whoami",
+      "handler": "api_debug_whoami",
+      "file_path": "app/routes.py",
+      "line_number": 4364
+    }
+  ],
+  "telegram_handlers": [
+    {
+      "trigger_type": "command",
+      "trigger": "/start",
+      "handler": "start_cmd",
+      "file_path": "bot/auth.py",
+      "line_number": 797
+    },
+    {
+      "trigger_type": "command",
+      "trigger": "/open",
+      "handler": "open_cmd",
+      "file_path": "bot/auth.py",
+      "line_number": 798
+    },
+    {
+      "trigger_type": "command",
+      "trigger": "/family",
+      "handler": "family_cmd",
+      "file_path": "bot/auth.py",
+      "line_number": 799
+    },
+    {
+      "trigger_type": "callback",
+      "trigger": "r\"^onboarding:(?:language|language_keep|language_change|account",
+      "handler": "onboarding_callback",
+      "file_path": "bot/auth.py",
+      "line_number": 800
+    },
+    {
+      "trigger_type": "callback",
+      "trigger": "r\"^family_link:(?:confirm|cancel",
+      "handler": "family_link_callback",
+      "file_path": "bot/auth.py",
+      "line_number": 804
+    },
+    {
+      "trigger_type": "message",
+      "trigger": "filters.Regex(learn_words_pattern)",
+      "handler": "open_cmd",
+      "file_path": "bot/auth.py",
+      "line_number": 811
+    },
+    {
+      "trigger_type": "message",
+      "trigger": "filters.TEXT & (~filters.COMMAND) & exclude_import_btns",
+      "handler": "on_text",
+      "file_path": "bot/auth.py",
+      "line_number": 815
+    },
+    {
+      "trigger_type": "command",
+      "trigger": "/reminder_now",
+      "handler": "_cmd_reminder_now",
+      "file_path": "bot/reminder.py",
+      "line_number": 266
+    },
+    {
+      "trigger_type": "command",
+      "trigger": "/upload_words",
+      "handler": "cmd_upload_words",
+      "file_path": "bot/upload.py",
+      "line_number": 460
+    },
+    {
+      "trigger_type": "message",
+      "trigger": "filters.Regex(upload_words_pattern)",
+      "handler": "cmd_upload_words",
+      "file_path": "bot/upload.py",
+      "line_number": 461
+    },
+    {
+      "trigger_type": "message",
+      "trigger": "filters.Regex(r\"^(Добавить слова|Импортировать слова)$\")",
+      "handler": "cmd_upload_words",
+      "file_path": "bot/upload.py",
+      "line_number": 462
+    },
+    {
+      "trigger_type": "message",
+      "trigger": "filters.Document.ALL & (~filters.COMMAND)",
+      "handler": "on_csv_document",
+      "file_path": "bot/upload.py",
+      "line_number": 463
+    },
+    {
+      "trigger_type": "message",
+      "trigger": "filters.Regex(r\"(?i)^(импортировать как есть)$\")",
+      "handler": "on_confirm_import_all",
+      "file_path": "bot/upload.py",
+      "line_number": 464
+    },
+    {
+      "trigger_type": "message",
+      "trigger": "filters.Regex(r\"(?i)^(отменить импорт)$\")",
+      "handler": "on_cancel_import",
+      "file_path": "bot/upload.py",
+      "line_number": 465
+    }
+  ],
+  "android_contracts": [
+    {
+      "endpoint": "/api/account/type",
+      "http_method": "POST",
+      "android_symbol": "setAccountType",
+      "backend_handler": "api_account_type_save",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/admin/grant_access",
+      "http_method": "POST",
+      "android_symbol": "grantAccess",
+      "backend_handler": "api_admin_grant_access",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/admin/revoke_access",
+      "http_method": "POST",
+      "android_symbol": "revokeAccess",
+      "backend_handler": "api_admin_revoke_access",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/admin/translation_usage/reset",
+      "http_method": "POST",
+      "android_symbol": "resetTranslationUsage",
+      "backend_handler": "api_admin_reset_translation_usage",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/admin/tts_usage/reset",
+      "http_method": "POST",
+      "android_symbol": "resetTtsUsage",
+      "backend_handler": "api_admin_reset_tts_usage",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/admin/unlink_family",
+      "http_method": "POST",
+      "android_symbol": "adminUnlinkFamily",
+      "backend_handler": "api_admin_unlink_family",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/admin/users",
+      "http_method": "GET",
+      "android_symbol": "getAdminUsers",
+      "backend_handler": "api_admin_users",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/audio/ensure",
+      "http_method": "POST",
+      "android_symbol": "ensureAudio",
+      "backend_handler": "api_audio_ensure",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/auth/login_android",
+      "http_method": "POST",
+      "android_symbol": "loginAndroid",
+      "backend_handler": "login_android",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/auth/login_android_token",
+      "http_method": "POST",
+      "android_symbol": "loginAndroidToken",
+      "backend_handler": "login_android_token",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/child-learning/status",
+      "http_method": "GET",
+      "android_symbol": "getChildLearningStatus",
+      "backend_handler": "api_child_learning_status",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/daily-goal",
+      "http_method": "GET",
+      "android_symbol": "getDailyGoal",
+      "backend_handler": "api_daily_goal_get",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/daily-goal",
+      "http_method": "POST",
+      "android_symbol": "saveDailyGoal",
+      "backend_handler": "api_daily_goal_save",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/difficult/user_set",
+      "http_method": "POST",
+      "android_symbol": "setDifficult",
+      "backend_handler": "api_difficult_user_set",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/difficult_words_user",
+      "http_method": "GET",
+      "android_symbol": "getDifficultWords",
+      "backend_handler": "api_difficult_words_user",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/family",
+      "http_method": "GET",
+      "android_symbol": "getFamily",
+      "backend_handler": "api_family_status",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/family/children/{childId}",
+      "http_method": "DELETE",
+      "android_symbol": "unlinkChild",
+      "backend_handler": "api_family_unlink_child",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/family/children/{childId}/priority-lesson",
+      "http_method": "PUT",
+      "android_symbol": "setPriorityLesson",
+      "backend_handler": "api_family_set_priority_lesson",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/family/dashboard",
+      "http_method": "GET",
+      "android_symbol": "getFamilyDashboard",
+      "backend_handler": "api_family_dashboard",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/family/link",
+      "http_method": "POST",
+      "android_symbol": "linkChild",
+      "backend_handler": "api_family_link",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/family/pairing-code",
+      "http_method": "GET",
+      "android_symbol": "getPairingCode",
+      "backend_handler": "api_family_pairing_code",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/generate/topic",
+      "http_method": "POST",
+      "android_symbol": "aiSuggestTopicWords",
+      "backend_handler": "api_generate_topic",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/import-words",
+      "http_method": "POST",
+      "android_symbol": "importWords",
+      "backend_handler": "api_import_words",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/language-options",
+      "http_method": "GET",
+      "android_symbol": "getLanguageOptions",
+      "backend_handler": "api_language_options",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/learning/streak",
+      "http_method": "GET",
+      "android_symbol": "getLearningStreak",
+      "backend_handler": "api_learning_streak",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/lesson_words",
+      "http_method": "GET",
+      "android_symbol": "getLessonWords",
+      "backend_handler": "api_lesson_words_by_title",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/lessons",
+      "http_method": "GET",
+      "android_symbol": "getLessons",
+      "backend_handler": "api_lessons",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/lessons/set_hidden",
+      "http_method": "POST",
+      "android_symbol": "setLessonHidden",
+      "backend_handler": "api_lessons_set_hidden",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/me",
+      "http_method": "GET",
+      "android_symbol": "getMe",
+      "backend_handler": "api_me",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/next_lesson",
+      "http_method": "GET",
+      "android_symbol": "getNextLesson",
+      "backend_handler": "api_next_lesson",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/prev_lesson",
+      "http_method": "GET",
+      "android_symbol": "getPrevLesson",
+      "backend_handler": "api_prev_lesson",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/progress/sync",
+      "http_method": "POST",
+      "android_symbol": "syncProgress",
+      "backend_handler": "api_progress_sync",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/share/create",
+      "http_method": "POST",
+      "android_symbol": "createShare",
+      "backend_handler": "api_share_create",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/share/source_lessons",
+      "http_method": "GET",
+      "android_symbol": "getShareSourceLessons",
+      "backend_handler": "api_share_source_lessons",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/share/{token}/import",
+      "http_method": "POST",
+      "android_symbol": "importShare",
+      "backend_handler": "api_share_import",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/subscription",
+      "http_method": "GET",
+      "android_symbol": "getSubscription",
+      "backend_handler": "api_subscription_get",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/subscription/verify_purchase",
+      "http_method": "POST",
+      "android_symbol": "verifyPurchase",
+      "backend_handler": "api_verify_purchase",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/sync/updates",
+      "http_method": "GET",
+      "android_symbol": "getSyncUpdates",
+      "backend_handler": "api_sync_updates",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/translate/word",
+      "http_method": "POST",
+      "android_symbol": "aiTranslateWord",
+      "backend_handler": "api_translate_word",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/ui-language",
+      "http_method": "GET",
+      "android_symbol": "getUiLanguage",
+      "backend_handler": "api_ui_language_get",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/ui-language",
+      "http_method": "POST",
+      "android_symbol": "saveUiLanguage",
+      "backend_handler": "api_ui_language_save",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/user-languages",
+      "http_method": "GET",
+      "android_symbol": "getUserLanguages",
+      "backend_handler": "api_user_languages_get",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/user-languages",
+      "http_method": "POST",
+      "android_symbol": "saveUserLanguages",
+      "backend_handler": "api_user_languages_save",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/user_lessons",
+      "http_method": "GET",
+      "android_symbol": "getUserLessons",
+      "backend_handler": "api_user_lessons",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/user_lessons/delete",
+      "http_method": "POST",
+      "android_symbol": "deleteLessons",
+      "backend_handler": "api_user_lessons_delete",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/words",
+      "http_method": "GET",
+      "android_symbol": "getWords",
+      "backend_handler": "api_get_words",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/words/duplicates",
+      "http_method": "GET",
+      "android_symbol": "getDuplicates",
+      "backend_handler": "api_words_duplicates",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/words/nl-list",
+      "http_method": "GET",
+      "android_symbol": "getNlWordList",
+      "backend_handler": "api_words_nl_list",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/words/{id}",
+      "http_method": "DELETE",
+      "android_symbol": "deleteWord",
+      "backend_handler": "api_delete_word",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/words/{id}",
+      "http_method": "PUT",
+      "android_symbol": "updateWord",
+      "backend_handler": "api_update_word",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/share/{token}/info",
+      "http_method": "GET",
+      "android_symbol": "getShareInfo",
+      "backend_handler": null,
+      "status": "unresolved"
+    }
+  ],
+  "frontend_entrypoints": [
+    "app/templates/base.html",
+    "app/templates/index.html",
+    "app/static/idb.js",
+    "app/static/sync.js",
+    "app/static/sw.js"
+  ],
+  "systemd_services": [
+    {
+      "service_name": "learn-words-learn-words-1",
+      "service_type": "docker",
+      "working_directory": "/app",
+      "port": "7001"
+    }
+  ],
+  "nginx_routes": [
+    {
+      "server_name": "learn.iovenko.eu",
+      "public_path": "/",
+      "proxy_target": "http://learn-words:7001",
+      "nginx_config_path": "/opt/proxy/nginx/conf.d/learn.conf"
+    }
+  ],
+  "verification_commands": [
+    "python -m compileall tools",
+    "python -m unittest tests.test_project_kb",
+    "python tools/project_kb.py status"
+  ],
+  "sqlite_index": ".codex/project_kb.sqlite",
+  "cli_commands": [
+    "build",
+    "update",
+    "server-scan",
+    "server-status",
+    "compare-environments",
+    "query",
+    "files-for",
+    "symbol",
+    "route",
+    "table",
+    "android-api",
+    "service",
+    "deployment",
+    "status"
+  ]
+}

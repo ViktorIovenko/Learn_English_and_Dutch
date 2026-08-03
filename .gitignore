@@ -71,4 +71,5 @@ desktop.ini
 
 # Codex/local notes
 .knowledge/
+.codex/project_kb.sqlite
 Команды.txt
