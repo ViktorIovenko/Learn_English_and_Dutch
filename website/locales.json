@@ -1,9 +1,18 @@
 {
   "default": "en",
   "supported": [
-    {"code": "en", "name": "English", "path": "/"},
-    {"code": "nl", "name": "Nederlands", "path": "/nl/"},
-    {"code": "ru", "name": "Русский", "path": "/ru/"}
+    {"code": "en", "name": "English", "native_name": "English", "flag": "🇬🇧", "path": "/"},
+    {"code": "nl", "name": "Dutch", "native_name": "Nederlands", "flag": "🇳🇱", "path": "/nl/"},
+    {"code": "ru", "name": "Russian", "native_name": "Русский", "flag": "🇷🇺", "path": "/ru/"},
+    {"code": "de", "name": "German", "native_name": "Deutsch", "flag": "🇩🇪", "path": "/de/"},
+    {"code": "fr", "name": "French", "native_name": "Français", "flag": "🇫🇷", "path": "/fr/"},
+    {"code": "es", "name": "Spanish", "native_name": "Español", "flag": "🇪🇸", "path": "/es/"},
+    {"code": "it", "name": "Italian", "native_name": "Italiano", "flag": "🇮🇹", "path": "/it/"},
+    {"code": "pt", "name": "Portuguese", "native_name": "Português", "flag": "🇵🇹", "path": "/pt/"},
+    {"code": "pl", "name": "Polish", "native_name": "Polski", "flag": "🇵🇱", "path": "/pl/"},
+    {"code": "zh", "name": "Chinese (Mandarin)", "native_name": "中文（普通话）", "flag": "🇨🇳", "path": "/zh/"},
+    {"code": "ja", "name": "Japanese", "native_name": "日本語", "flag": "🇯🇵", "path": "/ja/"}
   ],
-  "source": "Application data model currently supports NL, EN and RU vocabulary fields."
+  "website_strategy": "Each supported language has its own crawlable URL. The navigation uses a compact dropdown instead of individual language buttons.",
+  "learning_model": "Users can combine three or more supported languages in one connected vocabulary learning flow."
 }
