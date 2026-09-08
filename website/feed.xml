@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>LearnWord Blog</title>
+    <link>https://learnword.iovenko.eu/blog/</link>
+    <description>Guides about multilingual vocabulary learning and studying three or more languages.</description>
+    <language>en</language>
+    <lastBuildDate>Tue, 08 Sep 2026 17:30:00 GMT</lastBuildDate>
+    <item>
+      <title>How to learn vocabulary in three languages at the same time</title>
+      <link>https://learnword.iovenko.eu/blog/how-to-learn-vocabulary-in-three-languages/</link>
+      <guid isPermaLink="true">https://learnword.iovenko.eu/blog/how-to-learn-vocabulary-in-three-languages/</guid>
+      <pubDate>Tue, 08 Sep 2026 10:00:00 GMT</pubDate>
+      <description>A practical method for connecting several translations to one concept instead of maintaining duplicate word lists.</description>
+    </item>
+    <item>
+      <title>How to organize multilingual vocabulary without confusion</title>
+      <link>https://learnword.iovenko.eu/blog/organize-multilingual-vocabulary/</link>
+      <guid isPermaLink="true">https://learnword.iovenko.eu/blog/organize-multilingual-vocabulary/</guid>
+      <pubDate>Sun, 06 Sep 2026 10:00:00 GMT</pubDate>
+      <description>A lesson-based structure for managing vocabulary in three or more languages.</description>
+    </item>
+    <item>
+      <title>Why a Telegram Mini App works well for vocabulary practice</title>
+      <link>https://learnword.iovenko.eu/blog/telegram-mini-app-language-learning/</link>
+      <guid isPermaLink="true">https://learnword.iovenko.eu/blog/telegram-mini-app-language-learning/</guid>
+      <pubDate>Thu, 03 Sep 2026 10:00:00 GMT</pubDate>
+      <description>Why quick access and mobile-first practice matter for multilingual vocabulary learning.</description>
+    </item>
+  </channel>
+</rss>
