@@ -83,12 +83,16 @@
 <body>
   <header class="site-header">
     <div class="shell nav-row">
-      <a class="brand" href="/" aria-label="LearnWord home"><span class="brand-mark">L</span><span>LearnWord</span></a>
+      <a class="brand" href="/" aria-label="LearnWord home">
+        <span class="brand-mark">L</span>
+        <span>LearnWord</span>
+      </a>
       <nav aria-label="Main navigation">
         <a href="#how-it-works">How it works</a>
         <a href="#features">Features</a>
-        <a href="#faq">FAQ</a>
+        <a href="#get-app">Apps</a>
         <a href="/blog/">Blog</a>
+        <a class="nav-signup" href="#signup">Sign up</a>
         <a class="btn btn-small" href="https://learn.iovenko.eu/">Open app</a>
       </nav>
     </div>
@@ -96,25 +100,74 @@
 
   <main>
     <section class="hero">
+      <div class="hero-glow hero-glow-one" aria-hidden="true"></div>
+      <div class="hero-glow hero-glow-two" aria-hidden="true"></div>
       <div class="shell hero-grid">
-        <div>
-          <p class="eyebrow">MULTILINGUAL VOCABULARY LEARNING</p>
-          <h1>Learn one word across <span>3+ languages</span>.</h1>
-          <p class="lead">LearnWord is a vocabulary learning app for people who study several languages. Keep the word, its translations, pronunciation and progress together in one clear lesson instead of maintaining a separate word list for every language.</p>
+        <div class="hero-copy">
+          <div class="hero-badge"><span></span>Built for multilingual learners</div>
+          <h1>One word.<br><span>3+ languages.</span><br>One learning flow.</h1>
+          <p class="lead">LearnWord keeps vocabulary, translations, pronunciation and progress together, so you can study several languages without duplicating the same word across different apps and notebooks.</p>
           <div class="actions">
-            <a class="btn" href="https://learn.iovenko.eu/">Open LearnWord</a>
-            <a class="btn btn-secondary" href="#how-it-works">How it works</a>
+            <a class="btn btn-large" href="#signup">Create free account</a>
+            <a class="btn btn-secondary btn-large" href="https://learn.iovenko.eu/">Open LearnWord</a>
           </div>
-          <p class="microcopy">Designed for learners who work with three or more languages.</p>
+          <div class="hero-proof" aria-label="Product highlights">
+            <span>3+ languages</span>
+            <span>Pronunciation audio</span>
+            <span>Telegram access</span>
+          </div>
         </div>
 
-        <div class="demo-card" aria-label="Example multilingual vocabulary card">
-          <div class="demo-top"><span>Lesson 17.1</span><span class="status">Learning</span></div>
-          <p class="demo-word">ontwikkeling</p>
-          <p class="demo-meta">Dutch vocabulary</p>
-          <div class="translation"><b>EN</b><span><strong>development</strong><small>English translation</small></span></div>
-          <div class="translation"><b>RU</b><span><strong>развитие</strong><small>Russian translation</small></span></div>
-          <div class="translation"><b>+</b><span><strong>Add another language</strong><small>Keep the same concept connected</small></span></div>
+        <div class="product-stage" aria-label="LearnWord product preview">
+          <div class="stage-orbit orbit-one" aria-hidden="true"></div>
+          <div class="stage-orbit orbit-two" aria-hidden="true"></div>
+          <div class="floating-chip chip-top">NL · EN · RU · +</div>
+          <div class="demo-card">
+            <div class="demo-top">
+              <span class="lesson-label">Lesson 17.1</span>
+              <span class="status"><i></i> Learning</span>
+            </div>
+            <div class="word-block">
+              <p class="demo-word">ontwikkeling</p>
+              <p class="demo-meta">Dutch vocabulary</p>
+            </div>
+            <div class="translation"><b>EN</b><span><strong>development</strong><small>English</small></span><em>↗</em></div>
+            <div class="translation"><b>RU</b><span><strong>развитие</strong><small>Russian</small></span><em>↗</em></div>
+            <div class="translation translation-add"><b>+</b><span><strong>Add another language</strong><small>Keep the concept connected</small></span></div>
+            <div class="demo-progress">
+              <div><span>Progress</span><strong>72%</strong></div>
+              <div class="progress-track"><span></span></div>
+            </div>
+          </div>
+          <div class="floating-card card-a"><strong>🔊 Audio</strong><span>Pronunciation ready</span></div>
+          <div class="floating-card card-b"><strong>★ Difficult</strong><span>Review later</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="platform-strip" id="get-app" aria-labelledby="get-app-title">
+      <div class="shell platform-layout">
+        <div class="platform-copy">
+          <p class="eyebrow">LEARN ANYWHERE</p>
+          <h2 id="get-app-title">Get LearnWord on your favorite platform</h2>
+          <p>Start in Telegram today. Native iOS and Android access is prepared as part of the product roadmap.</p>
+        </div>
+        <div class="store-grid">
+          <div class="store-card store-disabled" aria-label="LearnWord for iOS coming soon">
+            <div class="store-icon apple" aria-hidden="true">●</div>
+            <div><small>Coming soon on</small><strong>App Store</strong></div>
+            <span class="store-state">Soon</span>
+          </div>
+          <div class="store-card store-disabled" aria-label="LearnWord for Android coming soon">
+            <div class="store-icon play" aria-hidden="true">▶</div>
+            <div><small>Coming soon on</small><strong>Google Play</strong></div>
+            <span class="store-state">Soon</span>
+          </div>
+          <a class="store-card store-active" href="https://learn.iovenko.eu/" aria-label="Open LearnWord in Telegram">
+            <div class="store-icon telegram" aria-hidden="true">➤</div>
+            <div><small>Available now</small><strong>Telegram</strong></div>
+            <span class="store-arrow">↗</span>
+          </a>
         </div>
       </div>
     </section>
@@ -122,32 +175,112 @@
     <section class="section" id="how-it-works">
       <div class="shell">
         <p class="eyebrow">HOW IT WORKS</p>
-        <h2>A multilingual vocabulary system, not three separate notebooks</h2>
-        <p class="section-intro">LearnWord organizes vocabulary around a lesson and a word. Each word can be connected with multiple translations, so multilingual learners can compare languages directly and repeat the same concept without switching between unrelated lists.</p>
+        <div class="section-title-row">
+          <h2>A multilingual vocabulary system, not three separate notebooks</h2>
+          <p class="section-intro">LearnWord organizes vocabulary around one concept. Add translations, practise them together and keep your progress attached to the same word.</p>
+        </div>
         <div class="steps">
-          <article><span>01</span><h3>Create or open a lesson</h3><p>Group vocabulary by a course chapter, topic, exam unit or your own study goal.</p></article>
-          <article><span>02</span><h3>Connect several languages</h3><p>Keep the source word and its translations together so the relationship between languages remains visible.</p></article>
-          <article><span>03</span><h3>Practise and track progress</h3><p>Review vocabulary, listen to pronunciation and return to the words that still need more attention.</p></article>
+          <article>
+            <span class="step-number">01</span>
+            <div class="step-icon">＋</div>
+            <h3>Create a lesson</h3>
+            <p>Group vocabulary by a chapter, topic, exam unit or your own learning goal.</p>
+          </article>
+          <article>
+            <span class="step-number">02</span>
+            <div class="step-icon">文</div>
+            <h3>Connect languages</h3>
+            <p>Keep the source word and several translations together in one clear structure.</p>
+          </article>
+          <article>
+            <span class="step-number">03</span>
+            <div class="step-icon">↗</div>
+            <h3>Practise and improve</h3>
+            <p>Review, listen to pronunciation and return to vocabulary that still needs attention.</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <section class="section soft" id="features">
+    <section class="section features-section" id="features">
       <div class="shell">
         <p class="eyebrow">FEATURES</p>
-        <h2>Built for everyday multilingual study</h2>
-        <div class="feature-grid">
-          <article><h3>3+ language learning</h3><p>Study the same vocabulary across three or more languages in a single learning structure.</p></article>
-          <article><h3>Custom lessons</h3><p>Organize vocabulary into lessons that match your school, course, textbook or personal goals.</p></article>
-          <article><h3>Pronunciation audio</h3><p>Keep spoken pronunciation close to the word instead of searching for audio separately.</p></article>
-          <article><h3>Difficult words</h3><p>Mark vocabulary that needs extra repetition and revisit it without restarting the whole lesson.</p></article>
-          <article><h3>Progress tracking</h3><p>Track learning activity at word level so the next repetition can focus on what still needs work.</p></article>
-          <article><h3>Mobile-first</h3><p>Use a lightweight web interface designed for quick practice on a phone, including Telegram Mini App access.</p></article>
+        <div class="section-title-row">
+          <h2>Everything your multilingual vocabulary needs</h2>
+          <p class="section-intro">A focused toolkit for people who already live between several languages.</p>
+        </div>
+        <div class="feature-bento">
+          <article class="feature-card feature-large feature-gradient">
+            <div class="feature-kicker">CORE IDEA</div>
+            <h3>3+ languages in one vocabulary item</h3>
+            <p>Compare several translations around the same concept instead of rebuilding the same vocabulary deck again and again.</p>
+            <div class="language-stack" aria-hidden="true">
+              <span>NL</span><span>EN</span><span>RU</span><span>+</span>
+            </div>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">▤</div>
+            <h3>Custom lessons</h3>
+            <p>Match your school, textbook, exam or personal study plan.</p>
+          </article>
+          <article class="feature-card dark-card">
+            <div class="feature-icon">◉</div>
+            <h3>Progress tracking</h3>
+            <p>See what is learned and what deserves another repetition.</p>
+            <div class="mini-progress"><span style="width:72%"></span></div>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">♪</div>
+            <h3>Pronunciation audio</h3>
+            <p>Keep spoken pronunciation directly beside the vocabulary.</p>
+          </article>
+          <article class="feature-card feature-wide">
+            <div>
+              <div class="feature-icon">★</div>
+              <h3>Difficult words</h3>
+              <p>Mark hard vocabulary and create a focused review flow without restarting the full lesson.</p>
+            </div>
+            <div class="difficulty-preview" aria-hidden="true">
+              <span>development</span><span>ontwikkelen</span><span>verantwoordelijk</span>
+            </div>
+          </article>
         </div>
       </div>
     </section>
 
-    <section class="section">
+    <section class="section signup-section" id="signup">
+      <div class="shell signup-shell">
+        <div class="signup-copy">
+          <p class="eyebrow">CREATE YOUR ACCOUNT</p>
+          <h2>Start learning in seconds.</h2>
+          <p>Use the account you already have. Your lessons and progress can stay connected across the website and LearnWord app.</p>
+          <ul class="signup-points">
+            <li><span>✓</span>No separate password to remember</li>
+            <li><span>✓</span>Fast access from mobile or desktop</li>
+            <li><span>✓</span>Telegram-friendly learning flow</li>
+          </ul>
+        </div>
+        <div class="auth-card" aria-label="LearnWord account registration">
+          <div class="auth-card-head">
+            <span class="brand-mark auth-logo">L</span>
+            <div><strong>Create LearnWord account</strong><small>Choose how you want to continue</small></div>
+          </div>
+          <a class="auth-button google-button" href="/auth/google">
+            <span class="auth-provider google-mark" aria-hidden="true">G</span>
+            <span>Continue with Google</span>
+          </a>
+          <a class="auth-button telegram-button" href="/auth/telegram">
+            <span class="auth-provider telegram-mark" aria-hidden="true">➤</span>
+            <span>Continue with Telegram</span>
+          </a>
+          <div class="auth-divider"><span>secure sign in</span></div>
+          <p class="auth-note">By continuing, you agree to the LearnWord terms and privacy policy.</p>
+          <p class="auth-tech-note">Google and Telegram authentication endpoints are prepared for backend connection.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section connect-section">
       <div class="shell split">
         <div>
           <p class="eyebrow">WHY MULTILINGUAL?</p>
@@ -161,40 +294,52 @@
       </div>
     </section>
 
-    <section class="section soft" id="faq">
+    <section class="section faq-section" id="faq">
       <div class="shell narrow">
         <p class="eyebrow">FAQ</p>
         <h2>About LearnWord</h2>
-        <details open><summary>What is LearnWord?</summary><p>LearnWord is a multilingual vocabulary learning application designed to keep a word, its translations, pronunciation and learning progress together across three or more languages.</p></details>
-        <details><summary>Can I learn vocabulary in three languages at the same time?</summary><p>Yes. The product is designed around multilingual vocabulary sets, so the same word can be connected with translations in three or more languages rather than being separated into several unrelated apps.</p></details>
-        <details><summary>Is LearnWord only for English and Dutch?</summary><p>No. The project began with English, Dutch and Russian vocabulary, but the learning concept is designed for multilingual study and can be extended with additional languages.</p></details>
-        <details><summary>Does LearnWord work on mobile?</summary><p>Yes. The learning interface is mobile-first and is available as a web application that can also run as a Telegram Mini App.</p></details>
-        <details><summary>How is LearnWord different from a normal flashcard app?</summary><p>The main difference is the multilingual structure. Instead of treating every language pair as a separate deck, LearnWord keeps several translations around the same vocabulary item and lesson.</p></details>
+        <div class="faq-list">
+          <details open><summary>What is LearnWord?<span>＋</span></summary><p>LearnWord is a multilingual vocabulary learning application designed to keep a word, its translations, pronunciation and learning progress together across three or more languages.</p></details>
+          <details><summary>Can I learn vocabulary in three languages at the same time?<span>＋</span></summary><p>Yes. The product is designed around multilingual vocabulary sets, so the same word can be connected with translations in three or more languages rather than being separated into several unrelated apps.</p></details>
+          <details><summary>Is LearnWord only for English and Dutch?<span>＋</span></summary><p>No. The project began with English, Dutch and Russian vocabulary, but the learning concept is designed for multilingual study and can be extended with additional languages.</p></details>
+          <details><summary>Does LearnWord work on mobile?<span>＋</span></summary><p>Yes. The learning interface is mobile-first and is available as a web application that can also run as a Telegram Mini App.</p></details>
+          <details><summary>How is LearnWord different from a normal flashcard app?<span>＋</span></summary><p>The main difference is the multilingual structure. Instead of treating every language pair as a separate deck, LearnWord keeps several translations around the same vocabulary item and lesson.</p></details>
+        </div>
       </div>
     </section>
 
-    <section class="section" aria-labelledby="latest-title">
+    <section class="section blog-section" aria-labelledby="latest-title">
       <div class="shell">
-        <div class="section-head"><div><p class="eyebrow">BLOG</p><h2 id="latest-title">Multilingual learning guides</h2></div><a class="text-link" href="/blog/">All articles →</a></div>
+        <div class="section-head">
+          <div><p class="eyebrow">BLOG</p><h2 id="latest-title">Multilingual learning guides</h2></div>
+          <a class="text-link" href="/blog/">Explore all articles →</a>
+        </div>
         <div class="post-grid">
-          <article><p class="post-meta">Guide · 5 min</p><h3><a href="/blog/how-to-learn-vocabulary-in-three-languages/">How to learn vocabulary in three languages at the same time</a></h3><p>A practical method for keeping several translations connected without creating duplicate word lists.</p></article>
-          <article><p class="post-meta">Method · 4 min</p><h3><a href="/blog/organize-multilingual-vocabulary/">How to organize multilingual vocabulary without confusion</a></h3><p>Use lessons, one core concept and focused repetition to make multilingual study easier to maintain.</p></article>
-          <article><p class="post-meta">Product · 4 min</p><h3><a href="/blog/telegram-mini-app-language-learning/">Why a Telegram Mini App works well for vocabulary practice</a></h3><p>Why quick access and mobile-first practice matter when language learning happens throughout the day.</p></article>
+          <article><p class="post-meta">Guide · 5 min</p><h3><a href="/blog/how-to-learn-vocabulary-in-three-languages/">How to learn vocabulary in three languages at the same time</a></h3><p>A practical method for keeping several translations connected without creating duplicate word lists.</p><a class="post-arrow" href="/blog/how-to-learn-vocabulary-in-three-languages/" aria-label="Read article">↗</a></article>
+          <article><p class="post-meta">Method · 4 min</p><h3><a href="/blog/organize-multilingual-vocabulary/">How to organize multilingual vocabulary without confusion</a></h3><p>Use lessons, one core concept and focused repetition to make multilingual study easier to maintain.</p><a class="post-arrow" href="/blog/organize-multilingual-vocabulary/" aria-label="Read article">↗</a></article>
+          <article><p class="post-meta">Product · 4 min</p><h3><a href="/blog/telegram-mini-app-language-learning/">Why a Telegram Mini App works well for vocabulary practice</a></h3><p>Why quick access and mobile-first practice matter when language learning happens throughout the day.</p><a class="post-arrow" href="/blog/telegram-mini-app-language-learning/" aria-label="Read article">↗</a></article>
         </div>
       </div>
     </section>
 
     <section class="cta">
-      <div class="shell cta-inner"><div><p class="eyebrow">START LEARNING</p><h2>Keep your languages connected.</h2><p>Open LearnWord and build your next multilingual vocabulary lesson.</p></div><a class="btn btn-light" href="https://learn.iovenko.eu/">Open LearnWord</a></div>
+      <div class="shell cta-inner">
+        <div><p class="eyebrow">START LEARNING</p><h2>Keep your languages connected.</h2><p>Create your LearnWord account or open the Telegram app and build your next multilingual vocabulary lesson.</p></div>
+        <div class="cta-actions"><a class="btn btn-light" href="#signup">Create account</a><a class="btn btn-ghost-light" href="https://learn.iovenko.eu/">Open Telegram app</a></div>
+      </div>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="shell footer-grid">
-      <div><a class="brand" href="/"><span class="brand-mark">L</span><span>LearnWord</span></a><p>Vocabulary learning for three or more languages.</p></div>
-      <div><a href="/blog/">Blog</a><a href="/llms.txt">llms.txt</a><a href="/sitemap.xml">Sitemap</a><a href="https://github.com/ViktorIovenko/Learn_English_and_Dutch">GitHub</a></div>
+      <div class="footer-brand-block"><a class="brand" href="/"><span class="brand-mark">L</span><span>LearnWord</span></a><p>Vocabulary learning for three or more languages.</p></div>
+      <div class="footer-columns">
+        <div><strong>Product</strong><a href="#features">Features</a><a href="#get-app">Apps</a><a href="#signup">Sign up</a></div>
+        <div><strong>Learn</strong><a href="/blog/">Blog</a><a href="#faq">FAQ</a><a href="/sitemap.xml">Sitemap</a></div>
+        <div><strong>AI & Developers</strong><a href="/llms.txt">llms.txt</a><a href="https://github.com/ViktorIovenko/Learn_English_and_Dutch">GitHub</a></div>
+      </div>
     </div>
-    <div class="shell footer-bottom">© 2026 LearnWord</div>
+    <div class="shell footer-bottom"><span>© 2026 LearnWord</span><span>Built for multilingual learners.</span></div>
   </footer>
 </body>
 </html>
