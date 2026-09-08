@@ -1,4 +1,5 @@
 # run.py
+# [ИЗМЕНЕНО v6.12] Добавлена универсальная многоязычная схема ParallelLingvo.
 # [ИЗМЕНЕНО v6.11] Переход на ежедневное напоминание в 12:00 (Europe/Amsterdam) вместо интервала.
 # [ИЗМЕНЕНО v6.10] Фолбэк: создаём JobQueue вручную, если отсутствует (экстры не установлены).
 # [ИЗМЕНЕНО v6.8]  Бот в главном потоке (run_polling), Flask — в отдельном.
@@ -14,6 +15,8 @@ from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from app.routes import init_app as init_web
+from app.language_routes import init_app as init_language_api
+from app.multilingual import ensure_multilingual_schema
 
 from telegram import Update
 from telegram.ext import ApplicationBuilder, Defaults, JobQueue
@@ -24,7 +27,7 @@ from bot.upload import register_upload_handlers
 # ▼▼▼ напоминания
 from bot.reminder import (
     register_admin_handlers,
-    register_reminders_daily_at,   # ← ИЗМЕНЕНО: используем ежедневное расписание
+    register_reminders_daily_at,
 )
 
 logging.basicConfig(level=logging.INFO,
@@ -51,6 +54,8 @@ def init_db(db_path: str) -> None:
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
         """)
+        # Legacy words table remains intact during migration so the current UI
+        # continues to work while new clients use word_translations.
         c.execute("""
             CREATE TABLE IF NOT EXISTS words (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,6 +98,10 @@ def init_db(db_path: str) -> None:
             c.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER;")
             c.execute("UPDATE words SET updated_at = (strftime('%s','now') * 1000) WHERE updated_at IS NULL;")
 
+        # New normalized storage supports the launch catalog of 45 languages
+        # and can grow further without ALTER TABLE per language.
+        ensure_multilingual_schema(c, backfill_legacy=True)
+
         c.execute("""
             CREATE TABLE IF NOT EXISTS reminder_state (
                 user_id        TEXT PRIMARY KEY,
@@ -111,14 +120,12 @@ def create_app() -> Flask:
     app = Flask(__name__, static_folder="app/static", template_folder="app/templates")
     app.config.from_object(Config)
 
-    # безопасные cookie только при https
     secure_cookies = _is_https_base(os.getenv("PUBLIC_BASE_URL", ""))
     app.config.update(
         SESSION_COOKIE_SAMESITE="None" if secure_cookies else "Lax",
         SESSION_COOKIE_SECURE=secure_cookies,
     )
 
-    # корректная работа за reverse-proxy
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     @app.after_request
@@ -127,8 +134,8 @@ def create_app() -> Flask:
         return response
 
     init_db(app.config["DB_PATH"])
-    init_app = init_web
-    init_app(app)
+    init_web(app)
+    init_language_api(app)
     return app
 
 
@@ -154,7 +161,6 @@ def build_bot_application():
     defaults = Defaults(parse_mode="HTML")
     application = ApplicationBuilder().token(Config.BOT_TOKEN).defaults(defaults).build()
 
-    # === ФОЛБЭК ДЛЯ JobQueue ===
     if application.job_queue is None:
         log.warning(
             "JobQueue не инициализирован. Включаю фолбэк через telegram.ext.JobQueue. "
@@ -166,20 +172,17 @@ def build_bot_application():
         application.job_queue = jq
         log.info("JobQueue: фолбэк запущен.")
 
-    # порядок важен
     register_upload_handlers(application)
     register_auth_handlers(application)
 
-    # напоминания: АДМИН-команда + ЕЖЕДНЕВНО в 12:00 Europe/Amsterdam
     register_admin_handlers(application)
-    register_reminders_daily_at(application)  # ← ИЗМЕНЕНО: ежедневное расписание (12:00 по TZ из reminder.py)
+    register_reminders_daily_at(application)
 
     log.info("Handlers registered: upload -> auth -> reminder_admin; jobs: reminder daily@12:00 Europe/Amsterdam")
     application.add_error_handler(on_error)
     return application
 
 
-# === запуск Flask в отдельном потоке ===
 def _flask_thread():
     host = os.getenv("FLASK_HOST", "127.0.0.1")
     port = int(os.getenv("FLASK_PORT", "7001"))
