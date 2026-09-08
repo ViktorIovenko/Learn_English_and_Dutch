@@ -1,0 +1,17 @@
+@media(max-width:1060px){
+  nav .lang-switch a{display:flex!important}
+  .lang-switch{flex-shrink:0}
+}
+
+@media(max-width:700px){
+  .nav-row{flex-wrap:wrap;padding:8px 0}
+  nav{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+  .lang-switch{width:auto;margin-top:0}
+}
+
+@media(max-width:560px){
+  .brand{width:155px;min-height:48px}
+  nav{gap:8px}
+  .lang-switch{padding:3px}
+  .lang-switch a{min-width:31px;height:29px;padding:0 6px;font-size:.7rem}
+}
