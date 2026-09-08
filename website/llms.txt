@@ -1,22 +1,38 @@
 # ParallelLingvo
 
-> ParallelLingvo is a multilingual vocabulary learning application. The current application supports Dutch (NL), English (EN), and Russian (RU) in one connected learning flow. It combines vocabulary lessons, translations, pronunciation audio, difficult-word review, and progress tracking in a mobile-first interface.
-
-ParallelLingvo is designed for learners who want Dutch, English, and Russian vocabulary to stay connected around the same concept instead of maintaining separate bilingual decks.
+> ParallelLingvo is a multilingual vocabulary learning application supporting 11 languages. Learners can choose three or more supported languages and keep vocabulary, translations, pronunciation, difficult-word review, and progress connected around the same concept.
 
 Canonical public website: https://parallellingvo.app/
 Learning application: https://learn.iovenko.eu/
 Source repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
 
-## Supported website languages
+## Supported languages and localized landing pages
 
-- English: https://parallellingvo.app/
-- Nederlands: https://parallellingvo.app/nl/
-- Русский: https://parallellingvo.app/ru/
+- English (EN): https://parallellingvo.app/
+- Nederlands / Dutch (NL): https://parallellingvo.app/nl/
+- Русский / Russian (RU): https://parallellingvo.app/ru/
+- Deutsch / German (DE): https://parallellingvo.app/de/
+- Français / French (FR): https://parallellingvo.app/fr/
+- Español / Spanish (ES): https://parallellingvo.app/es/
+- Italiano / Italian (IT): https://parallellingvo.app/it/
+- Português / Portuguese (PT): https://parallellingvo.app/pt/
+- Polski / Polish (PL): https://parallellingvo.app/pl/
+- 中文（普通话）/ Chinese Mandarin (ZH): https://parallellingvo.app/zh/
+- 日本語 / Japanese (JA): https://parallellingvo.app/ja/
 
-The website language set mirrors the languages currently supported by the application: NL, EN, RU. Each language has a separate crawlable HTML URL and corresponding hreflang relationships.
+Each landing page is server-delivered HTML with its own canonical URL, language metadata and hreflang links. The visible navigation uses a compact language dropdown.
+
+## Learning model
+
+ParallelLingvo is designed for parallel multilingual vocabulary study. A learner can choose three or more supported languages and attach their translations to the same vocabulary concept instead of maintaining a separate bilingual deck for each pair.
+
+Core workflow:
+
+Lesson -> vocabulary concept -> multiple language forms -> examples or pronunciation -> learning status.
 
 ## Blog indexes
+
+The current editorial blog has localized indexes and article translations in English, Dutch and Russian:
 
 - English: https://parallellingvo.app/blog/
 - Nederlands: https://parallellingvo.app/nl/blog/
@@ -43,5 +59,5 @@ The website language set mirrors the languages currently supported by the applic
 
 - Full site context: https://parallellingvo.app/llms-full.txt
 - RSS feed: https://parallellingvo.app/feed.xml
-- XML sitemap with hreflang alternatives: https://parallellingvo.app/sitemap.xml
+- XML sitemap: https://parallellingvo.app/sitemap.xml
 - Robots policy: https://parallellingvo.app/robots.txt
