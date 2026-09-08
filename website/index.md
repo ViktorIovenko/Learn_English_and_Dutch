@@ -21,6 +21,16 @@ Instead of creating separate bilingual decks, LearnWord organizes vocabulary aro
 
 LearnWord can be useful for multilingual learners, immigrants, international families, students preparing for language exams, professionals who work in several languages, and people who want to study more than one target language at the same time.
 
+## Platforms
+
+- Telegram / web application: available now at https://learn.iovenko.eu/
+- iOS application: planned.
+- Android application: planned.
+
+## Account access
+
+The public LearnWord website is designed to support account registration and sign-in through Google and Telegram. The landing-page authentication endpoints are prepared for backend OAuth integration; production Google authentication requires configured Google OAuth credentials.
+
 ## LearnWord blog
 
 - [How to learn vocabulary in three languages at the same time](https://learnword.iovenko.eu/blog/how-to-learn-vocabulary-in-three-languages/)
@@ -29,6 +39,6 @@ LearnWord can be useful for multilingual learners, immigrants, international fam
 
 ## Application
 
-The learning application is available at: https://learn.iovenko.eu/
+The current learning application is available at: https://learn.iovenko.eu/
 
 Project repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
