@@ -1,12 +1,20 @@
 # ParallelLingvo
 
-> ParallelLingvo is a multilingual vocabulary learning application supporting 11 languages. Learners can choose three or more supported languages and keep vocabulary, translations, pronunciation, difficult-word review, and progress connected around the same concept.
+> ParallelLingvo is a multilingual vocabulary learning application with an initial catalog of 45 learning languages. Learners can choose three or more languages and keep vocabulary, translations, pronunciation, difficult-word review, and progress connected around the same concept.
 
 Canonical public website: https://parallellingvo.app/
 Learning application: https://learn.iovenko.eu/
 Source repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
 
-## Supported languages and localized landing pages
+## Learning-language architecture
+
+ParallelLingvo targets 45 launch languages: major European languages plus selected major world languages. The backend uses normalized `word_translations` records rather than adding one database column per language, so the catalog can expand later without redesigning the `words` table.
+
+A learner selects at least three languages. One vocabulary concept can have any number of language forms attached to it.
+
+The application catalog is the source of truth: `app/languages.py`.
+
+## Current localized website interfaces
 
 - English (EN): https://parallellingvo.app/
 - Nederlands / Dutch (NL): https://parallellingvo.app/nl/
@@ -20,15 +28,21 @@ Source repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
 - 中文（普通话）/ Chinese Mandarin (ZH): https://parallellingvo.app/zh/
 - 日本語 / Japanese (JA): https://parallellingvo.app/ja/
 
-Each landing page is server-delivered HTML with its own canonical URL, language metadata and hreflang links. The visible navigation uses a compact language dropdown.
+Website-interface localization and supported learning languages are separate concerns. Additional website localizations can be added progressively while the learning engine remains language-agnostic.
 
-## Learning model
+## Core learning model
 
-ParallelLingvo is designed for parallel multilingual vocabulary study. A learner can choose three or more supported languages and attach their translations to the same vocabulary concept instead of maintaining a separate bilingual deck for each pair.
+Lesson -> vocabulary concept -> 3+ selected language forms -> examples/pronunciation -> learning status.
 
-Core workflow:
+## Multilingual API
 
-Lesson -> vocabulary concept -> multiple language forms -> examples or pronunciation -> learning status.
+- `GET /api/languages` — launch language catalog.
+- `GET /api/user_languages` — current learner language selection.
+- `PUT /api/user_languages` — save three or more selected languages.
+- `GET /api/words/<word_id>/translations` — normalized translations for a word.
+- `PUT /api/words/<word_id>/translations` — create/update translations without adding database columns.
+
+Legacy NL/EN/RU fields remain temporarily for backward compatibility during migration.
 
 ## Blog indexes
 
@@ -37,23 +51,6 @@ The current editorial blog has localized indexes and article translations in Eng
 - English: https://parallellingvo.app/blog/
 - Nederlands: https://parallellingvo.app/nl/blog/
 - Русский: https://parallellingvo.app/ru/blog/
-
-## Learning guides
-
-### Learn vocabulary in three languages
-- English: https://parallellingvo.app/blog/how-to-learn-vocabulary-in-three-languages/
-- Nederlands: https://parallellingvo.app/nl/blog/how-to-learn-vocabulary-in-three-languages/
-- Русский: https://parallellingvo.app/ru/blog/how-to-learn-vocabulary-in-three-languages/
-
-### Organize multilingual vocabulary
-- English: https://parallellingvo.app/blog/organize-multilingual-vocabulary/
-- Nederlands: https://parallellingvo.app/nl/blog/organize-multilingual-vocabulary/
-- Русский: https://parallellingvo.app/ru/blog/organize-multilingual-vocabulary/
-
-### Telegram Mini App for vocabulary practice
-- English: https://parallellingvo.app/blog/telegram-mini-app-language-learning/
-- Nederlands: https://parallellingvo.app/nl/blog/telegram-mini-app-language-learning/
-- Русский: https://parallellingvo.app/ru/blog/telegram-mini-app-language-learning/
 
 ## Machine-readable resources
 
