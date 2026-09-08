@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./website:/usr/share/nginx/html:ro
-      - ./website/nginx-site.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/learnword-site.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - family_internal
 
