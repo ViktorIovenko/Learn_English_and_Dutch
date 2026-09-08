@@ -2,32 +2,28 @@
 
 Published: 2026-09-06
 
-When you study three or more languages, vocabulary management can become harder than the vocabulary itself. Organize by concept and lesson instead of creating a new list for every language pair.
+When you study Dutch, English, and Russian, vocabulary management can become harder than the vocabulary itself. Organize by concept and lesson instead of creating separate lists for each language pair.
 
 ## Use one vocabulary item for one concept
 
-One item should represent one meaning. Attach the translations you need to that item. If a word has several unrelated meanings, create separate items so the context stays clear.
+One item should represent one meaning. Attach the Dutch, English, and Russian forms to that same item.
 
 ## Organize by lessons, not by language
 
-Use lessons such as Work, Housing, Health, School or your course chapter. Languages become properties of the vocabulary item rather than separate collections.
+Use lessons such as Work, Housing, School, or your course chapter. The three languages become properties of the vocabulary item rather than separate collections.
 
 ## Choose a primary language for each session
 
-You do not need to test every translation at once. Choose the language you want to actively recall and use the other translations as support.
+You do not need to test all three directions at once. Choose the language you want to recall and use the other two as support.
 
 ## Keep examples close to ambiguous words
 
-Add an example sentence when meaning depends on context, grammar changes the form, or two languages use a word differently.
+Add an example sentence when meaning depends on context or grammar differs between NL, EN, and RU.
 
 ## Separate difficult vocabulary from ordinary review
 
-Mark difficult words and review them separately instead of repeating familiar vocabulary equally often.
+Mark difficult words and review them more often instead of repeating familiar vocabulary equally often.
 
-## A scalable multilingual structure
+## ParallelLingvo
 
-A simple model is: Lesson → vocabulary concept → translations → example or audio → learning status. Adding a fourth language does not require rebuilding the lesson; another translation is attached to the same item.
-
-## LearnWord
-
-LearnWord applies this structure to multilingual vocabulary lessons, pronunciation, progress and difficult-word review.
+ParallelLingvo applies this structure to lessons, Dutch/English/Russian vocabulary, pronunciation, progress, and difficult-word review.
