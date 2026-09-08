@@ -14,5 +14,6 @@
     {"code": "ja", "name": "Japanese", "native_name": "日本語", "flag": "🇯🇵", "path": "/ja/"}
   ],
   "website_strategy": "Each supported language has its own crawlable URL. The navigation uses a compact dropdown instead of individual language buttons.",
-  "learning_model": "Users can combine three or more supported languages in one connected vocabulary learning flow."
+  "learning_model": "Users can combine three or more supported languages in one connected vocabulary learning flow.",
+  "note": "Keep this file synchronized with the production application's supported-language configuration when that configuration changes."
 }
