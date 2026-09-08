@@ -1,26 +1,26 @@
-# LearnWord
+# ParallelLingvo
 
-> LearnWord is a multilingual vocabulary learning application designed for studying the same vocabulary across three or more languages in one learning flow. It combines vocabulary lessons, multiple translations, pronunciation audio, difficult-word review and progress tracking in a mobile-first interface.
+> ParallelLingvo is a multilingual vocabulary learning application designed for studying the same vocabulary across three or more languages in one learning flow. It combines vocabulary lessons, multiple translations, pronunciation audio, difficult-word review and progress tracking in a mobile-first interface.
 
-LearnWord is intended for multilingual learners who want to keep several languages connected instead of maintaining a separate vocabulary deck for every language pair. The learning application can run as a Telegram Mini App. The public website contains product information and practical multilingual learning guides.
+ParallelLingvo is intended for multilingual learners who want to keep several languages connected instead of maintaining a separate vocabulary deck for every language pair. The learning application can run as a Telegram Mini App. The public website contains product information and practical multilingual learning guides.
 
-Canonical public website: https://learnword.iovenko.eu/
+Canonical public website: https://parallellingvo.app/
 Learning application: https://learn.iovenko.eu/
 Source repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
 
 ## Core pages
 
-- [LearnWord overview](https://learnword.iovenko.eu/index.md): What LearnWord is, who it is for, and how the multilingual vocabulary structure works.
-- [LearnWord blog](https://learnword.iovenko.eu/blog/index.md): Index of multilingual vocabulary learning guides.
+- [ParallelLingvo overview](https://parallellingvo.app/index.md): What ParallelLingvo is, who it is for, and how the multilingual vocabulary structure works.
+- [ParallelLingvo blog](https://parallellingvo.app/blog/index.md): Index of multilingual vocabulary learning guides.
 
 ## Learning guides
 
-- [How to learn vocabulary in three languages at the same time](https://learnword.iovenko.eu/blog/how-to-learn-vocabulary-in-three-languages/index.md): A concept-centered method for studying the same vocabulary across three or more languages.
-- [How to organize multilingual vocabulary without confusion](https://learnword.iovenko.eu/blog/organize-multilingual-vocabulary/index.md): Lesson and vocabulary structure for scalable multilingual study.
-- [Why a Telegram Mini App works well for vocabulary practice](https://learnword.iovenko.eu/blog/telegram-mini-app-language-learning/index.md): Mobile-first vocabulary learning, cached study data and pronunciation access.
+- [How to learn vocabulary in three languages at the same time](https://parallellingvo.app/blog/how-to-learn-vocabulary-in-three-languages/index.md): A concept-centered method for studying the same vocabulary across three or more languages.
+- [How to organize multilingual vocabulary without confusion](https://parallellingvo.app/blog/organize-multilingual-vocabulary/index.md): Lesson and vocabulary structure for scalable multilingual study.
+- [Why a Telegram Mini App works well for vocabulary practice](https://parallellingvo.app/blog/telegram-mini-app-language-learning/index.md): Mobile-first vocabulary learning, cached study data and pronunciation access.
 
 ## Optional
 
-- [Full site context](https://learnword.iovenko.eu/llms-full.txt): Consolidated textual context about LearnWord and its learning method.
-- [RSS feed](https://learnword.iovenko.eu/feed.xml): Blog updates.
-- [XML sitemap](https://learnword.iovenko.eu/sitemap.xml): Indexable website URLs.
+- [Full site context](https://parallellingvo.app/llms-full.txt): Consolidated textual context about ParallelLingvo and its learning method.
+- [RSS feed](https://parallellingvo.app/feed.xml): Blog updates.
+- [XML sitemap](https://parallellingvo.app/sitemap.xml): Indexable website URLs.
