@@ -40,13 +40,22 @@ def _word_is_visible_to_user(conn: sqlite3.Connection, word_id: int, user_id: st
     return bool(row)
 
 
+def _word_is_writable_by_user(conn: sqlite3.Connection, word_id: int, user_id: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM words WHERE id = ? AND user_id = ?",
+        (int(word_id), str(user_id)),
+    ).fetchone()
+    return bool(row)
+
+
 @language_api.get("/api/languages")
 def api_languages():
+    catalog = public_language_catalog()
     return jsonify({
         "ok": True,
-        "count": len(public_language_catalog()),
+        "count": len(catalog),
         "minimum_parallel_languages": MIN_PARALLEL_LANGUAGES,
-        "languages": public_language_catalog(),
+        "languages": catalog,
     })
 
 
@@ -109,8 +118,8 @@ def api_word_translations_put(word_id: int):
 
     with _conn() as conn:
         ensure_multilingual_schema(conn, backfill_legacy=True)
-        if not _word_is_visible_to_user(conn, word_id, user_id):
-            return jsonify({"ok": False, "error": "not_found"}), 404
+        if not _word_is_writable_by_user(conn, word_id, user_id):
+            return jsonify({"ok": False, "error": "not_writable"}), 403
 
         try:
             for language_code, payload in translations.items():
