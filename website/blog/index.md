@@ -1,14 +1,21 @@
-# LearnWord Blog
+# ParallelLingvo Blog
 
-> Practical guides about multilingual vocabulary learning and studying three or more languages.
+> Practical guides about learning Dutch, English and Russian vocabulary in one connected system.
 
-## Articles
+## English
 
-- [How to learn vocabulary in three languages at the same time](https://learnword.iovenko.eu/blog/how-to-learn-vocabulary-in-three-languages/)
-  A practical method for connecting several translations to one concept instead of maintaining duplicate word lists.
+- [How to learn vocabulary in three languages at the same time](https://parallellingvo.app/blog/how-to-learn-vocabulary-in-three-languages/)
+- [How to organize multilingual vocabulary without confusion](https://parallellingvo.app/blog/organize-multilingual-vocabulary/)
+- [Why a Telegram Mini App works well for vocabulary practice](https://parallellingvo.app/blog/telegram-mini-app-language-learning/)
 
-- [How to organize multilingual vocabulary without confusion](https://learnword.iovenko.eu/blog/organize-multilingual-vocabulary/)
-  A lesson-based structure for managing vocabulary in three or more languages.
+## Nederlands
 
-- [Why a Telegram Mini App works well for vocabulary practice](https://learnword.iovenko.eu/blog/telegram-mini-app-language-learning/)
-  Why fast access, mobile-first design, cached study data and attached pronunciation audio can improve short vocabulary sessions.
+- [Woordenschat in drie talen tegelijk leren](https://parallellingvo.app/nl/blog/how-to-learn-vocabulary-in-three-languages/)
+- [Meertalige woordenschat overzichtelijk organiseren](https://parallellingvo.app/nl/blog/organize-multilingual-vocabulary/)
+- [Waarom een Telegram Mini App goed werkt voor woordenschat](https://parallellingvo.app/nl/blog/telegram-mini-app-language-learning/)
+
+## Русский
+
+- [Как учить слова на трёх языках одновременно](https://parallellingvo.app/ru/blog/how-to-learn-vocabulary-in-three-languages/)
+- [Как организовать многоязычный словарь без путаницы](https://parallellingvo.app/ru/blog/organize-multilingual-vocabulary/)
+- [Почему Telegram Mini App удобен для изучения слов](https://parallellingvo.app/ru/blog/telegram-mini-app-language-learning/)
