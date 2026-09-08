@@ -20,7 +20,7 @@ body{
 .brand{
   width:210px;
   min-height:58px;
-  background:url('/assets/parallel-lingvo-logo.svg') left center/contain no-repeat;
+  background:url('/assets/parallel-lingvo-logo.png') left center/contain no-repeat;
 }
 .brand>*{display:none!important}
 .footer-brand-block .brand{width:220px;min-height:128px}
