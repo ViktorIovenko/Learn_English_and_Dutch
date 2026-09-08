@@ -25,7 +25,7 @@ ParallelLingvo is presented in 11 supported learning languages:
 
 The canonical locale mapping is stored in `website/locales.json`.
 
-Every localized landing page is server-delivered HTML. The header uses a responsive language dropdown rather than eleven separate navigation buttons. Landing-page alternatives use reciprocal `hreflang` metadata and all locale URLs are included in `sitemap.xml`.
+Every localized landing page is server-delivered HTML. The header uses a responsive globe language dropdown rather than eleven separate navigation buttons. Landing-page alternatives use reciprocal `hreflang` metadata and all locale URLs are included in `sitemap.xml`.
 
 ## Learning-language positioning
 
@@ -38,6 +38,8 @@ The current editorial blog and its three existing articles have localized Englis
 - `/blog/...`
 - `/nl/blog/...`
 - `/ru/blog/...`
+
+The blog index uses the same global 11-language dropdown. For a language whose blog translation does not exist yet, the dropdown returns the visitor to that language's localized product landing page rather than linking to a nonexistent article.
 
 Additional blog translations can be added independently. Do not publish hreflang URLs for article translations that do not yet exist.
 
