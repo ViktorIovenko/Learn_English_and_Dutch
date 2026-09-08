@@ -34,10 +34,12 @@ linear-gradient(135deg, #5D12C7 0%, #9B37E8 34%, #D61399 55%, #F6365D 76%, #FD90
 
 ## Language identity
 
-ParallelLingvo is a multilingual product. The public site currently presents the product in 11 supported languages and uses a compact globe language dropdown. Do not use a visual identity that suggests the product is limited to only one language pair or only EN/NL/RU.
+ParallelLingvo is a global multilingual product with an initial **45-language learning catalog** and a language-agnostic backend architecture. Users can learn three or more languages in parallel around one vocabulary concept.
 
-Supported website locales are maintained in `/locales.json`.
+Website-interface localization is expanded independently from the learning-language catalog. Do not use branding or copy that makes the product look limited to one language pair, EN/NL/RU, or the current number of translated landing pages.
+
+Language metadata is maintained in `app/languages.py` and `website/locales.json`.
 
 ## UI usage
 
-Use Parallel Purple for primary actions and interactive emphasis. Use the purple-to-orange brand gradient for hero accents, major CTA surfaces and selected brand moments. Keep content backgrounds light and neutral so multilingual text remains readable across Latin, Cyrillic, Chinese and Japanese scripts.
+Use Parallel Purple for primary actions and interactive emphasis. Use the purple-to-orange brand gradient for hero accents, major CTA surfaces and selected brand moments. Keep content backgrounds light and neutral so multilingual text remains readable across Latin, Cyrillic, Greek, Arabic, Georgian, Armenian, Chinese, Japanese, Korean and Devanagari scripts.
