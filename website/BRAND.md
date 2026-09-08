@@ -1,44 +1,43 @@
-# ParallelLingvo brand guide
+# ParallelLingvo Brand
 
-## Brand name
+## Name
 
 **ParallelLingvo**
 
-## Primary brand color
+Use this spelling consistently in the public website, metadata, structured data, social assets and documentation.
 
-**Parallel Purple** — `#5D12C7`
+## Brand colors
 
-This is the main UI and identity color. Use it for primary buttons, links, active states, focus accents and key product highlights.
+Primary brand color:
 
-## Supporting colors
+- Parallel Purple: `#5D12C7`
 
-- Deep Plum — `#33013E` — dark backgrounds, footer, strong text accents
-- Violet — `#9B37E8` — secondary purple and gradient transition
-- Magenta — `#D61399` — energetic accent
-- Coral — `#F6365D` — warm accent
-- Orange — `#FD9016` — final gradient accent and highlights
-- Soft Purple — `#F7EEFF` — light brand surfaces
+Supporting colors:
 
-## Brand gradient
+- Deep Plum: `#33013E`
+- Violet: `#9B37E8`
+- Magenta: `#D61399`
+- Coral: `#F6365D`
+- Orange: `#FD9016`
+- Soft Purple: `#F7EEFF`
+
+Primary brand gradient:
 
 ```css
-linear-gradient(
-  135deg,
-  #5D12C7 0%,
-  #9B37E8 34%,
-  #D61399 55%,
-  #F6365D 76%,
-  #FD9016 100%
-)
+linear-gradient(135deg, #5D12C7 0%, #9B37E8 34%, #D61399 55%, #F6365D 76%, #FD9016 100%)
 ```
 
-The gradient comes directly from the approved ParallelLingvo logo: purple/violet for language and technology, transitioning to magenta/coral/orange for communication, energy and learning progress.
+## Logo assets
 
-## Assets
+- Full logo: `/assets/parallel-lingvo-logo.svg`
+- Favicon / compact mark: `/favicon.svg`
 
-- `/favicon.svg` — square ParallelLingvo favicon
-- `/assets/parallel-lingvo-logo.svg` — approved transparent logo/emblem
+## Language identity
 
-## Usage
+ParallelLingvo is a multilingual product. The public site currently presents the product in 11 supported languages and uses a compact globe language dropdown. Do not use a visual identity that suggests the product is limited to only one language pair or only EN/NL/RU.
 
-Use `#5D12C7` as the default single brand color when a gradient is not appropriate. Use the full gradient for hero accents, large CTA areas and promotional graphics. Avoid replacing the primary purple with blue or green in new website components so the visual identity remains consistent.
+Supported website locales are maintained in `/locales.json`.
+
+## UI usage
+
+Use Parallel Purple for primary actions and interactive emphasis. Use the purple-to-orange brand gradient for hero accents, major CTA surfaces and selected brand moments. Keep content backgrounds light and neutral so multilingual text remains readable across Latin, Cyrillic, Chinese and Japanese scripts.
