@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  learnword-site:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./website:/usr/share/nginx/html:ro
+      - ./website/nginx-site.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - family_internal
+
+networks:
+  family_internal:
+    external: true
+    name: family-call_internal
