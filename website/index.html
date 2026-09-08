@@ -3,343 +3,151 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LearnWord — Learn Vocabulary in 3 or More Languages</title>
-  <meta name="description" content="LearnWord is a multilingual vocabulary learning app for studying the same words across three or more languages, with lessons, pronunciation audio, difficult-word review and progress tracking.">
+  <title>ParallelLingvo — Learn Dutch, English and Russian Together</title>
+  <meta name="description" content="ParallelLingvo is a multilingual vocabulary app for learning Dutch, English and Russian in one connected learning flow with lessons, pronunciation audio, difficult-word review and progress tracking.">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
-  <link rel="canonical" href="https://learnword.iovenko.eu/">
-  <link rel="describedby" href="https://learnword.iovenko.eu/llms.txt" type="text/plain">
-  <link rel="alternate" href="https://learnword.iovenko.eu/index.md" type="text/markdown" title="Markdown version">
-  <link rel="alternate" href="https://learnword.iovenko.eu/feed.xml" type="application/rss+xml" title="LearnWord blog RSS">
+  <link rel="canonical" href="https://parallellingvo.app/">
+  <link rel="alternate" hreflang="en" href="https://parallellingvo.app/">
+  <link rel="alternate" hreflang="nl" href="https://parallellingvo.app/nl/">
+  <link rel="alternate" hreflang="ru" href="https://parallellingvo.app/ru/">
+  <link rel="alternate" hreflang="x-default" href="https://parallellingvo.app/">
+  <link rel="describedby" href="https://parallellingvo.app/llms.txt" type="text/plain">
+  <link rel="alternate" href="https://parallellingvo.app/index.md" type="text/markdown" title="Markdown version">
+  <link rel="alternate" href="https://parallellingvo.app/feed.xml" type="application/rss+xml" title="ParallelLingvo blog RSS">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#5D12C7">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="LearnWord — Learn Vocabulary in 3 or More Languages">
-  <meta property="og:description" content="One vocabulary learning flow for three or more languages.">
-  <meta property="og:url" content="https://learnword.iovenko.eu/">
-  <meta property="og:site_name" content="LearnWord">
+  <meta property="og:title" content="ParallelLingvo — Learn Dutch, English and Russian Together">
+  <meta property="og:description" content="One connected vocabulary learning flow for Dutch, English and Russian.">
+  <meta property="og:url" content="https://parallellingvo.app/">
+  <meta property="og:site_name" content="ParallelLingvo">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="/styles.css">
   <script type="application/ld+json">
   {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebSite",
-        "@id": "https://learnword.iovenko.eu/#website",
-        "url": "https://learnword.iovenko.eu/",
-        "name": "LearnWord",
-        "description": "A multilingual vocabulary learning app for studying words across three or more languages.",
-        "inLanguage": "en"
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://learnword.iovenko.eu/#app",
-        "name": "LearnWord",
-        "url": "https://learnword.iovenko.eu/",
-        "applicationCategory": "EducationalApplication",
-        "operatingSystem": "Web, Telegram",
-        "description": "LearnWord helps multilingual learners study the same vocabulary across three or more languages in one learning flow.",
-        "featureList": [
-          "Vocabulary lessons",
-          "Three or more languages in one learning flow",
-          "Pronunciation audio",
-          "Difficult-word review",
-          "Word-level progress tracking",
-          "Telegram Mini App interface"
-        ]
-      },
-      {
-        "@type": "FAQPage",
-        "@id": "https://learnword.iovenko.eu/#faq",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "What is LearnWord?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "LearnWord is a multilingual vocabulary learning application designed to keep a word, its translations, pronunciation and learning progress together across three or more languages."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Can I learn vocabulary in three languages at the same time?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Yes. LearnWord is designed around multilingual vocabulary sets so one word can be connected with translations in three or more languages instead of being split into separate study apps."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Does LearnWord work on mobile?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Yes. LearnWord uses a mobile-first web interface and can be used through a Telegram Mini App."
-            }
-          }
-        ]
-      }
+    "@context":"https://schema.org",
+    "@graph":[
+      {"@type":"WebSite","@id":"https://parallellingvo.app/#website","url":"https://parallellingvo.app/","name":"ParallelLingvo","description":"A multilingual vocabulary learning app for Dutch, English and Russian.","inLanguage":["en","nl","ru"]},
+      {"@type":"SoftwareApplication","@id":"https://parallellingvo.app/#app","name":"ParallelLingvo","url":"https://parallellingvo.app/","applicationCategory":"EducationalApplication","operatingSystem":"Web, Telegram","availableLanguage":["English","Dutch","Russian"],"description":"ParallelLingvo helps learners keep Dutch, English and Russian vocabulary connected in one learning flow.","featureList":["Vocabulary lessons","Dutch, English and Russian in one learning flow","Pronunciation audio","Difficult-word review","Word-level progress tracking","Telegram Mini App interface"]},
+      {"@type":"FAQPage","mainEntity":[
+        {"@type":"Question","name":"Which languages does ParallelLingvo support?","acceptedAnswer":{"@type":"Answer","text":"The current application supports Dutch, English and Russian vocabulary in one connected learning flow."}},
+        {"@type":"Question","name":"Can I learn three languages at the same time?","acceptedAnswer":{"@type":"Answer","text":"Yes. ParallelLingvo keeps Dutch, English and Russian translations attached to the same vocabulary item so they can be studied together."}},
+        {"@type":"Question","name":"Does ParallelLingvo work on mobile?","acceptedAnswer":{"@type":"Answer","text":"Yes. The learning interface is mobile-first and can be used as a web application and through Telegram."}}
+      ]}
     ]
   }
   </script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="shell nav-row">
-      <a class="brand" href="/" aria-label="LearnWord home">
-        <span class="brand-mark">L</span>
-        <span>LearnWord</span>
-      </a>
-      <nav aria-label="Main navigation">
-        <a href="#how-it-works">How it works</a>
-        <a href="#features">Features</a>
-        <a href="#get-app">Apps</a>
-        <a href="/blog/">Blog</a>
-        <a class="nav-signup" href="#signup">Sign up</a>
-        <a class="btn btn-small" href="https://learn.iovenko.eu/">Open app</a>
-      </nav>
-    </div>
-  </header>
+<header class="site-header">
+  <div class="shell nav-row">
+    <a class="brand" href="/" aria-label="ParallelLingvo home"><span>ParallelLingvo</span></a>
+    <nav aria-label="Main navigation">
+      <a href="#how-it-works">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#get-app">Apps</a>
+      <a href="/blog/">Blog</a>
+      <a class="nav-signup" href="#signup">Sign up</a>
+      <div class="lang-switch" aria-label="Language selector"><a class="active" href="/" lang="en">EN</a><a href="/nl/" lang="nl">NL</a><a href="/ru/" lang="ru">RU</a></div>
+      <a class="btn btn-small" href="https://learn.iovenko.eu/">Open app</a>
+    </nav>
+  </div>
+</header>
 
-  <main>
-    <section class="hero">
-      <div class="hero-glow hero-glow-one" aria-hidden="true"></div>
-      <div class="hero-glow hero-glow-two" aria-hidden="true"></div>
-      <div class="shell hero-grid">
-        <div class="hero-copy">
-          <div class="hero-badge"><span></span>Built for multilingual learners</div>
-          <h1>One word.<br><span>3+ languages.</span><br>One learning flow.</h1>
-          <p class="lead">LearnWord keeps vocabulary, translations, pronunciation and progress together, so you can study several languages without duplicating the same word across different apps and notebooks.</p>
-          <div class="actions">
-            <a class="btn btn-large" href="#signup">Create free account</a>
-            <a class="btn btn-secondary btn-large" href="https://learn.iovenko.eu/">Open LearnWord</a>
-          </div>
-          <div class="hero-proof" aria-label="Product highlights">
-            <span>3+ languages</span>
-            <span>Pronunciation audio</span>
-            <span>Telegram access</span>
-          </div>
-        </div>
-
-        <div class="product-stage" aria-label="LearnWord product preview">
-          <div class="stage-orbit orbit-one" aria-hidden="true"></div>
-          <div class="stage-orbit orbit-two" aria-hidden="true"></div>
-          <div class="floating-chip chip-top">NL · EN · RU · +</div>
-          <div class="demo-card">
-            <div class="demo-top">
-              <span class="lesson-label">Lesson 17.1</span>
-              <span class="status"><i></i> Learning</span>
-            </div>
-            <div class="word-block">
-              <p class="demo-word">ontwikkeling</p>
-              <p class="demo-meta">Dutch vocabulary</p>
-            </div>
-            <div class="translation"><b>EN</b><span><strong>development</strong><small>English</small></span><em>↗</em></div>
-            <div class="translation"><b>RU</b><span><strong>развитие</strong><small>Russian</small></span><em>↗</em></div>
-            <div class="translation translation-add"><b>+</b><span><strong>Add another language</strong><small>Keep the concept connected</small></span></div>
-            <div class="demo-progress">
-              <div><span>Progress</span><strong>72%</strong></div>
-              <div class="progress-track"><span></span></div>
-            </div>
-          </div>
-          <div class="floating-card card-a"><strong>🔊 Audio</strong><span>Pronunciation ready</span></div>
-          <div class="floating-card card-b"><strong>★ Difficult</strong><span>Review later</span></div>
-        </div>
+<main>
+  <section class="hero">
+    <div class="hero-glow hero-glow-one" aria-hidden="true"></div><div class="hero-glow hero-glow-two" aria-hidden="true"></div>
+    <div class="shell hero-grid">
+      <div class="hero-copy">
+        <div class="hero-badge"><span></span>Built for multilingual learners</div>
+        <h1>One word.<br><span>Three languages.</span><br>One learning flow.</h1>
+        <p class="lead">ParallelLingvo keeps Dutch, English and Russian vocabulary, translations, pronunciation and progress together. Learn the same concept across three languages without maintaining duplicate lists.</p>
+        <div class="actions"><a class="btn btn-large" href="#signup">Create free account</a><a class="btn btn-secondary btn-large" href="https://learn.iovenko.eu/">Open ParallelLingvo</a></div>
+        <div class="language-note" aria-label="Supported languages"><span>🇳🇱 Nederlands</span><span>🇬🇧 English</span><span>🇷🇺 Русский</span></div>
       </div>
-    </section>
-
-    <section class="platform-strip" id="get-app" aria-labelledby="get-app-title">
-      <div class="shell platform-layout">
-        <div class="platform-copy">
-          <p class="eyebrow">LEARN ANYWHERE</p>
-          <h2 id="get-app-title">Get LearnWord on your favorite platform</h2>
-          <p>Start in Telegram today. Native iOS and Android access is prepared as part of the product roadmap.</p>
+      <div class="product-stage" aria-label="ParallelLingvo product preview">
+        <div class="stage-orbit orbit-one" aria-hidden="true"></div><div class="stage-orbit orbit-two" aria-hidden="true"></div>
+        <div class="floating-chip chip-top">NL · EN · RU</div>
+        <div class="demo-card">
+          <div class="demo-top"><span class="lesson-label">Lesson 17.1</span><span class="status"><i></i> Learning</span></div>
+          <div class="word-block"><p class="demo-word">ontwikkeling</p><p class="demo-meta">Dutch vocabulary</p></div>
+          <div class="translation"><b>EN</b><span><strong>development</strong><small>English</small></span><em>↗</em></div>
+          <div class="translation"><b>RU</b><span><strong>развитие</strong><small>Russian</small></span><em>↗</em></div>
+          <div class="demo-progress"><div><span>Progress</span><strong>72%</strong></div><div class="progress-track"><span></span></div></div>
         </div>
-        <div class="store-grid">
-          <div class="store-card store-disabled" aria-label="LearnWord for iOS coming soon">
-            <div class="store-icon apple" aria-hidden="true">●</div>
-            <div><small>Coming soon on</small><strong>App Store</strong></div>
-            <span class="store-state">Soon</span>
-          </div>
-          <div class="store-card store-disabled" aria-label="LearnWord for Android coming soon">
-            <div class="store-icon play" aria-hidden="true">▶</div>
-            <div><small>Coming soon on</small><strong>Google Play</strong></div>
-            <span class="store-state">Soon</span>
-          </div>
-          <a class="store-card store-active" href="https://learn.iovenko.eu/" aria-label="Open LearnWord in Telegram">
-            <div class="store-icon telegram" aria-hidden="true">➤</div>
-            <div><small>Available now</small><strong>Telegram</strong></div>
-            <span class="store-arrow">↗</span>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="how-it-works">
-      <div class="shell">
-        <p class="eyebrow">HOW IT WORKS</p>
-        <div class="section-title-row">
-          <h2>A multilingual vocabulary system, not three separate notebooks</h2>
-          <p class="section-intro">LearnWord organizes vocabulary around one concept. Add translations, practise them together and keep your progress attached to the same word.</p>
-        </div>
-        <div class="steps">
-          <article>
-            <span class="step-number">01</span>
-            <div class="step-icon">＋</div>
-            <h3>Create a lesson</h3>
-            <p>Group vocabulary by a chapter, topic, exam unit or your own learning goal.</p>
-          </article>
-          <article>
-            <span class="step-number">02</span>
-            <div class="step-icon">文</div>
-            <h3>Connect languages</h3>
-            <p>Keep the source word and several translations together in one clear structure.</p>
-          </article>
-          <article>
-            <span class="step-number">03</span>
-            <div class="step-icon">↗</div>
-            <h3>Practise and improve</h3>
-            <p>Review, listen to pronunciation and return to vocabulary that still needs attention.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section features-section" id="features">
-      <div class="shell">
-        <p class="eyebrow">FEATURES</p>
-        <div class="section-title-row">
-          <h2>Everything your multilingual vocabulary needs</h2>
-          <p class="section-intro">A focused toolkit for people who already live between several languages.</p>
-        </div>
-        <div class="feature-bento">
-          <article class="feature-card feature-large feature-gradient">
-            <div class="feature-kicker">CORE IDEA</div>
-            <h3>3+ languages in one vocabulary item</h3>
-            <p>Compare several translations around the same concept instead of rebuilding the same vocabulary deck again and again.</p>
-            <div class="language-stack" aria-hidden="true">
-              <span>NL</span><span>EN</span><span>RU</span><span>+</span>
-            </div>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon">▤</div>
-            <h3>Custom lessons</h3>
-            <p>Match your school, textbook, exam or personal study plan.</p>
-          </article>
-          <article class="feature-card dark-card">
-            <div class="feature-icon">◉</div>
-            <h3>Progress tracking</h3>
-            <p>See what is learned and what deserves another repetition.</p>
-            <div class="mini-progress"><span style="width:72%"></span></div>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon">♪</div>
-            <h3>Pronunciation audio</h3>
-            <p>Keep spoken pronunciation directly beside the vocabulary.</p>
-          </article>
-          <article class="feature-card feature-wide">
-            <div>
-              <div class="feature-icon">★</div>
-              <h3>Difficult words</h3>
-              <p>Mark hard vocabulary and create a focused review flow without restarting the full lesson.</p>
-            </div>
-            <div class="difficulty-preview" aria-hidden="true">
-              <span>development</span><span>ontwikkelen</span><span>verantwoordelijk</span>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section signup-section" id="signup">
-      <div class="shell signup-shell">
-        <div class="signup-copy">
-          <p class="eyebrow">CREATE YOUR ACCOUNT</p>
-          <h2>Start learning in seconds.</h2>
-          <p>Use the account you already have. Your lessons and progress can stay connected across the website and LearnWord app.</p>
-          <ul class="signup-points">
-            <li><span>✓</span>No separate password to remember</li>
-            <li><span>✓</span>Fast access from mobile or desktop</li>
-            <li><span>✓</span>Telegram-friendly learning flow</li>
-          </ul>
-        </div>
-        <div class="auth-card" aria-label="LearnWord account registration">
-          <div class="auth-card-head">
-            <span class="brand-mark auth-logo">L</span>
-            <div><strong>Create LearnWord account</strong><small>Choose how you want to continue</small></div>
-          </div>
-          <a class="auth-button google-button" href="/auth/google">
-            <span class="auth-provider google-mark" aria-hidden="true">G</span>
-            <span>Continue with Google</span>
-          </a>
-          <a class="auth-button telegram-button" href="/auth/telegram">
-            <span class="auth-provider telegram-mark" aria-hidden="true">➤</span>
-            <span>Continue with Telegram</span>
-          </a>
-          <div class="auth-divider"><span>secure sign in</span></div>
-          <p class="auth-note">By continuing, you agree to the LearnWord terms and privacy policy.</p>
-          <p class="auth-tech-note">Google and Telegram authentication endpoints are prepared for backend connection.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section connect-section">
-      <div class="shell split">
-        <div>
-          <p class="eyebrow">WHY MULTILINGUAL?</p>
-          <h2>See connections between languages while you learn</h2>
-        </div>
-        <div class="prose">
-          <p>Many vocabulary tools are built around one source language and one target language. That works well for bilingual study, but multilingual learners often maintain several duplicated lists for the same concept.</p>
-          <p>LearnWord is designed for a different workflow: one vocabulary item can stay connected to several translations. This makes it easier to compare meanings, notice similar words, detect false friends and switch between languages without rebuilding your study material.</p>
-          <a class="text-link" href="/blog/how-to-learn-vocabulary-in-three-languages/">Read: how to learn vocabulary in three languages →</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section faq-section" id="faq">
-      <div class="shell narrow">
-        <p class="eyebrow">FAQ</p>
-        <h2>About LearnWord</h2>
-        <div class="faq-list">
-          <details open><summary>What is LearnWord?<span>＋</span></summary><p>LearnWord is a multilingual vocabulary learning application designed to keep a word, its translations, pronunciation and learning progress together across three or more languages.</p></details>
-          <details><summary>Can I learn vocabulary in three languages at the same time?<span>＋</span></summary><p>Yes. The product is designed around multilingual vocabulary sets, so the same word can be connected with translations in three or more languages rather than being separated into several unrelated apps.</p></details>
-          <details><summary>Is LearnWord only for English and Dutch?<span>＋</span></summary><p>No. The project began with English, Dutch and Russian vocabulary, but the learning concept is designed for multilingual study and can be extended with additional languages.</p></details>
-          <details><summary>Does LearnWord work on mobile?<span>＋</span></summary><p>Yes. The learning interface is mobile-first and is available as a web application that can also run as a Telegram Mini App.</p></details>
-          <details><summary>How is LearnWord different from a normal flashcard app?<span>＋</span></summary><p>The main difference is the multilingual structure. Instead of treating every language pair as a separate deck, LearnWord keeps several translations around the same vocabulary item and lesson.</p></details>
-        </div>
-      </div>
-    </section>
-
-    <section class="section blog-section" aria-labelledby="latest-title">
-      <div class="shell">
-        <div class="section-head">
-          <div><p class="eyebrow">BLOG</p><h2 id="latest-title">Multilingual learning guides</h2></div>
-          <a class="text-link" href="/blog/">Explore all articles →</a>
-        </div>
-        <div class="post-grid">
-          <article><p class="post-meta">Guide · 5 min</p><h3><a href="/blog/how-to-learn-vocabulary-in-three-languages/">How to learn vocabulary in three languages at the same time</a></h3><p>A practical method for keeping several translations connected without creating duplicate word lists.</p><a class="post-arrow" href="/blog/how-to-learn-vocabulary-in-three-languages/" aria-label="Read article">↗</a></article>
-          <article><p class="post-meta">Method · 4 min</p><h3><a href="/blog/organize-multilingual-vocabulary/">How to organize multilingual vocabulary without confusion</a></h3><p>Use lessons, one core concept and focused repetition to make multilingual study easier to maintain.</p><a class="post-arrow" href="/blog/organize-multilingual-vocabulary/" aria-label="Read article">↗</a></article>
-          <article><p class="post-meta">Product · 4 min</p><h3><a href="/blog/telegram-mini-app-language-learning/">Why a Telegram Mini App works well for vocabulary practice</a></h3><p>Why quick access and mobile-first practice matter when language learning happens throughout the day.</p><a class="post-arrow" href="/blog/telegram-mini-app-language-learning/" aria-label="Read article">↗</a></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="cta">
-      <div class="shell cta-inner">
-        <div><p class="eyebrow">START LEARNING</p><h2>Keep your languages connected.</h2><p>Create your LearnWord account or open the Telegram app and build your next multilingual vocabulary lesson.</p></div>
-        <div class="cta-actions"><a class="btn btn-light" href="#signup">Create account</a><a class="btn btn-ghost-light" href="https://learn.iovenko.eu/">Open Telegram app</a></div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="shell footer-grid">
-      <div class="footer-brand-block"><a class="brand" href="/"><span class="brand-mark">L</span><span>LearnWord</span></a><p>Vocabulary learning for three or more languages.</p></div>
-      <div class="footer-columns">
-        <div><strong>Product</strong><a href="#features">Features</a><a href="#get-app">Apps</a><a href="#signup">Sign up</a></div>
-        <div><strong>Learn</strong><a href="/blog/">Blog</a><a href="#faq">FAQ</a><a href="/sitemap.xml">Sitemap</a></div>
-        <div><strong>AI & Developers</strong><a href="/llms.txt">llms.txt</a><a href="https://github.com/ViktorIovenko/Learn_English_and_Dutch">GitHub</a></div>
+        <div class="floating-card card-a"><strong>🔊 Audio</strong><span>Pronunciation ready</span></div><div class="floating-card card-b"><strong>★ Difficult</strong><span>Review later</span></div>
       </div>
     </div>
-    <div class="shell footer-bottom"><span>© 2026 LearnWord</span><span>Built for multilingual learners.</span></div>
-  </footer>
+  </section>
+
+  <section class="platform-strip" id="get-app">
+    <div class="shell platform-layout">
+      <div class="platform-copy"><p class="eyebrow">LEARN ANYWHERE</p><h2>Get ParallelLingvo on your favorite platform</h2><p>Start in Telegram or the web app today. Native iOS and Android versions are planned.</p></div>
+      <div class="store-grid">
+        <div class="store-card store-disabled"><div class="store-icon apple">●</div><div><small>Coming soon on</small><strong>App Store</strong></div><span class="store-state">Soon</span></div>
+        <div class="store-card store-disabled"><div class="store-icon play">▶</div><div><small>Coming soon on</small><strong>Google Play</strong></div><span class="store-state">Soon</span></div>
+        <a class="store-card store-active" href="https://learn.iovenko.eu/"><div class="store-icon telegram">➤</div><div><small>Available now</small><strong>Telegram / Web</strong></div><span class="store-arrow">↗</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how-it-works">
+    <div class="shell">
+      <p class="eyebrow">HOW IT WORKS</p>
+      <div class="section-title-row"><h2>A multilingual vocabulary system, not three separate notebooks</h2><p class="section-intro">ParallelLingvo organizes vocabulary around one concept. Dutch, English and Russian stay connected to the same learning item.</p></div>
+      <div class="steps">
+        <article><span class="step-number">01</span><div class="step-icon">＋</div><h3>Create a lesson</h3><p>Group words by course chapter, topic, exam unit or personal learning goal.</p></article>
+        <article><span class="step-number">02</span><div class="step-icon">🌐</div><h3>Connect three languages</h3><p>Keep Dutch, English and Russian meanings together in one clear structure.</p></article>
+        <article><span class="step-number">03</span><div class="step-icon">↗</div><h3>Practise and improve</h3><p>Listen to pronunciation, track progress and return to difficult vocabulary.</p></article>
+      </div>
+      <div class="supported-languages">
+        <div class="supported-language"><strong>🇳🇱 Dutch / Nederlands</strong><span>Vocabulary, examples and pronunciation.</span></div>
+        <div class="supported-language"><strong>🇬🇧 English</strong><span>Connected translations, examples and audio.</span></div>
+        <div class="supported-language"><strong>🇷🇺 Russian / Русский</strong><span>Translations, contextual examples and progress.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section features-section" id="features">
+    <div class="shell">
+      <p class="eyebrow">FEATURES</p><div class="section-title-row"><h2>Everything you need for connected vocabulary learning</h2><p class="section-intro">A focused toolkit for people who use more than one language every day.</p></div>
+      <div class="feature-bento">
+        <article class="feature-card feature-large feature-gradient"><div class="feature-kicker">CORE IDEA</div><h3>NL + EN + RU in one vocabulary item</h3><p>Compare the three translations around the same meaning instead of rebuilding the same deck for every language pair.</p><div class="language-stack"><span>NL</span><span>EN</span><span>RU</span></div></article>
+        <article class="feature-card"><div class="feature-icon">▤</div><h3>Custom lessons</h3><p>Match your textbook, school, exam or personal study plan.</p></article>
+        <article class="feature-card dark-card"><div class="feature-icon">◉</div><h3>Progress tracking</h3><p>See what is learned and what needs another repetition.</p><div class="mini-progress"><span style="width:72%"></span></div></article>
+        <article class="feature-card"><div class="feature-icon">♪</div><h3>Pronunciation audio</h3><p>Hear pronunciation directly beside each vocabulary item.</p></article>
+        <article class="feature-card feature-wide"><div><div class="feature-icon">★</div><h3>Difficult words</h3><p>Mark hard vocabulary and create a focused review flow.</p></div><div class="difficulty-preview"><span>ontwikkeling</span><span>development</span><span>развитие</span></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section signup-section" id="signup">
+    <div class="shell signup-shell">
+      <div class="signup-copy"><p class="eyebrow">CREATE YOUR ACCOUNT</p><h2>Start learning in seconds.</h2><p>Use an account you already have. ParallelLingvo is designed for quick access on desktop and mobile.</p><ul class="signup-points"><li><span>✓</span>No separate password to remember</li><li><span>✓</span>Google sign-in</li><li><span>✓</span>Telegram-friendly learning flow</li></ul></div>
+      <div class="auth-card"><div class="auth-card-head"><span class="brand-mark auth-logo">P</span><div><strong>Create ParallelLingvo account</strong><small>Choose how you want to continue</small></div></div><a class="auth-button google-button" href="/auth/google"><span class="auth-provider google-mark">G</span><span>Continue with Google</span></a><a class="auth-button telegram-button" href="/auth/telegram"><span class="auth-provider telegram-mark">➤</span><span>Continue with Telegram</span></a><div class="auth-divider"><span>secure sign in</span></div><p class="auth-note">Authentication endpoints are prepared for backend connection.</p></div>
+    </div>
+  </section>
+
+  <section class="section faq-section" id="faq">
+    <div class="shell narrow"><p class="eyebrow">FAQ</p><h2>About ParallelLingvo</h2><div class="faq-list">
+      <details open><summary>Which languages does ParallelLingvo support?<span>＋</span></summary><p>The current application supports Dutch, English and Russian. The same vocabulary item stores the three language versions together.</p></details>
+      <details><summary>Can I learn all three languages at the same time?<span>＋</span></summary><p>Yes. You can keep Dutch, English and Russian translations connected and choose which direction to practise.</p></details>
+      <details><summary>Does it work on mobile?<span>＋</span></summary><p>Yes. ParallelLingvo uses a mobile-first web interface and can be opened through Telegram.</p></details>
+      <details><summary>How is it different from a normal flashcard app?<span>＋</span></summary><p>The main difference is the three-language structure: one concept stays connected across Dutch, English and Russian instead of becoming several duplicated decks.</p></details>
+    </div></div>
+  </section>
+
+  <section class="section blog-section">
+    <div class="shell"><div class="section-head"><div><p class="eyebrow">BLOG</p><h2>Multilingual learning guides</h2></div><a class="text-link" href="/blog/">Explore all articles →</a></div><div class="post-grid">
+      <article><p class="post-meta">Guide · 5 min</p><h3><a href="/blog/how-to-learn-vocabulary-in-three-languages/">How to learn vocabulary in three languages at the same time</a></h3><p>A practical method for keeping Dutch, English and Russian vocabulary connected.</p><a class="post-arrow" href="/blog/how-to-learn-vocabulary-in-three-languages/">↗</a></article>
+      <article><p class="post-meta">Method · 4 min</p><h3><a href="/blog/organize-multilingual-vocabulary/">How to organize multilingual vocabulary without confusion</a></h3><p>Use lessons, one core concept and focused repetition.</p><a class="post-arrow" href="/blog/organize-multilingual-vocabulary/">↗</a></article>
+      <article><p class="post-meta">Product · 4 min</p><h3><a href="/blog/telegram-mini-app-language-learning/">Why a Telegram Mini App works well for vocabulary practice</a></h3><p>Quick access makes short practice sessions easier.</p><a class="post-arrow" href="/blog/telegram-mini-app-language-learning/">↗</a></article>
+    </div></div>
+  </section>
+
+  <section class="cta"><div class="shell cta-inner"><div><p class="eyebrow">START LEARNING</p><h2>Keep your languages connected.</h2><p>Learn Dutch, English and Russian vocabulary in one connected system.</p></div><div class="cta-actions"><a class="btn btn-light" href="#signup">Create account</a><a class="btn btn-ghost-light" href="https://learn.iovenko.eu/">Open app</a></div></div></section>
+</main>
+
+<footer class="site-footer"><div class="shell footer-grid"><div class="footer-brand-block"><a class="brand" href="/"><span>ParallelLingvo</span></a><p>Connected vocabulary learning for Dutch, English and Russian.</p></div><div class="footer-columns"><div><strong>Product</strong><a href="#features">Features</a><a href="#get-app">Apps</a><a href="#signup">Sign up</a></div><div><strong>Learn</strong><a href="/blog/">Blog</a><a href="#faq">FAQ</a><a href="/sitemap.xml">Sitemap</a></div><div><strong>Languages</strong><a href="/">English</a><a href="/nl/">Nederlands</a><a href="/ru/">Русский</a></div></div></div><div class="shell footer-bottom"><span>© 2026 ParallelLingvo</span><span>Built for multilingual learners.</span></div></footer>
 </body>
 </html>
