@@ -40,4 +40,4 @@ Allow: /
 User-agent: Applebot-Extended
 Allow: /
 
-Sitemap: https://learnword.iovenko.eu/sitemap.xml
+Sitemap: https://parallellingvo.app/sitemap.xml
