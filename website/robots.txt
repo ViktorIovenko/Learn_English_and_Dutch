@@ -1,0 +1,43 @@
+User-agent: *
+Allow: /
+
+# OpenAI search and user retrieval
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# OpenAI model-training crawler: intentionally allowed
+User-agent: GPTBot
+Allow: /
+
+# Anthropic search, user retrieval and model-development crawlers
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+# Perplexity search crawler
+User-agent: PerplexityBot
+Allow: /
+
+# Google Search and Gemini-related usage
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Apple search and foundation-model usage
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://learnword.iovenko.eu/sitemap.xml
