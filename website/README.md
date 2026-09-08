@@ -7,35 +7,47 @@ This folder contains the static public website for ParallelLingvo. It is separat
 - Public website: `https://parallellingvo.app/`
 - Learning application: `https://learn.iovenko.eu/`
 
-## Supported languages
+## Supported website languages
 
-The current application data model supports three vocabulary languages, and the public website mirrors the same set:
+ParallelLingvo is presented in 11 supported learning languages:
 
 - English (`en`) — `/`
 - Nederlands (`nl`) — `/nl/`
 - Русский (`ru`) — `/ru/`
+- Deutsch (`de`) — `/de/`
+- Français (`fr`) — `/fr/`
+- Español (`es`) — `/es/`
+- Italiano (`it`) — `/it/`
+- Português (`pt`) — `/pt/`
+- Polski (`pl`) — `/pl/`
+- 中文（普通话） (`zh`) — `/zh/`
+- 日本語 (`ja`) — `/ja/`
 
-The canonical locale mapping is also documented in `website/locales.json`.
+The canonical locale mapping is stored in `website/locales.json`.
 
-Every localized page is server-delivered HTML. Language alternatives use `hreflang`, and the multilingual URLs are included in `sitemap.xml`.
+Every localized landing page is server-delivered HTML. The header uses a responsive language dropdown rather than eleven separate navigation buttons. Landing-page alternatives use reciprocal `hreflang` metadata and all locale URLs are included in `sitemap.xml`.
+
+## Learning-language positioning
+
+The product is positioned around choosing three or more languages from the supported set and connecting the translations to the same vocabulary concept. Do not describe ParallelLingvo as limited to only EN/NL/RU.
 
 ## Blog localization
 
-Each blog article has English, Dutch and Russian HTML versions:
+The current editorial blog and its three existing articles have localized English, Dutch and Russian versions:
 
 - `/blog/...`
 - `/nl/blog/...`
 - `/ru/blog/...`
 
-When adding a new public article, create all three language versions and add their hreflang relationships to the page and sitemap.
+Additional blog translations can be added independently. Do not publish hreflang URLs for article translations that do not yet exist.
 
 ## AI/search discoverability
 
 The site includes:
 
 - semantic server-delivered HTML
-- separate crawlable URLs for EN/NL/RU
-- Schema.org JSON-LD
+- separate crawlable landing URLs for all 11 languages
+- Schema.org JSON-LD with language metadata
 - canonical URLs and hreflang alternatives
 - `robots.txt` for search and AI crawlers
 - multilingual `sitemap.xml`
@@ -77,9 +89,14 @@ The existing learning application at `learn.iovenko.eu` must remain untouched.
 curl -I https://parallellingvo.app/
 curl -I https://parallellingvo.app/nl/
 curl -I https://parallellingvo.app/ru/
-curl -I https://parallellingvo.app/blog/
-curl -I https://parallellingvo.app/nl/blog/
-curl -I https://parallellingvo.app/ru/blog/
+curl -I https://parallellingvo.app/de/
+curl -I https://parallellingvo.app/fr/
+curl -I https://parallellingvo.app/es/
+curl -I https://parallellingvo.app/it/
+curl -I https://parallellingvo.app/pt/
+curl -I https://parallellingvo.app/pl/
+curl -I https://parallellingvo.app/zh/
+curl -I https://parallellingvo.app/ja/
 curl -A "OAI-SearchBot" -I https://parallellingvo.app/
 curl -A "Claude-SearchBot" -I https://parallellingvo.app/
 curl -A "PerplexityBot" -I https://parallellingvo.app/
@@ -92,12 +109,13 @@ All public pages should return HTTP 200 without login, CAPTCHA or JavaScript cha
 
 ## Content workflow
 
-For every new marketing page or blog article:
+For every new marketing page:
 
-1. Create the English version.
-2. Create the Dutch version under `/nl/`.
-3. Create the Russian version under `/ru/`.
-4. Add reciprocal `hreflang` links to all versions.
-5. Add all localized URLs to `sitemap.xml`.
-6. Keep visible content and Schema.org language metadata consistent.
-7. Update `llms.txt` when the page is important for product discovery.
+1. Add localized HTML under the appropriate locale URL.
+2. Keep the 11-language dropdown consistent.
+3. Add reciprocal landing-page `hreflang` links.
+4. Add the localized URL to `sitemap.xml`.
+5. Keep visible content and Schema.org language metadata consistent.
+6. Update `llms.txt` when the page is important for product discovery.
+
+For blog content, only add a locale to hreflang when that translated article actually exists.
