@@ -3,6 +3,13 @@
 This module adds a language-agnostic layer on top of the existing legacy
 NL/EN/RU columns. Existing routes keep working while new clients can store any
 supported language without adding columns to the `words` table.
+
+Migration strategy:
+- keep the legacy NL/EN/RU columns while the current UI still uses them;
+- backfill legacy content into `word_translations` once;
+- keep legacy writes synchronized with normalized rows through SQLite triggers;
+- keep new NL/EN/RU API writes synchronized back to legacy columns;
+- remove normalized translations automatically when a word is deleted.
 """
 
 from __future__ import annotations
@@ -24,6 +31,102 @@ LEGACY_COLUMN_MAP = {
     "en": ("en", "ex_en", "audio_en"),
     "ru": ("ru", "ex_ru", "audio_ru"),
 }
+
+LEGACY_BACKFILL_MARKER = "legacy_nl_en_ru_backfill_v1"
+
+
+def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {
+        row["name"] if isinstance(row, sqlite3.Row) else row[1]
+        for row in conn.execute(f"PRAGMA table_info({table})")
+    }
+
+
+def _ensure_legacy_sync_triggers(conn: sqlite3.Connection) -> None:
+    """Keep the current legacy UI and normalized storage in sync."""
+    cols = _table_columns(conn, "words")
+    if "id" not in cols:
+        return
+
+    # Clean normalized rows when an old route deletes from `words`.
+    conn.execute("""
+        CREATE TRIGGER IF NOT EXISTS trg_words_delete_translations
+        AFTER DELETE ON words
+        BEGIN
+            DELETE FROM word_translations WHERE word_id = OLD.id;
+        END;
+    """)
+
+    for code, (text_col, example_col, audio_col) in LEGACY_COLUMN_MAP.items():
+        if text_col not in cols:
+            continue
+
+        example_new = f"COALESCE(NEW.{example_col}, '')" if example_col in cols else "''"
+        audio_new = f"COALESCE(NEW.{audio_col}, '')" if audio_col in cols else "''"
+        updated_new = "NEW.updated_at" if "updated_at" in cols else "NULL"
+
+        conn.execute(f"""
+            CREATE TRIGGER IF NOT EXISTS trg_words_insert_translation_{code}
+            AFTER INSERT ON words
+            WHEN COALESCE(NEW.{text_col}, '') != ''
+              OR {example_new} != ''
+              OR {audio_new} != ''
+            BEGIN
+                INSERT INTO word_translations
+                    (word_id, language_code, text, example, audio_url, updated_at)
+                VALUES (
+                    NEW.id,
+                    '{code}',
+                    COALESCE(NEW.{text_col}, ''),
+                    {example_new},
+                    {audio_new},
+                    {updated_new}
+                )
+                ON CONFLICT(word_id, language_code) DO UPDATE SET
+                    text=excluded.text,
+                    example=excluded.example,
+                    audio_url=excluded.audio_url,
+                    updated_at=excluded.updated_at;
+            END;
+        """)
+
+        watched_cols = [text_col]
+        if example_col in cols:
+            watched_cols.append(example_col)
+        if audio_col in cols:
+            watched_cols.append(audio_col)
+        if "updated_at" in cols:
+            watched_cols.append("updated_at")
+        update_of = ", ".join(watched_cols)
+
+        conn.execute(f"""
+            CREATE TRIGGER IF NOT EXISTS trg_words_update_translation_{code}
+            AFTER UPDATE OF {update_of} ON words
+            BEGIN
+                INSERT INTO word_translations
+                    (word_id, language_code, text, example, audio_url, updated_at)
+                VALUES (
+                    NEW.id,
+                    '{code}',
+                    COALESCE(NEW.{text_col}, ''),
+                    {example_new},
+                    {audio_new},
+                    {updated_new}
+                )
+                ON CONFLICT(word_id, language_code) DO UPDATE SET
+                    text=excluded.text,
+                    example=excluded.example,
+                    audio_url=excluded.audio_url,
+                    updated_at=excluded.updated_at;
+
+                DELETE FROM word_translations
+                WHERE word_id = NEW.id
+                  AND language_code = '{code}'
+                  AND COALESCE(NEW.{text_col}, '') = ''
+                  AND {example_new} = ''
+                  AND {audio_new} = '';
+            END;
+        """)
 
 
 def ensure_multilingual_schema(conn: sqlite3.Connection, *, backfill_legacy: bool = True) -> None:
@@ -58,15 +161,41 @@ def ensure_multilingual_schema(conn: sqlite3.Connection, *, backfill_legacy: boo
         CREATE INDEX IF NOT EXISTS idx_user_languages_order
         ON user_languages(user_id, enabled, position);
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS multilingual_meta (
+            key        TEXT PRIMARY KEY,
+            value      TEXT NOT NULL DEFAULT '',
+            updated_at INTEGER
+        );
+    """)
+
+    # Remove any rows left by versions that existed before the delete trigger.
+    conn.execute("""
+        DELETE FROM word_translations
+        WHERE word_id NOT IN (SELECT id FROM words);
+    """)
+
+    _ensure_legacy_sync_triggers(conn)
 
     if backfill_legacy:
-        backfill_legacy_translations(conn)
+        marker = conn.execute(
+            "SELECT 1 FROM multilingual_meta WHERE key = ?",
+            (LEGACY_BACKFILL_MARKER,),
+        ).fetchone()
+        if not marker:
+            backfill_legacy_translations(conn)
+            conn.execute("""
+                INSERT INTO multilingual_meta (key, value, updated_at)
+                VALUES (?, 'done', ?)
+                ON CONFLICT(key) DO UPDATE SET
+                    value=excluded.value,
+                    updated_at=excluded.updated_at
+            """, (LEGACY_BACKFILL_MARKER, int(time.time() * 1000)))
 
 
 def backfill_legacy_translations(conn: sqlite3.Connection) -> None:
-    """Copy legacy NL/EN/RU data into normalized rows once, without overwriting edits."""
-    cols = {row["name"] if isinstance(row, sqlite3.Row) else row[1]
-            for row in conn.execute("PRAGMA table_info(words)")}
+    """Copy legacy NL/EN/RU data into normalized rows without overwriting newer rows."""
+    cols = _table_columns(conn, "words")
     if "id" not in cols:
         return
 
