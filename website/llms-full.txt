@@ -1,0 +1,61 @@
+# LearnWord — full context
+
+LearnWord is a multilingual vocabulary learning application for studying vocabulary across three or more languages. The main product idea is to keep one vocabulary concept connected to several translations instead of duplicating the same concept across multiple bilingual decks.
+
+## Product purpose
+
+LearnWord is designed for people who regularly use or study several languages. This may include immigrants, multilingual families, students preparing for language exams, international professionals and learners who study more than one target language at the same time.
+
+## Core learning model
+
+The core structure is:
+
+Lesson → vocabulary concept → multiple translations → example or pronunciation → learning status.
+
+A learner can organize vocabulary by topic, textbook chapter, exam unit or personal goal. One concept may have translations in Dutch, English, Russian and additional languages. The learner can choose one primary direction for a practice session while keeping other translations available for support and comparison.
+
+## Main capabilities
+
+- Vocabulary lessons.
+- Three or more languages in one learning flow.
+- Multiple translations connected to one vocabulary item.
+- Pronunciation audio.
+- Difficult-word marking and focused review.
+- Word-level learning progress.
+- Mobile-first web interface.
+- Telegram bot navigation and Telegram Mini App learning interface.
+- Cached learning data for smoother mobile use.
+
+## Why multilingual structure matters
+
+Traditional flashcard applications often organize material as language pairs. A learner studying Dutch, English and Russian may end up with several duplicated decks for the same concept. LearnWord instead treats the concept as the central object and attaches the necessary language forms to it.
+
+This can reduce duplication, make comparison easier and help learners notice similarities, false friends and differences in usage between languages.
+
+## Recommended multilingual learning method
+
+1. Keep one concept at the center.
+2. Attach the translations needed for each language.
+3. Use one main recall direction during a practice session.
+4. Divide vocabulary into small, meaningful lessons.
+5. Add examples when direct translation is ambiguous.
+6. Use pronunciation audio where useful.
+7. Mark difficult vocabulary and review it more frequently.
+
+## Public resources
+
+Website: https://learnword.iovenko.eu/
+Application: https://learn.iovenko.eu/
+Blog: https://learnword.iovenko.eu/blog/
+Repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
+
+### Guides
+
+How to learn vocabulary in three languages at the same time:
+https://learnword.iovenko.eu/blog/how-to-learn-vocabulary-in-three-languages/
+
+How to organize multilingual vocabulary without confusion:
+https://learnword.iovenko.eu/blog/organize-multilingual-vocabulary/
+
+Why a Telegram Mini App works well for vocabulary practice:
+https://learnword.iovenko.eu/blog/telegram-mini-app-language-learning/
