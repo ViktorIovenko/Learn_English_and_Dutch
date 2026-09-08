@@ -1,26 +1,47 @@
 # ParallelLingvo
 
-> ParallelLingvo is a multilingual vocabulary learning application designed for studying the same vocabulary across three or more languages in one learning flow. It combines vocabulary lessons, multiple translations, pronunciation audio, difficult-word review and progress tracking in a mobile-first interface.
+> ParallelLingvo is a multilingual vocabulary learning application. The current application supports Dutch (NL), English (EN), and Russian (RU) in one connected learning flow. It combines vocabulary lessons, translations, pronunciation audio, difficult-word review, and progress tracking in a mobile-first interface.
 
-ParallelLingvo is intended for multilingual learners who want to keep several languages connected instead of maintaining a separate vocabulary deck for every language pair. The learning application can run as a Telegram Mini App. The public website contains product information and practical multilingual learning guides.
+ParallelLingvo is designed for learners who want Dutch, English, and Russian vocabulary to stay connected around the same concept instead of maintaining separate bilingual decks.
 
 Canonical public website: https://parallellingvo.app/
 Learning application: https://learn.iovenko.eu/
 Source repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
 
-## Core pages
+## Supported website languages
 
-- [ParallelLingvo overview](https://parallellingvo.app/index.md): What ParallelLingvo is, who it is for, and how the multilingual vocabulary structure works.
-- [ParallelLingvo blog](https://parallellingvo.app/blog/index.md): Index of multilingual vocabulary learning guides.
+- English: https://parallellingvo.app/
+- Nederlands: https://parallellingvo.app/nl/
+- Русский: https://parallellingvo.app/ru/
+
+The website language set mirrors the languages currently supported by the application: NL, EN, RU. Each language has a separate crawlable HTML URL and corresponding hreflang relationships.
+
+## Blog indexes
+
+- English: https://parallellingvo.app/blog/
+- Nederlands: https://parallellingvo.app/nl/blog/
+- Русский: https://parallellingvo.app/ru/blog/
 
 ## Learning guides
 
-- [How to learn vocabulary in three languages at the same time](https://parallellingvo.app/blog/how-to-learn-vocabulary-in-three-languages/index.md): A concept-centered method for studying the same vocabulary across three or more languages.
-- [How to organize multilingual vocabulary without confusion](https://parallellingvo.app/blog/organize-multilingual-vocabulary/index.md): Lesson and vocabulary structure for scalable multilingual study.
-- [Why a Telegram Mini App works well for vocabulary practice](https://parallellingvo.app/blog/telegram-mini-app-language-learning/index.md): Mobile-first vocabulary learning, cached study data and pronunciation access.
+### Learn vocabulary in three languages
+- English: https://parallellingvo.app/blog/how-to-learn-vocabulary-in-three-languages/
+- Nederlands: https://parallellingvo.app/nl/blog/how-to-learn-vocabulary-in-three-languages/
+- Русский: https://parallellingvo.app/ru/blog/how-to-learn-vocabulary-in-three-languages/
 
-## Optional
+### Organize multilingual vocabulary
+- English: https://parallellingvo.app/blog/organize-multilingual-vocabulary/
+- Nederlands: https://parallellingvo.app/nl/blog/organize-multilingual-vocabulary/
+- Русский: https://parallellingvo.app/ru/blog/organize-multilingual-vocabulary/
 
-- [Full site context](https://parallellingvo.app/llms-full.txt): Consolidated textual context about ParallelLingvo and its learning method.
-- [RSS feed](https://parallellingvo.app/feed.xml): Blog updates.
-- [XML sitemap](https://parallellingvo.app/sitemap.xml): Indexable website URLs.
+### Telegram Mini App for vocabulary practice
+- English: https://parallellingvo.app/blog/telegram-mini-app-language-learning/
+- Nederlands: https://parallellingvo.app/nl/blog/telegram-mini-app-language-learning/
+- Русский: https://parallellingvo.app/ru/blog/telegram-mini-app-language-learning/
+
+## Machine-readable resources
+
+- Full site context: https://parallellingvo.app/llms-full.txt
+- RSS feed: https://parallellingvo.app/feed.xml
+- XML sitemap with hreflang alternatives: https://parallellingvo.app/sitemap.xml
+- Robots policy: https://parallellingvo.app/robots.txt
