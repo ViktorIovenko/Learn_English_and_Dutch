@@ -1,0 +1,9 @@
+{
+  "default": "en",
+  "supported": [
+    {"code": "en", "name": "English", "path": "/"},
+    {"code": "nl", "name": "Nederlands", "path": "/nl/"},
+    {"code": "ru", "name": "Русский", "path": "/ru/"}
+  ],
+  "source": "Application data model currently supports NL, EN and RU vocabulary fields."
+}
