@@ -1,85 +1,92 @@
 # ParallelLingvo — full context
 
-ParallelLingvo is a multilingual vocabulary learning application. The current production data model supports three languages: Dutch (NL), English (EN), and Russian (RU). The central product idea is to keep one vocabulary concept connected to these three language forms instead of duplicating the same concept across several bilingual decks.
+ParallelLingvo is a multilingual vocabulary learning application supporting 11 languages. The central product idea is to keep one vocabulary concept connected to several language forms instead of duplicating the same concept across many bilingual decks.
 
 ## Product purpose
 
-ParallelLingvo is designed for people who regularly use or study several languages: multilingual families, immigrants, students preparing for language exams, international professionals, and learners who want Dutch, English, and Russian vocabulary to remain connected.
+ParallelLingvo is designed for multilingual learners, international families, immigrants, students preparing for language exams, international professionals, and anyone who studies or uses several languages at the same time.
 
-## Current supported languages
+## Supported languages
 
-- Dutch / Nederlands (NL)
 - English (EN)
+- Dutch / Nederlands (NL)
 - Russian / Русский (RU)
+- German / Deutsch (DE)
+- French / Français (FR)
+- Spanish / Español (ES)
+- Italian / Italiano (IT)
+- Portuguese / Português (PT)
+- Polish / Polski (PL)
+- Chinese Mandarin / 中文（普通话） (ZH)
+- Japanese / 日本語 (JA)
 
-The public website mirrors this language set with separate crawlable pages:
+Users can choose three or more of these languages for a connected vocabulary learning flow.
+
+## Localized public website
 
 - English: https://parallellingvo.app/
 - Nederlands: https://parallellingvo.app/nl/
 - Русский: https://parallellingvo.app/ru/
+- Deutsch: https://parallellingvo.app/de/
+- Français: https://parallellingvo.app/fr/
+- Español: https://parallellingvo.app/es/
+- Italiano: https://parallellingvo.app/it/
+- Português: https://parallellingvo.app/pt/
+- Polski: https://parallellingvo.app/pl/
+- 中文（普通话）: https://parallellingvo.app/zh/
+- 日本語: https://parallellingvo.app/ja/
+
+Every landing page is crawlable server-delivered HTML. Language variants use canonical and hreflang metadata, and the visible interface uses a responsive language dropdown.
 
 ## Core learning model
 
-Lesson → vocabulary concept → NL / EN / RU → example or pronunciation → learning status.
+Lesson → vocabulary concept → three or more selected language forms → example or pronunciation → learning status.
 
-A learner can organize vocabulary by topic, textbook chapter, exam unit, or personal goal. The same concept remains connected to Dutch, English, and Russian. A learner can choose one main recall direction in a practice session while the other two languages remain available for support and comparison.
+A learner can organize vocabulary by topic, textbook chapter, exam unit, or personal goal. Several translations remain attached to the same concept. The learner can choose a primary recall direction during a practice session while other languages remain available for comparison and support.
 
 ## Main capabilities
 
 - Vocabulary lessons.
-- Dutch, English, and Russian in one learning flow.
-- Three translations connected to one vocabulary item.
+- 11 supported languages.
+- Three or more languages in one learning flow.
+- Multiple translations connected to one vocabulary concept.
 - Pronunciation audio.
 - Difficult-word marking and focused review.
 - Word-level learning progress.
 - Mobile-first web interface.
 - Telegram Mini App access.
-- Cached learning data for smoother mobile use.
+- Google and Telegram account-entry points on the public site.
 
 ## Why the multilingual structure matters
 
-Traditional flashcard tools often organize material as language pairs. A learner studying Dutch, English, and Russian may end up with duplicated decks for the same meaning. ParallelLingvo treats the concept as the central object and keeps the three language forms together.
+Traditional flashcard tools often organize material as language pairs. A learner using several languages can end up with duplicated decks for the same meaning. ParallelLingvo treats the concept as the central object and attaches multiple language forms to it.
 
-This reduces duplication, makes comparison easier, and helps learners notice similarities, false friends, and differences in usage between Dutch, English, and Russian.
+This reduces duplication, makes comparison easier, and helps learners notice similarities, false friends, and differences in usage between languages.
 
 ## Recommended learning method
 
 1. Keep one concept at the center.
-2. Attach the Dutch, English, and Russian forms to the same item.
-3. Use one main recall direction during a practice session.
-4. Divide vocabulary into small meaningful lessons.
-5. Add examples when direct translation is ambiguous.
-6. Use pronunciation audio where useful.
-7. Mark difficult vocabulary and review it more frequently.
+2. Choose three or more supported languages.
+3. Attach the required language forms to the same vocabulary item.
+4. Use one main recall direction during a practice session.
+5. Divide vocabulary into small meaningful lessons.
+6. Add examples when direct translation is ambiguous.
+7. Use pronunciation audio where useful.
+8. Mark difficult vocabulary and review it more frequently.
 
-## Public resources
+## Blog
 
-Website: https://parallellingvo.app/
-Dutch website: https://parallellingvo.app/nl/
-Russian website: https://parallellingvo.app/ru/
-Application: https://learn.iovenko.eu/
-Repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
-
-### Blog indexes
+The editorial blog currently has localized English, Dutch and Russian versions. These guides explain the multilingual learning method and product workflow.
 
 English: https://parallellingvo.app/blog/
 Nederlands: https://parallellingvo.app/nl/blog/
 Русский: https://parallellingvo.app/ru/blog/
 
-### Guides — English
+## Public resources
 
-https://parallellingvo.app/blog/how-to-learn-vocabulary-in-three-languages/
-https://parallellingvo.app/blog/organize-multilingual-vocabulary/
-https://parallellingvo.app/blog/telegram-mini-app-language-learning/
-
-### Guides — Nederlands
-
-https://parallellingvo.app/nl/blog/how-to-learn-vocabulary-in-three-languages/
-https://parallellingvo.app/nl/blog/organize-multilingual-vocabulary/
-https://parallellingvo.app/nl/blog/telegram-mini-app-language-learning/
-
-### Guides — Русский
-
-https://parallellingvo.app/ru/blog/how-to-learn-vocabulary-in-three-languages/
-https://parallellingvo.app/ru/blog/organize-multilingual-vocabulary/
-https://parallellingvo.app/ru/blog/telegram-mini-app-language-learning/
+Website: https://parallellingvo.app/
+Application: https://learn.iovenko.eu/
+Sitemap: https://parallellingvo.app/sitemap.xml
+Robots policy: https://parallellingvo.app/robots.txt
+RSS: https://parallellingvo.app/feed.xml
+Repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
