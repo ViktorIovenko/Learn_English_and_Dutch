@@ -55,10 +55,25 @@ def _user_exists(user_id: str) -> bool:
         return bool(c.execute("SELECT 1 FROM users WHERE user_id=?", (str(user_id),)).fetchone())
 
 
+def _load_user_profile(user_id: str) -> dict[str, str]:
+    with _conn() as c:
+        row = c.execute(
+            "SELECT username, first_name, last_name FROM users WHERE user_id=?",
+            (str(user_id),),
+        ).fetchone()
+    if not row:
+        return {"username": "", "first_name": "", "last_name": ""}
+    return {
+        "username": str(row["username"] or ""),
+        "first_name": str(row["first_name"] or ""),
+        "last_name": str(row["last_name"] or ""),
+    }
+
+
 def _upsert_user(user_id: str, claims: dict[str, Any]) -> None:
-    username = str(claims.get("preferred_username") or "").strip()
-    first_name = str(claims.get("given_name") or "").strip()
-    last_name = str(claims.get("family_name") or "").strip()
+    username = str(claims.get("preferred_username") or claims.get("username") or "").strip()
+    first_name = str(claims.get("given_name") or claims.get("first_name") or "").strip()
+    last_name = str(claims.get("family_name") or claims.get("last_name") or "").strip()
 
     # Some providers only return a single display name.
     if not first_name:
@@ -152,7 +167,8 @@ def _resolve_account(provider: str, claims: dict[str, Any]) -> str:
 
     if provider == "telegram":
         # Existing installations historically used Telegram's numeric user id as users.user_id.
-        # Preserve that id so existing lessons/progress remain attached to the same account.
+        # Telegram OIDC profile claims include that same numeric id, so preserving it keeps
+        # existing lessons/progress attached to the same ParallelLingvo account.
         telegram_id = str(claims.get("id") or "").strip()
         user_id = telegram_id if telegram_id else f"u_{uuid.uuid4().hex}"
     else:
@@ -164,12 +180,17 @@ def _resolve_account(provider: str, claims: dict[str, Any]) -> str:
 
 
 def _login_session(user_id: str, provider: str) -> None:
+    profile = _load_user_profile(user_id)
     session.clear()
     session["user_id"] = str(user_id)
 
-    # Temporary compatibility bridge: existing API helpers read tg_user_id first.
-    # It contains the internal ParallelLingvo user id here, not necessarily a Telegram id.
+    # Compatibility bridge for the current learning API while it is migrated
+    # from Telegram-specific session field names to provider-neutral names.
     session["tg_user_id"] = str(user_id)
+    session["tg_username"] = profile["username"]
+    session["tg_first_name"] = profile["first_name"]
+    session["tg_last_name"] = profile["last_name"]
+    session["is_auth"] = True
     session["auth_provider"] = provider
     session.permanent = True
 
@@ -221,9 +242,17 @@ def _finish_oidc(provider: str):
 
     try:
         token = client.authorize_access_token()
-        claims = token.get("userinfo")
-        if not claims:
+
+        # Telegram currently returns requested profile information in the ID token
+        # and does not expose a separate UserInfo endpoint. Parse the signed ID token
+        # directly so the integration stays compatible with the standard OIDC flow.
+        if provider == "telegram":
             claims = client.parse_id_token(token, nonce=nonce)
+        else:
+            claims = token.get("userinfo")
+            if not claims:
+                claims = client.parse_id_token(token, nonce=nonce)
+
         claims = dict(claims or {})
         user_id = _resolve_account(provider, claims)
     except OAuthError as exc:
@@ -249,15 +278,23 @@ def google_callback():
 
 @auth.get("/telegram")
 def telegram_login():
-    username = str(Config.BOT_USERNAME or "").strip().lstrip("@")
-    if not username:
-        return jsonify({"ok": False, "error": "Telegram bot is not configured on the server yet"}), 503
-    return redirect(f"https://t.me/{username}?startapp=login")
+    # Modern Telegram Login: standard OIDC Authorization Code flow with PKCE.
+    # The BotFather Client ID/Secret identify the branded ParallelLingvo bot.
+    return _start_oidc("telegram", "auth.telegram_callback")
 
 
 @auth.get("/telegram/callback")
 def telegram_callback():
     return _finish_oidc("telegram")
+
+
+@auth.get("/telegram/miniapp")
+def telegram_miniapp():
+    """Optional explicit route to open the same account through the Telegram Mini App."""
+    username = str(Config.TELEGRAM_BOT_USERNAME or "").strip().lstrip("@")
+    if not username:
+        return jsonify({"ok": False, "error": "Telegram bot username is not configured"}), 503
+    return redirect(f"https://t.me/{username}?startapp=login")
 
 
 @auth.get("/logout")
@@ -284,7 +321,7 @@ def init_app(app) -> None:
     ensure_auth_schema()
 
     # Authlib providers are only registered when credentials exist. This keeps
-    # deployments bootable while BotFather/Google credentials are still being configured.
+    # deployments bootable while BotFather/Google credentials are being configured.
     oauth.init_app(app)
 
     if app.config.get("GOOGLE_CLIENT_ID") and app.config.get("GOOGLE_CLIENT_SECRET"):
@@ -303,7 +340,9 @@ def init_app(app) -> None:
             client_secret=app.config["TELEGRAM_OIDC_CLIENT_SECRET"],
             server_metadata_url="https://oauth.telegram.org/.well-known/openid-configuration",
             client_kwargs={
-                "scope": "openid profile",
+                # profile returns Telegram id/name/username/photo. bot_access lets the
+                # same branded bot message the user after website login. Phone is not requested.
+                "scope": "openid profile telegram:bot_access",
                 "code_challenge_method": "S256",
             },
         )
