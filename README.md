@@ -1,26 +1,44 @@
-# Learn English & Dutch 🇬🇧🇳🇱
+# ParallelLingvo
 
-A Telegram-based language learning project that combines a **Telegram bot** and a **Telegram Mini App (Web App)** for studying English and Dutch vocabulary.
+ParallelLingvo is a multilingual vocabulary-learning platform designed for learning three or more languages in one connected flow.
 
-The main goal of the project is to provide a fast, simple, and scalable way to practice words, track learning progress, and support **offline-first usage** on mobile devices.
+## Production domains
 
----
+- Public website and blog: `https://parallellingvo.app/`
+- Learning application: `https://app.parallellingvo.app/`
+- Legacy application hostname: `https://learn.iovenko.eu/` (redirect only after migration)
 
-## Key Features
+## Main components
 
-- 🤖 Telegram bot for navigation and interaction
-- 🌐 Telegram Mini App (Web App) for a rich learning interface
-- 📚 Vocabulary-based learning (EN ↔ NL / RU)
-- ✅ Progress tracking per word
-- ⚡ Fast startup and smooth UX
+- Static public website and blog for SEO/AI indexing
+- Flask web application and API
+- Telegram Mini App
+- Telegram bot
+- Google OIDC login
+- Telegram OIDC login
+- SQLite vocabulary/progress storage
+- Multilingual translation model that is not limited to fixed language pairs
 
-### Planned / In Progress
-- 📦 Offline-first support using IndexedDB
-- 🔄 Progress synchronization when internet is available
-- 🔊 Audio caching for offline practice
-- 🧠 Spaced Repetition System (SRS)
+## Authentication direction
 
----
+The application is moving away from browser-controlled `?uid=` / `X-User-Id` identity. Production authentication is server-verified and session-based:
 
-## Project Structure
+- Google OIDC -> ParallelLingvo account -> Flask session
+- Telegram OIDC -> ParallelLingvo account -> Flask session
+- Telegram Mini App -> verified Telegram `initData` -> existing account
 
+Existing Telegram numeric user IDs are preserved where possible so existing learning data remains attached during migration.
+
+## Deployment
+
+See `docs/APP_DOMAIN_MIGRATION.md` for the app-domain, TLS, Google login, Telegram bot, Telegram OIDC, and migration checklist.
+
+## Project structure
+
+- `app/` — Flask application, API, templates, auth
+- `bot/` — Telegram bot
+- `website/` — static public website and blog
+- `nginx/` — public-site, app-domain, and legacy-domain nginx configs
+- `docs/` — deployment and product documentation
+- `docker-compose.eu.yml` — application service
+- `docker-compose.website.yml` — static public website service
