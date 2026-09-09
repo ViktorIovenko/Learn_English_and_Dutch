@@ -1,0 +1,247 @@
+/* =========================================================
+   [ДОБАВЛЕНО 2026-09-09]
+   Компактная компоновка первого экрана ParallelLingvo.
+
+   Цели:
+   - меню + весь первый hero-блок помещаются в один viewport;
+   - левый и правый столбцы имеют одинаковую высоту;
+   - главный заголовок заметно компактнее;
+   - интерактивная демонстрация не раздувает первый экран;
+   - на маленьких экранах сохраняется обычный вертикальный поток.
+   ========================================================= */
+
+@media (min-width: 901px) {
+  /* [ИЗМЕНЕНО] Сохраняем заметный логотип, но убираем лишнюю высоту header.
+     Предыдущее значение 420x116 делало шапку слишком высокой. */
+  .site-header .nav-row {
+    min-height: 76px;
+  }
+
+  .site-header .brand {
+    width: 300px;
+    min-height: 72px;
+  }
+
+  /* [ИЗМЕНЕНО] Header + hero занимают ровно первый экран браузера.
+     Если контент когда-либо станет выше, блок всё равно сможет расшириться. */
+  .hero {
+    min-height: calc(100svh - 76px);
+    display: flex;
+    align-items: center;
+    padding: clamp(18px, 2.8vh, 32px) 0;
+  }
+
+  .hero-grid {
+    grid-template-columns: minmax(0, .96fr) minmax(440px, 1.04fr);
+    gap: clamp(34px, 4vw, 58px);
+    align-items: stretch;
+  }
+
+  /* [ИЗМЕНЕНО] Одинаковая высота двух частей hero. */
+  .hero-copy,
+  .interactive-demo-stage {
+    min-height: 520px;
+    height: 100%;
+  }
+
+  .hero-copy {
+    max-width: 620px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* [ИЗМЕНЕНО] Главный заголовок уменьшен с глобального max 6rem
+     до более компактного размера для первого экрана. */
+  .hero h1 {
+    max-width: 620px;
+    margin-bottom: 0;
+    font-size: clamp(3.35rem, 4.55vw, 4.65rem);
+    line-height: .98;
+    letter-spacing: -.052em;
+  }
+
+  .hero-badge {
+    margin-bottom: 16px;
+  }
+
+  .hero .lead {
+    max-width: 590px;
+    margin-top: 18px;
+    font-size: 1.02rem;
+    line-height: 1.55;
+  }
+
+  .hero .actions {
+    margin-top: 22px;
+  }
+
+  .hero .btn-large {
+    min-height: 50px;
+    padding-inline: 22px;
+  }
+
+  .hero-proof {
+    gap: 10px 18px;
+    margin-top: 18px;
+    font-size: .78rem;
+  }
+
+  /* [ИЗМЕНЕНО] Правая часть получает ту же высоту, что и левая,
+     а сама карточка центрируется внутри неё. */
+  .interactive-demo-stage {
+    min-height: 520px;
+    align-self: stretch;
+  }
+
+  .interactive-demo-stage .orbit-one {
+    width: 470px;
+    height: 470px;
+  }
+
+  .interactive-demo-stage .orbit-two {
+    width: 345px;
+    height: 345px;
+  }
+
+  .interactive-demo-stage .floating-chip {
+    top: 12px;
+    right: 8px;
+  }
+
+  .concept-demo {
+    width: min(100%, 500px);
+    padding: 18px;
+    border-radius: 26px;
+  }
+
+  .concept-demo-head {
+    margin-bottom: 12px;
+  }
+
+  .concept-language-row {
+    grid-template-columns: 108px minmax(0, 1fr);
+    gap: 11px;
+    padding: 12px;
+    border-radius: 17px;
+  }
+
+  .demo-language-flag {
+    width: 34px;
+    height: 34px;
+  }
+
+  .demo-example {
+    font-size: .69rem;
+    line-height: 1.32;
+  }
+
+  .demo-add-language {
+    min-height: 48px;
+    margin-top: 8px;
+  }
+
+  /* При 5–6 языках карточка остаётся компактной,
+     а строки прокручиваются внутри демонстрации. */
+  .concept-stack {
+    max-height: 355px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(93, 18, 199, .22) transparent;
+  }
+
+  .concept-stack::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .concept-stack::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(93, 18, 199, .20);
+  }
+
+  .demo-hint {
+    right: -2px;
+    bottom: 22px;
+  }
+}
+
+/* [ДОБАВЛЕНО] Отдельная компактная настройка для ноутбуков
+   с небольшой высотой окна (например 1366x768). */
+@media (min-width: 901px) and (max-height: 760px) {
+  .hero {
+    padding: 12px 0;
+  }
+
+  .hero-copy,
+  .interactive-demo-stage {
+    min-height: 465px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 4.05vw, 3.95rem);
+  }
+
+  .hero-badge {
+    margin-bottom: 11px;
+  }
+
+  .hero .lead {
+    margin-top: 13px;
+    font-size: .95rem;
+    line-height: 1.43;
+  }
+
+  .hero .actions {
+    margin-top: 17px;
+  }
+
+  .hero .btn-large {
+    min-height: 46px;
+  }
+
+  .hero-proof {
+    margin-top: 13px;
+    font-size: .73rem;
+  }
+
+  .interactive-demo-stage .orbit-one {
+    width: 430px;
+    height: 430px;
+  }
+
+  .interactive-demo-stage .orbit-two {
+    width: 315px;
+    height: 315px;
+  }
+
+  .concept-demo {
+    width: min(100%, 480px);
+    padding: 15px;
+  }
+
+  .concept-language-row {
+    padding: 10px 11px;
+  }
+
+  .concept-stack {
+    max-height: 315px;
+  }
+
+  .demo-hint {
+    display: none;
+  }
+}
+
+/* На планшетах и телефонах viewport-ограничение снимается:
+   контент идёт вертикально и не должен искусственно сжиматься. */
+@media (max-width: 900px) {
+  .hero {
+    min-height: 0;
+  }
+
+  .hero-copy,
+  .interactive-demo-stage {
+    height: auto;
+  }
+}
