@@ -71,7 +71,7 @@ Brand idea: One word. Multiple languages. One learning flow.
 ## Public resources
 
 Website: https://parallellingvo.app/
-Application: https://learn.iovenko.eu/
+Application: https://app.parallellingvo.app/
 Sitemap: https://parallellingvo.app/sitemap.xml
 Robots policy: https://parallellingvo.app/robots.txt
 RSS: https://parallellingvo.app/feed.xml

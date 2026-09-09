@@ -6,7 +6,7 @@ This folder contains the static public website for ParallelLingvo. It is separat
 
 - Public website: `https://parallellingvo.app/`
 - Learning application: `https://app.parallellingvo.app/`
-- Legacy application hostname: `https://learn.iovenko.eu/` (redirect only after migration)
+- Legacy application hostname: `https://app.parallellingvo.app/` (redirect only after migration)
 
 ## Learning languages vs website languages
 

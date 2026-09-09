@@ -3,7 +3,7 @@
 > ParallelLingvo is a multilingual vocabulary learning application with an initial catalog of 45 learning languages. Learners can choose three or more languages and keep vocabulary, translations, pronunciation, difficult-word review, and progress connected around the same concept.
 
 Canonical public website: https://parallellingvo.app/
-Learning application: https://learn.iovenko.eu/
+Learning application: https://app.parallellingvo.app/
 Source repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
 
 ## Learning-language architecture

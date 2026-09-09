@@ -42,7 +42,7 @@ Website-interface localization is separate from the number of languages that can
 ## Platforms
 
 - Public website: https://parallellingvo.app/
-- Telegram / web application: https://learn.iovenko.eu/
+- Telegram / web application: https://app.parallellingvo.app/
 - iOS application: planned.
 - Android application: planned.
 
