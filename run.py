@@ -1,4 +1,5 @@
 # run.py
+# [ИЗМЕНЕНО v6.13] Добавлена Google/Telegram OIDC авторизация для app.parallellingvo.app.
 # [ИЗМЕНЕНО v6.12] Добавлена универсальная многоязычная схема ParallelLingvo.
 # [ИЗМЕНЕНО v6.11] Переход на ежедневное напоминание в 12:00 (Europe/Amsterdam) вместо интервала.
 # [ИЗМЕНЕНО v6.10] Фолбэк: создаём JobQueue вручную, если отсутствует (экстры не установлены).
@@ -9,6 +10,7 @@ import logging
 import os
 import sqlite3
 import threading
+from datetime import timedelta
 from pathlib import Path
 
 from flask import Flask
@@ -17,6 +19,7 @@ from config import Config
 from app.routes import init_app as init_web
 from app.language_routes import init_app as init_language_api
 from app.multilingual import ensure_multilingual_schema
+from app.web_auth import init_app as init_web_auth
 
 from telegram import Update
 from telegram.ext import ApplicationBuilder, Defaults, JobQueue
@@ -120,10 +123,13 @@ def create_app() -> Flask:
     app = Flask(__name__, static_folder="app/static", template_folder="app/templates")
     app.config.from_object(Config)
 
-    secure_cookies = _is_https_base(os.getenv("PUBLIC_BASE_URL", ""))
+    secure_cookies = _is_https_base(app.config.get("APP_BASE_URL") or app.config.get("PUBLIC_BASE_URL") or "")
     app.config.update(
+        SESSION_COOKIE_NAME="parallellingvo_session",
+        SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="None" if secure_cookies else "Lax",
         SESSION_COOKIE_SECURE=secure_cookies,
+        PERMANENT_SESSION_LIFETIME=timedelta(days=30),
     )
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
@@ -134,6 +140,7 @@ def create_app() -> Flask:
         return response
 
     init_db(app.config["DB_PATH"])
+    init_web_auth(app)
     init_web(app)
     init_language_api(app)
     return app
