@@ -17,9 +17,10 @@ body{
   background:radial-gradient(circle at 8% 2%,rgba(93,18,199,.08),transparent 30%),radial-gradient(circle at 88% 12%,rgba(246,54,93,.05),transparent 26%),var(--bg);
 }
 
+/* [ИЗМЕНЕНО 2026-09-09] Логотип на desktop увеличен ровно в 2 раза: 210x58 -> 420x116. */
 .brand{
-  width:210px;
-  min-height:58px;
+  width:420px;
+  min-height:116px;
   background:url('/assets/parallel-lingvo-logo.png') left center/contain no-repeat;
 }
 .brand>*{display:none!important}
@@ -73,8 +74,7 @@ body{
 .lang-switch a.active{background:var(--brand-primary);color:#fff}
 .language-note{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
 .language-note span{padding:7px 11px;border-radius:999px;background:#fff;border:1px solid rgba(93,18,199,.10);font-size:.78rem;font-weight:760;color:#55435c}
-.supported-languages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px}
-.supported-language{padding:22px;border-radius:20px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.supported-languages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px}.supported-language{padding:22px;border-radius:20px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
 .supported-language strong{display:block;font-size:1.08rem;margin-bottom:5px}.supported-language span{color:var(--muted);font-size:.9rem}
 
 @media(max-width:900px){

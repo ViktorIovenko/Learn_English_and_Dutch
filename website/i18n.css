@@ -1,3 +1,7 @@
+/* [ИЗМЕНЕНО 2026-09-09] Языковой селектор визуально идет первым внутри nav,
+   поэтому располагается сразу после логотипа и перед основным меню. */
+nav .language-dropdown{order:-1}
+
 .language-dropdown{
   position:relative;
   flex-shrink:0;
