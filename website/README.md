@@ -5,7 +5,8 @@ This folder contains the static public website for ParallelLingvo. It is separat
 ## Production URLs
 
 - Public website: `https://parallellingvo.app/`
-- Learning application: `https://learn.iovenko.eu/`
+- Learning application: `https://app.parallellingvo.app/`
+- Legacy application hostname: `https://learn.iovenko.eu/` (redirect only after migration)
 
 ## Learning languages vs website languages
 
@@ -42,15 +43,30 @@ The current editorial blog and its three existing articles have English, Dutch a
 
 The site includes semantic server-delivered HTML, Schema.org JSON-LD, canonical URLs, hreflang, `robots.txt`, `sitemap.xml`, `feed.xml`, `llms.txt`, `llms-full.txt`, favicon and brand assets.
 
+## Authentication handoff
+
+The public website remains static. Login buttons use these paths:
+
+- `/auth/google`
+- `/auth/telegram`
+
+The production nginx vhost redirects those paths to the corresponding routes on `https://app.parallellingvo.app`.
+
+Direct application links should use:
+
+```text
+https://app.parallellingvo.app/
+```
+
 ## Deployment
 
 ```bash
 docker compose -f docker-compose.website.yml up -d
 ```
 
-Production reverse proxy: `nginx/parallellingvo.conf`
+Production reverse proxy: `nginx/parallellingvo.conf`.
 
-`www.parallellingvo.app` redirects to `https://parallellingvo.app` and the existing application at `learn.iovenko.eu` must remain untouched.
+`www.parallellingvo.app` redirects to `https://parallellingvo.app`. The old `learn.iovenko.eu` hostname is retained only as a migration redirect to the new app hostname.
 
 ## Backend multilingual API
 
