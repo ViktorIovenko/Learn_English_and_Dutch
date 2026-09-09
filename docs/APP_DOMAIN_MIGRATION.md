@@ -1,6 +1,6 @@
 # ParallelLingvo app-domain and authentication migration
 
-This document is the handoff checklist for moving the learning application from
+This document is the deployment/agent handoff for moving the learning application from
 `learn.iovenko.eu` to `app.parallellingvo.app` and enabling website login.
 
 ## Target architecture
@@ -11,7 +11,7 @@ This document is the handoff checklist for moving the learning application from
 - Google and Telegram login start from the public website and finish inside the app.
 - Telegram Mini App also opens `https://app.parallellingvo.app/`.
 
-## Already prepared in the repository
+## Prepared in the repository
 
 1. `nginx/app.parallellingvo.conf` proxies `app.parallellingvo.app` to `learn-words:7001`.
 2. `nginx/learn.conf` redirects the old application hostname to the new app hostname.
@@ -19,8 +19,12 @@ This document is the handoff checklist for moving the learning application from
 4. `app/web_auth.py` adds Google OIDC and Telegram OIDC login.
 5. `auth_identities` is created automatically and maps provider identities to the existing `users.user_id`.
 6. Existing Telegram numeric user IDs are preserved when possible so old lessons/progress remain attached.
-7. `X-User-Id` authentication is disabled by default because the browser must not be allowed to choose its own user id.
-8. `.env.example` lists the required production variables.
+7. Browser-controlled `?uid=` / localStorage user identity / `X-User-Id` was removed from `app/templates/base.html`.
+8. Page API requests wait for server-verified Telegram Mini App auth or the existing Flask session before they run.
+9. `X-User-Id` is also stripped server-side by default as defense in depth.
+10. `bot/auth.py` no longer creates Mini App URLs with `?uid=` and no longer contains the personal fallback password.
+11. If `BOT_PASSWORD` is empty, the branded public Telegram bot registers new Telegram users automatically. If it is set, the old shared-password gate remains available.
+12. `.env.example` lists the required production variables.
 
 ## Server steps still required
 
@@ -49,7 +53,7 @@ The nginx config expects:
 /etc/letsencrypt/live/app.parallellingvo.app/privkey.pem
 ```
 
-Important: do not enable/reload the HTTPS vhost before the certificate exists, otherwise nginx validation can fail.
+Do not enable/reload the HTTPS vhost before the certificate exists, otherwise nginx validation can fail.
 
 ### 3. Install nginx vhost
 
@@ -59,9 +63,7 @@ Copy/enable:
 nginx/app.parallellingvo.conf
 ```
 
-Keep the public-site vhost and legacy redirect vhost enabled as well.
-
-Run nginx config validation before reload.
+Keep the public-site vhost and legacy redirect vhost enabled as well. Run nginx config validation before reload.
 
 ### 4. Update server `.env`
 
@@ -75,7 +77,7 @@ ALLOW_LEGACY_UID_AUTH=0
 FLASK_SECRET=<strong-random-secret>
 ```
 
-Then add the new branded bot token and OAuth credentials when available.
+For a public Telegram bot, leave `BOT_PASSWORD` empty. Set it only if a temporary invitation/password gate is intentionally required.
 
 ### 5. Rebuild the application container
 
@@ -118,7 +120,7 @@ Expected result: Google login -> callback -> `https://app.parallellingvo.app/`.
 
 Create a new branded bot for ParallelLingvo. Do not reuse the old personal-name bot.
 
-Recommended bot identity:
+Recommended identity:
 
 - Name: `ParallelLingvo`
 - Username: a free username such as `ParallelLingvoBot` or similar
@@ -137,7 +139,7 @@ In BotFather configure the Mini App URL:
 https://app.parallellingvo.app/
 ```
 
-For Telegram Login/OIDC, BotFather -> Login Widget must include allowed URLs for the site/app and the callback, including:
+For Telegram Login/OIDC, BotFather -> Login Widget must include allowed URLs for the site/app and callback, including:
 
 ```text
 https://parallellingvo.app
@@ -152,7 +154,7 @@ TELEGRAM_OIDC_CLIENT_ID=...
 TELEGRAM_OIDC_CLIENT_SECRET=...
 ```
 
-Telegram OIDC uses the discovery document:
+Telegram OIDC discovery:
 
 ```text
 https://oauth.telegram.org/.well-known/openid-configuration
@@ -184,47 +186,48 @@ auth_identities
 
 Do not delete or rewrite existing `users`, `words`, progress, lesson, or translation data during deployment.
 
-## Security migration
+## Security status
 
-The old frontend can still send `X-User-Id` and can still contain `?uid=` in URLs. The new Flask auth middleware removes the `X-User-Id` header unless:
+Production must keep:
 
 ```env
-ALLOW_LEGACY_UID_AUTH=1
+ALLOW_LEGACY_UID_AUTH=0
 ```
 
-Production must keep this value `0`.
+The current frontend no longer uses `?uid=` or `X-User-Id`. The Flask middleware also removes a supplied `X-User-Id` header unless legacy mode is explicitly enabled.
 
-A later cleanup commit should remove the old `?uid=` / localStorage / `X-User-Id` code from `app/templates/base.html` entirely after the new auth flow has been tested on all clients.
+## Remaining repository cleanup for the next agent
 
-## Public-site cleanup after deployment
-
-The public website currently has some direct `learn.iovenko.eu` links. They will work because the old hostname redirects to the new app hostname, but after deployment replace every direct app link with:
+The public static website still contains some direct `https://learn.iovenko.eu/` links in the main/localized HTML pages. They are not a deployment blocker because `learn.iovenko.eu` now redirects to the new hostname, but replace them with:
 
 ```text
 https://app.parallellingvo.app/
 ```
 
-Also keep:
+Search the entire `website/` tree, including localized pages, Markdown/LLM documents and any app buttons. Do not change canonical URLs for the public marketing pages themselves; those must remain on `https://parallellingvo.app/`.
 
-```text
-/auth/google
-/auth/telegram
-```
+After server credentials are available, the next agent must also run a real end-to-end test of:
 
-on the public website; nginx forwards those to the app authentication routes.
+1. anonymous `GET /auth/status`;
+2. Google OIDC login and callback;
+3. Telegram OIDC login and callback;
+4. Telegram Mini App initData login with the new bot token;
+5. loading lessons/progress for an existing Telegram user;
+6. loading lessons/progress for a new Google-only user;
+7. old `learn.iovenko.eu` redirect preserving paths/query strings;
+8. logout and second login.
 
 ## Recommended deployment order
 
 1. DNS resolves.
 2. Issue TLS certificate.
 3. Install/enable app nginx vhost.
-4. Update `.env` domain values.
+4. Update `.env` domain values and `FLASK_SECRET`.
 5. Rebuild application container.
-6. Test app directly.
+6. Test app directly and `/auth/status`.
 7. Test old-domain redirect.
 8. Configure Google credentials and test Google login.
 9. Create/configure new ParallelLingvo Telegram bot.
 10. Configure Telegram OIDC and Mini App URL.
 11. Test Telegram browser login and Telegram Mini App login.
-12. Replace remaining `learn.iovenko.eu` links in static website files.
-13. Remove legacy `?uid=` frontend code after confirming no client depends on it.
+12. Replace remaining `learn.iovenko.eu` references in `website/`.
