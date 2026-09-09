@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Multilingual vocabulary connected to one concept</title>
+  <desc id="desc">A ParallelLingvo illustration showing Dutch, English and Russian words connected around one shared concept.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef0ff"/>
+      <stop offset="0.52" stop-color="#f8f7ff"/>
+      <stop offset="1" stop-color="#e7f7ff"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#696af0"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#30356b" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" rx="42" fill="url(#bg)"/>
+  <circle cx="100" cy="95" r="72" fill="#5b5ce2" opacity="0.07"/>
+  <circle cx="1090" cy="590" r="118" fill="#229ed9" opacity="0.08"/>
+  <circle cx="1065" cy="112" r="34" fill="#7c3aed" opacity="0.08"/>
+
+  <path d="M600 338 C485 300 414 244 329 190" fill="none" stroke="#8b8cf1" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+  <path d="M600 338 C720 300 800 244 887 190" fill="none" stroke="#8b8cf1" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+  <path d="M600 338 C600 424 600 470 600 523" fill="none" stroke="#8b8cf1" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+
+  <g filter="url(#shadow)">
+    <rect x="470" y="230" width="260" height="216" rx="46" fill="url(#core)"/>
+    <circle cx="600" cy="318" r="48" fill="#fff" opacity="0.16"/>
+    <path d="M600 282c-23 0-42 18-42 41 0 16 9 30 23 37v18h38v-18c14-7 23-21 23-37 0-23-19-41-42-41Zm-17 39c3-12 12-20 25-22" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M586 395h28" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity="0.85"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="130" y="112" width="300" height="156" rx="28" fill="#fff"/>
+    <rect x="158" y="140" width="58" height="58" rx="18" fill="#eef0ff"/>
+    <text x="187" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#5b5ce2">NL</text>
+    <text x="245" y="182" font-family="Arial,sans-serif" font-size="42" font-weight="700" fill="#15172b">huis</text>
+    <rect x="245" y="207" width="128" height="12" rx="6" fill="#dfe2f4"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="770" y="112" width="300" height="156" rx="28" fill="#fff"/>
+    <rect x="798" y="140" width="58" height="58" rx="18" fill="#eef0ff"/>
+    <text x="827" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#5b5ce2">EN</text>
+    <text x="885" y="182" font-family="Arial,sans-serif" font-size="42" font-weight="700" fill="#15172b">house</text>
+    <rect x="885" y="207" width="132" height="12" rx="6" fill="#dfe2f4"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="450" y="495" width="300" height="132" rx="28" fill="#fff"/>
+    <rect x="478" y="522" width="58" height="58" rx="18" fill="#f4edff"/>
+    <text x="507" y="560" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#7c3aed">RU</text>
+    <text x="566" y="564" font-family="Arial,sans-serif" font-size="42" font-weight="700" fill="#15172b">дом</text>
+    <rect x="566" y="586" width="132" height="12" rx="6" fill="#dfe2f4"/>
+  </g>
+</svg>
