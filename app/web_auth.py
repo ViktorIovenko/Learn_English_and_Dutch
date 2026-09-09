@@ -249,7 +249,10 @@ def google_callback():
 
 @auth.get("/telegram")
 def telegram_login():
-    return _start_oidc("telegram", "auth.telegram_callback")
+    username = str(Config.BOT_USERNAME or "").strip().lstrip("@")
+    if not username:
+        return jsonify({"ok": False, "error": "Telegram bot is not configured on the server yet"}), 503
+    return redirect(f"https://t.me/{username}?startapp=login")
 
 
 @auth.get("/telegram/callback")
