@@ -1,6 +1,6 @@
 @import url('/base.css');
 @import url('/landing.css');
 @import url('/responsive.css');
-/* [ИЗМЕНЕНО 2026-09-09] Обновлены cache-busting версии после правки header. */
+/* [ИЗМЕНЕНО 2026-09-09] Cache-busting после обновления header и language popup. */
 @import url('/brand.css?v=20260909-header');
-@import url('/i18n.css?v=20260909-header');
+@import url('/i18n.css?v=20260909-language-popup');
