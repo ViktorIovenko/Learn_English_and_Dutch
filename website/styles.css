@@ -4,3 +4,5 @@
 /* [ИЗМЕНЕНО 2026-09-09] Cache-busting после обновления header и language popup. */
 @import url('/brand.css?v=20260909-header');
 @import url('/i18n.css?v=20260909-language-popup');
+/* [ДОБАВЛЕНО 2026-09-09] Интерактивная демонстрация работы приложения в hero-блоке. */
+@import url('/demo.css?v=20260909-interactive-demo');
