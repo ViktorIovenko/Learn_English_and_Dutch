@@ -8,9 +8,8 @@
     .then((status) => {
       if (!status || !status.auth) return;
       links.forEach((link) => {
-        link.textContent = "Log out";
-        link.href = `${appBase}/auth/logout`;
-        link.setAttribute("aria-label", "Log out from ParallelLingvo");
+        link.hidden = true;
+        link.setAttribute("aria-hidden", "true");
       });
     })
     .catch(() => {});
