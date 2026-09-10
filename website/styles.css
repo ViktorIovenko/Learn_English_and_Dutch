@@ -7,4 +7,4 @@
 /* [ДОБАВЛЕНО 2026-09-09] Интерактивная демонстрация работы приложения в hero-блоке. */
 @import url('/demo.css?v=20260909-interactive-demo');
 /* [ДОБАВЛЕНО 2026-09-09] Компактный первый экран: header + hero в одном viewport. */
-@import url('/hero-fit.css?v=20260910-header-spacing');
+@import url('/hero-fit.css?v=20260910-header-flush');

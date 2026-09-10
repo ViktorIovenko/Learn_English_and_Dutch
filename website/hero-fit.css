@@ -15,7 +15,7 @@
      Предыдущее значение 420x116 делало шапку слишком высокой. */
   .site-header .nav-row {
     position: relative;
-    min-height: 154px;
+    min-height: 144px;
   }
 
   .site-header .brand {
@@ -33,7 +33,7 @@
   /* [ИЗМЕНЕНО] Header + hero занимают ровно первый экран браузера.
      Если контент когда-либо станет выше, блок всё равно сможет расшириться. */
   .hero {
-    min-height: calc(100svh - 154px);
+    min-height: calc(100svh - 144px);
     display: flex;
     align-items: center;
     padding: clamp(18px, 2.8vh, 32px) 0;
