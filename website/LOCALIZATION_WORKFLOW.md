@@ -12,14 +12,17 @@
 
 ## Порядок работы
 
-1. Сначала вносить и проверять текст/разметку в `website/ru/index.html`.
-2. После согласования переносить ту же структуру в `website/<locale>/index.html`
+1. Запустить локальный preview из корня checkout:
+   `powershell -ExecutionPolicy Bypass -File .\start-local-preview.ps1`
+   Затем открыть `http://localhost:4173/ru/`.
+2. Сначала вносить и проверять текст/разметку в `website/ru/index.html`.
+3. После согласования переносить ту же структуру в `website/<locale>/index.html`
    и переводить только видимый текст, metadata и подписи меню.
-3. Общие CSS/JS менять один раз, только если изменение одинаково для всех языков.
-4. Перед commit выполнять `git diff --check` и проверять, что в корне по-прежнему
+4. Общие CSS/JS менять один раз, только если изменение одинаково для всех языков.
+5. Перед commit выполнять `git diff --check` и проверять, что в корне по-прежнему
    есть `conceptDemo`, `demoAddLanguage` и подключение `demo.js`.
-5. Commit и push всегда делать в `feature/landing-blog`.
-6. Production обновлять только после push через `git pull --ff-only`; затем
+6. Commit и push всегда делать в `feature/landing-blog`.
+7. Production обновлять только после push через `git pull --ff-only`; затем
    сверять SHA production с `origin/feature/landing-blog`. Статике restart не нужен.
 
 Не редактировать файлы в `/opt/parallellingvo` как обычный рабочий процесс:
