@@ -250,3 +250,12 @@ nav .language-dropdown{order:-1}
 @media(prefers-reduced-motion:reduce){
   .language-menu{animation:none}
 }
+
+/* One visual control: the details wrapper must not look like a second button. */
+.language-dropdown{
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
