@@ -2,7 +2,7 @@
 @import url('/landing.css');
 @import url('/responsive.css');
 /* [ИЗМЕНЕНО 2026-09-09] Cache-busting после обновления header и language popup. */
-@import url('/brand.css?v=20260910-auth-menu-state');
+@import url('/brand.css?v=20260910-logo-cropped');
 @import url('/i18n.css?v=20260910-header-grid');
 /* [ДОБАВЛЕНО 2026-09-09] Интерактивная демонстрация работы приложения в hero-блоке. */
 @import url('/demo.css?v=20260909-interactive-demo');
