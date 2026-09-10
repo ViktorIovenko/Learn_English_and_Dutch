@@ -1,0 +1,78 @@
+# ParallelLingvo — full context
+
+ParallelLingvo is a multilingual vocabulary learning application with an initial catalog of 45 learning languages. The central product idea is to keep one vocabulary concept connected to multiple language forms instead of duplicating the same concept across many bilingual decks.
+
+## Product purpose
+
+ParallelLingvo is designed for multilingual learners, international families, immigrants, students preparing for language exams, international professionals, travelers, and anyone who studies or uses several languages at the same time.
+
+## Learning-language catalog
+
+The initial catalog contains 45 languages: major European languages plus key world languages.
+
+European catalog includes English, Dutch, German, French, Spanish, Italian, Portuguese, Polish, Russian, Ukrainian, Czech, Slovak, Hungarian, Romanian, Bulgarian, Croatian, Serbian, Bosnian, Slovenian, Greek, Swedish, Norwegian, Danish, Finnish, Estonian, Latvian, Lithuanian, Icelandic, Irish, Albanian, Macedonian, Turkish, Maltese, Belarusian, Romansh, Georgian, Armenian and Azerbaijani.
+
+Additional major world languages include Chinese Mandarin, Japanese, Korean, Arabic, Hindi, Indonesian and Vietnamese.
+
+The catalog is defined in `app/languages.py` and can grow later without adding new columns to the `words` table.
+
+## Scalable data architecture
+
+ParallelLingvo no longer treats a language as a dedicated database column. The normalized model uses:
+
+- `words` — vocabulary concepts and lesson metadata;
+- `word_translations` — one row per word + language, with text, example, audio and update timestamp;
+- `user_languages` — the learner's selected languages and preferred order.
+
+The existing `nl`, `en`, `ru`, example and audio columns remain temporarily for compatibility with the current client. On startup, existing NL/EN/RU content is backfilled into `word_translations`. Updates to NL/EN/RU through the new translation API are synchronized back to legacy columns during the migration period.
+
+This means adding a new supported language does not require `ALTER TABLE words`.
+
+## Core learning model
+
+Lesson → vocabulary concept → 3+ selected language forms → examples/pronunciation → learning status.
+
+A learner chooses at least three languages. One concept may contain as many supported language forms as the learner needs.
+
+## Multilingual API
+
+- `GET /api/languages` — returns the 45-language launch catalog and metadata.
+- `GET /api/user_languages` — returns the learner's selected languages.
+- `PUT /api/user_languages` — stores three or more selected languages.
+- `GET /api/words/<word_id>/translations` — returns language-agnostic translations for one vocabulary item.
+- `PUT /api/words/<word_id>/translations` — creates or updates one or more language forms.
+
+## Main capabilities
+
+- Vocabulary lessons.
+- Initial 45-language catalog.
+- Three or more languages in one learning flow.
+- Multiple translations connected to one vocabulary concept.
+- Pronunciation audio.
+- Difficult-word marking and focused review.
+- Word-level learning progress.
+- Mobile-first web interface.
+- Telegram Mini App access.
+- Google and Telegram account-entry points on the public site.
+
+## Website localization
+
+The website interface is currently localized in a smaller set of languages and is expanded independently from the learning-language catalog. Current crawlable landing interfaces include English, Dutch, Russian, German, French, Spanish, Italian, Portuguese, Polish, Chinese Mandarin and Japanese.
+
+This separation prevents the application data architecture from depending on the number of marketing-site translations.
+
+## Brand
+
+Name: ParallelLingvo
+Primary color: #5D12C7
+Brand gradient: #5D12C7 → #9B37E8 → #D61399 → #F6365D → #FD9016
+Brand idea: One word. Multiple languages. One learning flow.
+
+## Public resources
+
+Website: https://parallellingvo.app/
+Application: https://app.parallellingvo.app/
+Sitemap: https://parallellingvo.app/sitemap.xml
+Robots policy: https://parallellingvo.app/robots.txt
+RSS: https://parallellingvo.app/feed.xml
+Repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch

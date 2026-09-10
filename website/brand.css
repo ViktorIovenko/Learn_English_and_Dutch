@@ -1,0 +1,89 @@
+:root{
+  --brand-primary:#5D12C7;
+  --brand-primary-dark:#33013E;
+  --brand-violet:#9B37E8;
+  --brand-magenta:#D61399;
+  --brand-coral:#F6365D;
+  --brand-orange:#FD9016;
+  --brand-soft:#F7EEFF;
+  --brand-gradient:linear-gradient(135deg,#5D12C7 0%,#9B37E8 34%,#D61399 55%,#F6365D 76%,#FD9016 100%);
+  --primary:var(--brand-primary);
+  --primary-dark:#4A0AA3;
+  --violet:var(--brand-violet);
+  --soft:var(--brand-soft);
+}
+
+body{
+  background:radial-gradient(circle at 8% 2%,rgba(93,18,199,.08),transparent 30%),radial-gradient(circle at 88% 12%,rgba(246,54,93,.05),transparent 26%),var(--bg);
+}
+
+/* [ИЗМЕНЕНО 2026-09-09] Логотип на desktop увеличен ровно в 2 раза: 210x58 -> 420x116. */
+.brand{
+  width:420px;
+  min-height:116px;
+  background:url('/assets/parallel-lingvo-logo.png') left center/contain no-repeat;
+}
+.brand>*{display:none!important}
+.footer-brand-block .brand{width:220px;min-height:128px}
+.auth-card .brand-mark.auth-logo{
+  display:block!important;
+  width:46px;
+  height:46px;
+  min-width:46px;
+  border-radius:12px;
+  background:url('/favicon.svg') center/contain no-repeat;
+  color:transparent;
+  box-shadow:none;
+}
+
+.btn{
+  background:linear-gradient(135deg,#5D12C7,#9B37E8 55%,#D61399);
+  box-shadow:0 12px 28px rgba(93,18,199,.24);
+}
+.btn:hover{box-shadow:0 18px 34px rgba(93,18,199,.31)}
+.btn-secondary{background:rgba(255,255,255,.88);color:#32113D}
+.nav-signup,.eyebrow,.text-link{color:var(--brand-primary)!important}
+
+.hero::before{background-image:radial-gradient(rgba(93,18,199,.13) 1px,transparent 1px)}
+.hero-glow-one{background:radial-gradient(circle,rgba(155,55,232,.17),rgba(155,55,232,0) 69%)}
+.hero-glow-two{background:radial-gradient(circle,rgba(246,54,93,.10),rgba(246,54,93,0) 70%)}
+.hero-badge{border-color:rgba(93,18,199,.16);color:#6D28D9}
+.hero-badge span,.hero-proof span::before{background:var(--brand-primary)}
+.hero h1 span{background:var(--brand-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stage-orbit{border-color:rgba(93,18,199,.14)}
+.progress-track span,.mini-progress span{background:linear-gradient(90deg,#5D12C7,#D61399,#FD9016)}
+.translation>b,.step-icon,.feature-icon,.post-arrow{background:var(--brand-soft);color:var(--brand-primary)}
+
+.feature-gradient{
+  background:radial-gradient(circle at 80% 15%,rgba(255,255,255,.22),transparent 25%),linear-gradient(145deg,#5D12C7,#9B37E8 40%,#D61399 67%,#F6365D 100%);
+}
+.features-section{background:linear-gradient(180deg,#F8F1FF,#FFF6F3)}
+.signup-section{background:linear-gradient(145deg,#22062C,#33013E 58%,#4A0A45);color:#fff}
+.signup-copy .eyebrow{color:#E3B7FF!important}
+.signup-points span{color:#F2D8FF;background:rgba(155,55,232,.20)}
+.faq-section{background:#FAF5FF}
+.article-note{background:var(--brand-soft);border-color:rgba(93,18,199,.12)}
+.cta{background:radial-gradient(circle at 85% 0%,rgba(255,255,255,.16),transparent 23%),linear-gradient(125deg,#5D12C7,#D61399 58%,#F6365D 82%,#FD9016 115%)}
+.cta .eyebrow{color:#F3D8FF!important}
+.site-footer{background:#21062A}
+
+/* Multilingual navigation */
+.lang-switch{position:relative;display:flex;align-items:center;gap:5px;padding:5px;border:1px solid rgba(93,18,199,.13);border-radius:13px;background:rgba(255,255,255,.78);box-shadow:0 6px 18px rgba(51,1,62,.05)}
+.lang-switch a{display:flex;align-items:center;justify-content:center;min-width:34px;height:31px;padding:0 8px;border-radius:9px;text-decoration:none;font-size:.75rem;font-weight:800;color:#667085;letter-spacing:.02em}
+.lang-switch a:hover{background:var(--brand-soft);color:var(--brand-primary)}
+.lang-switch a.active{background:var(--brand-primary);color:#fff}
+.language-note{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.language-note span{padding:7px 11px;border-radius:999px;background:#fff;border:1px solid rgba(93,18,199,.10);font-size:.78rem;font-weight:760;color:#55435c}
+.supported-languages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px}.supported-language{padding:22px;border-radius:20px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.supported-language strong{display:block;font-size:1.08rem;margin-bottom:5px}.supported-language span{color:var(--muted);font-size:.9rem}
+
+@media(max-width:900px){
+  .brand{width:175px;min-height:52px}
+  .footer-brand-block .brand{width:190px;min-height:112px}
+  .lang-switch{order:3}
+  .supported-languages{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .lang-switch{width:100%;justify-content:center;margin-top:5px}
+  .lang-switch a{flex:1}
+}
