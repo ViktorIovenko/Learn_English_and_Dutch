@@ -259,3 +259,7 @@ nav .language-dropdown{order:-1}
   background:transparent!important;
   box-shadow:none!important;
 }
+
+/* Keep header navigation on one horizontal line. */
+nav{flex-wrap:nowrap!important}
+nav a{white-space:nowrap}
