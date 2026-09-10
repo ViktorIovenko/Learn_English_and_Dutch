@@ -19,7 +19,7 @@ body{
 
 /* [ИЗМЕНЕНО 2026-09-09] Логотип на desktop увеличен ровно в 2 раза: 210x58 -> 420x116. */
 .brand{
-  width:420px;
+  width:154.49px;
   min-height:116px;
   background:url('/assets/parallel-lingvo-logo.png') left center/contain no-repeat;
 }
@@ -78,7 +78,7 @@ body{
 .supported-language strong{display:block;font-size:1.08rem;margin-bottom:5px}.supported-language span{color:var(--muted);font-size:.9rem}
 
 @media(max-width:900px){
-  .brand{width:175px;min-height:52px}
+  .site-header .brand{width:69.34px;min-height:52px}
   .footer-brand-block .brand{width:190px;min-height:112px}
   .lang-switch{order:3}
   .supported-languages{grid-template-columns:1fr}
