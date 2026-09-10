@@ -14,26 +14,29 @@
   /* [ИЗМЕНЕНО] Сохраняем заметный логотип, но убираем лишнюю высоту header.
      Предыдущее значение 420x116 делало шапку слишком высокой. */
   .site-header .nav-row {
-    position: relative;
-    min-height: 144px;
-  }
-
-  .site-header .brand {
-    flex: 0 0 600px;
-    width: 600px;
-    min-height: 144px;
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    align-items: center;
+    column-gap: 32px;
+    min-height: 116px;
   }
 
   .site-header .language-dropdown {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    grid-column: 2;
+    justify-self: center;
+  }
+
+  .site-header .nav-row > nav {
+    grid-column: 3;
+    width: max-content;
+    min-width: 0;
+    flex-wrap: nowrap;
   }
 
   /* [ИЗМЕНЕНО] Header + hero занимают ровно первый экран браузера.
      Если контент когда-либо станет выше, блок всё равно сможет расшириться. */
   .hero {
-    min-height: calc(100svh - 144px);
+    min-height: calc(100svh - 116px);
     display: flex;
     align-items: center;
     padding: clamp(18px, 2.8vh, 32px) 0;
