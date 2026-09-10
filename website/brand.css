@@ -43,6 +43,7 @@ body{
 .btn:hover{box-shadow:0 18px 34px rgba(93,18,199,.31)}
 .btn-secondary{background:rgba(255,255,255,.88);color:#32113D}
 .nav-signup,.eyebrow,.text-link{color:var(--brand-primary)!important}
+nav [hidden]{display:none!important}
 
 .hero::before{background-image:radial-gradient(rgba(93,18,199,.13) 1px,transparent 1px)}
 .hero-glow-one{background:radial-gradient(circle,rgba(155,55,232,.17),rgba(155,55,232,0) 69%)}
