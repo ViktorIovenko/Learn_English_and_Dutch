@@ -14,6 +14,10 @@
     logout.textContent = 'Log out';
     logout.setAttribute('aria-label', 'Log out from ParallelLingvo');
     logout.hidden = true;
+    logout.addEventListener('click', (event) => {
+      event.preventDefault();
+      window.location.assign(logout.href);
+    });
     navigation.append(logout);
 
     fetch(`${appBase}/auth/session-profile`, { credentials: 'include' })
