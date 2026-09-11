@@ -1,0 +1,46 @@
+{
+  "slug": "parallel-method",
+  "date": "2026-09-11",
+  "locales": {
+    "en": {
+      "title": "How the parallel learning method works",
+      "description": "One word opens the door to several languages at once — the mechanics.",
+      "eyebrow": "Languages",
+      "tags": ["Languages", "Learning", "Tips"],
+      "author": "ParallelLingvo Team",
+      "readMinutes": 6,
+      "dateLabel": "Sep 11, 2026",
+      "body": [
+        { "type": "p", "text": "Most vocabulary apps repeat the same idea for every language pair: one deck for Spanish, another for German, a third for Dutch — three separate lists of the same underlying words. ParallelLingvo starts from a different assumption. A word isn't three unrelated facts to memorize three times; it's one concept that happens to have several names. So instead of duplicating decks, every card holds one concept with all of its translations attached to it at once." },
+        { "type": "h2", "text": "One card, every language you're learning" },
+        { "type": "p", "text": "When you open a lesson, each card shows your word's translation in every language you've currently selected — not just the one pair you'd normally be studying. Add a third or fourth language later, and it slots into the same cards retroactively; you don't rebuild anything." },
+        { "type": "p", "text": "One of those languages is always the \"target\" for that pass through the card: its translation stays hidden, and you spell it out yourself, letter by letter, instead of just picking it out of a multiple-choice list. Recognizing a word and being able to produce it are different skills, and only one of them is useful in a real conversation." },
+        { "type": "quote", "text": "Translations stay attached to the same concept, so a session in one lesson moves every selected language forward." },
+        { "type": "h2", "text": "Why typing beats tapping" },
+        { "type": "p", "text": "Flashcard apps that only ask you to recognize a word train recognition — useful for reading, not for speaking or writing. Typing forces active recall: your brain has to reconstruct the word instead of just confirming it looks familiar. Get a letter wrong and the card shows you exactly where the mistake happened, so the correction is specific instead of a vague \"try again.\"" },
+        { "type": "p", "text": "Every correct answer also unlocks pronunciation audio for that word, generated per language, so you leave each card having seen it, spelled it, and heard it." },
+        { "type": "p", "text": "None of this requires you to slow down and study one language at a time. The parallel structure means a single study session — the same words, the same ten minutes — moves every language you're learning forward together, instead of splitting your time between separate apps or separate decks for each one." }
+      ]
+    },
+    "ru": {
+      "title": "Как работает метод параллельного изучения",
+      "description": "Одно слово открывает дверь сразу в несколько языков — разбираем механику.",
+      "eyebrow": "Языки",
+      "tags": ["Языки", "Обучение", "Советы"],
+      "author": "Команда ParallelLingvo",
+      "readMinutes": 6,
+      "dateLabel": "11 сен 2026",
+      "body": [
+        { "type": "p", "text": "Большинство приложений для слов повторяют одну и ту же идею для каждой языковой пары: одна колода для испанского, другая для немецкого, третья для голландского — три отдельных списка одних и тех же по сути слов. ParallelLingvo исходит из другого допущения. Слово — это не три разных факта, которые нужно запомнить трижды, а одно понятие с несколькими названиями. Поэтому вместо дублирования колод каждая карточка сразу содержит понятие со всеми привязанными к нему переводами." },
+        { "type": "h2", "text": "Одна карточка — все языки, которые вы учите" },
+        { "type": "p", "text": "Когда вы открываете урок, каждая карточка показывает перевод слова сразу на всех выбранных вами языках — а не только на той паре, которую вы обычно изучали бы. Добавите третий или четвёртый язык позже — он встроится в те же карточки задним числом, ничего пересобирать не придётся." },
+        { "type": "p", "text": "Один из языков всегда становится «целевым» для этого прохода по карточке: его перевод скрыт, и вы вводите слово сами, по буквам, а не просто выбираете вариант из списка. Узнавать слово и уметь его воспроизвести — разные навыки, а в реальном разговоре полезен только второй." },
+        { "type": "quote", "text": "Переводы остаются привязаны к одному понятию, поэтому один урок продвигает вперёд сразу все выбранные языки." },
+        { "type": "h2", "text": "Почему набирать полезнее, чем нажимать" },
+        { "type": "p", "text": "Приложения-карточки, которые просят только узнать слово, тренируют узнавание — это полезно для чтения, но не для устной речи и письма. Набор текста заставляет вспоминать активно: мозг должен воссоздать слово, а не просто подтвердить, что оно кажется знакомым. Ошибётесь в букве — карточка точно покажет, где именно, и правка будет конкретной, а не расплывчатым «попробуйте ещё раз»." },
+        { "type": "p", "text": "Каждый правильный ответ также открывает произношение слова — озвучку генерируют отдельно для каждого языка, так что вы уходите с карточки, увидев слово, написав его и услышав его звучание." },
+        { "type": "p", "text": "И всё это не требует замедляться и учить языки по одному. Параллельная структура означает, что одна учебная сессия — те же слова, те же десять минут — продвигает вперёд сразу все изучаемые языки, вместо того чтобы делить время между разными приложениями или колодами под каждый язык." }
+      ]
+    }
+  }
+}

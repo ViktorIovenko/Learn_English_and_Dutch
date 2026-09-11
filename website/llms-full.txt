@@ -1,72 +1,101 @@
 # ParallelLingvo — full context
 
-ParallelLingvo is a multilingual vocabulary learning application with an initial catalog of 45 learning languages. The central product idea is to keep one vocabulary concept connected to multiple language forms instead of duplicating the same concept across many bilingual decks.
+ParallelLingvo is a multilingual vocabulary learning application. The central product idea is "one word, every language you speak": a single vocabulary concept stays connected to every language a learner selects, instead of duplicating that concept across separate bilingual decks.
 
 ## Product purpose
 
-ParallelLingvo is designed for multilingual learners, international families, immigrants, students preparing for language exams, international professionals, travelers, and anyone who studies or uses several languages at the same time.
+Designed for multilingual learners, international families, immigrants, students preparing for language exams, international professionals, travelers, and anyone who studies or uses several languages at the same time.
 
-## Learning-language catalog
+## Core idea and hero pitch
 
-The initial catalog contains 45 languages: major European languages plus key world languages.
+"One word. Every language you speak." Most vocabulary apps make learners rebuild the same word list for every language pair. ParallelLingvo keeps one concept — with all its translations, example sentences and pronunciation — in a single card. A learner studies a word once and moves forward in every language they've selected at the same time.
 
-European catalog includes English, Dutch, German, French, Spanish, Italian, Portuguese, Polish, Russian, Ukrainian, Czech, Slovak, Hungarian, Romanian, Bulgarian, Croatian, Serbian, Bosnian, Slovenian, Greek, Swedish, Norwegian, Danish, Finnish, Estonian, Latvian, Lithuanian, Icelandic, Irish, Albanian, Macedonian, Turkish, Maltese, Belarusian, Romansh, Georgian, Armenian and Azerbaijani.
+## How the practice exercise works
 
-Additional major world languages include Chinese Mandarin, Japanese, Korean, Arabic, Hindi, Indonesian and Vietnamese.
-
-The catalog is defined in `app/languages.py` and can grow later without adding new columns to the `words` table.
-
-## Scalable data architecture
-
-ParallelLingvo no longer treats a language as a dedicated database column. The normalized model uses:
-
-- `words` — vocabulary concepts and lesson metadata;
-- `word_translations` — one row per word + language, with text, example, audio and update timestamp;
-- `user_languages` — the learner's selected languages and preferred order.
-
-The existing `nl`, `en`, `ru`, example and audio columns remain temporarily for compatibility with the current client. On startup, existing NL/EN/RU content is backfilled into `word_translations`. Updates to NL/EN/RU through the new translation API are synchronized back to legacy columns during the migration period.
-
-This means adding a new supported language does not require `ALTER TABLE words`.
-
-## Core learning model
-
-Lesson → vocabulary concept → 3+ selected language forms → examples/pronunciation → learning status.
-
-A learner chooses at least three languages. One concept may contain as many supported language forms as the learner needs.
-
-## Multilingual API
-
-- `GET /api/languages` — returns the 45-language launch catalog and metadata.
-- `GET /api/user_languages` — returns the learner's selected languages.
-- `PUT /api/user_languages` — stores three or more selected languages.
-- `GET /api/words/<word_id>/translations` — returns language-agnostic translations for one vocabulary item.
-- `PUT /api/words/<word_id>/translations` — creates or updates one or more language forms.
+Each card shows the word's translations across the learner's active languages. One language is the current "target": its word is hidden and the learner spells it out letter by letter by dragging or tapping tiles into place, rather than simply recognising a printed answer. Getting it right reveals the sentence and unlocks pronunciation audio (spoken via text-to-speech, one voice per language). A learner can flag a word as difficult to review it separately later, and a daily-goal timer tracks study time per session.
 
 ## Main capabilities
 
-- Vocabulary lessons.
-- Initial 45-language catalog.
-- Three or more languages in one learning flow.
-- Multiple translations connected to one vocabulary concept.
-- Pronunciation audio.
-- Difficult-word marking and focused review.
-- Word-level learning progress.
-- Mobile-first web interface.
-- Telegram Mini App access.
-- Google and Telegram account-entry points on the public site.
+- AI-built lessons: give it a word, a list, or a topic; it produces translations, example sentences and a ready lesson.
+- Learning you can guide: parent accounts assign lessons, set a priority topic, and see each child's real progress.
+- One concept, all languages: a single concept links to several languages at once rather than separate language-pair decks.
+- Connect via MCP: add words directly from any AI tool already in use, through an MCP connector.
+- Focus on difficult words: mark tricky words and train them in a separate, focused review.
+
+## Four ways to fill a deck (word sources)
+
+1. Upload your own list — paste words; AI translates them into the target languages and writes an example sentence for each.
+2. Let AI generate words — pick a topic and a level (A2/B1/B2); AI builds a whole deck from scratch.
+3. Connect another AI — add words through an MCP connector from any AI tool already in use (e.g. Claude, ChatGPT, Gemini).
+4. Get a deck from a friend — another user can share their deck directly via a share code or username.
+
+## Family accounts
+
+A parent account and a child account share one deck and stay in sync:
+- Real progress, not guesses — words learned, streak and accuracy per language, updated live.
+- Priority lessons — the parent picks which topic the child practices first.
+- Synced word lists — the parent's and child's decks are always the same set.
+- Hand over new words — words a parent adds land directly in the child's queue.
+
+## Language catalog
+
+48 languages at launch: the major European languages plus Mandarin, Japanese, Korean, Arabic, Hindi, Indonesian and Vietnamese. The catalog can grow without redesigning the underlying data model, since vocabulary concepts are stored independently of any specific language column.
+
+## Platforms
+
+- Telegram Mini App — https://app.parallellingvo.app/
+- Web app (mobile-first) — https://app.parallellingvo.app/
+- Android app — https://play.google.com/store/apps/details?id=app.parallellingvo
+- iOS — planned, not yet available.
+
+## Pricing
+
+- Free, with ads — €0/month: 48 languages, unlimited lessons, audio and difficult-word review; no AI-built lessons.
+- €3/month, no ads — everything in Free, ad-free experience.
+- €6/month, best value — everything in the €3 plan, plus AI-built lessons and AI-generated translations and example sentences.
+
+## Frequently asked questions
+
+Q: Which languages are supported?
+A: 48 at launch: the major European languages plus Mandarin, Japanese, Korean, Arabic, Hindi, Indonesian and Vietnamese. More can be added without redesigning storage.
+
+Q: Can I really learn more than three languages at once?
+A: Yes. Translations stay attached to the same concept, so a session in one lesson moves every selected language forward.
+
+Q: How is it different from a flashcard app?
+A: Flashcards are bilingual by design — one deck per pair. Here the structure itself is multilingual, and you type the word out letter by letter instead of just recognising it.
+
+Q: Does it work on mobile?
+A: Yes — a mobile-first web app, an Android app, and a Telegram mini app. Native iOS is planned.
 
 ## Website localization
 
-The website interface is currently localized in a smaller set of languages and is expanded independently from the learning-language catalog. Current crawlable landing interfaces include English, Dutch, Russian, German, French, Spanish, Italian, Portuguese, Polish, Chinese Mandarin and Japanese.
+The public marketing website's own interface is localized in English and Russian:
 
-This separation prevents the application data architecture from depending on the number of marketing-site translations.
+- English: https://parallellingvo.app/
+- Русский: https://parallellingvo.app/ru/
+
+This is a separate concern from the 48-language learning catalog above — the marketing site's translation set is expanded independently from the languages the application teaches.
+
+## Blog
+
+Localized blog indexes and article translations exist in English and Russian:
+
+- English: https://parallellingvo.app/blog/
+- Русский: https://parallellingvo.app/ru/blog/
+
+Articles (newest first):
+
+<!-- BLOG-LIST:START -->
+1. How the parallel learning method works — One word opens the door to several languages at once — the mechanics. https://parallellingvo.app/blog/parallel-method/
+<!-- BLOG-LIST:END -->
 
 ## Brand
 
 Name: ParallelLingvo
-Primary color: #5D12C7
-Brand gradient: #5D12C7 → #9B37E8 → #D61399 → #F6365D → #FD9016
-Brand idea: One word. Multiple languages. One learning flow.
+Primary accent color: #5D12C7
+Brand gradient: #3A16E0 → #A31BE8 → #F0179B → #F9A80B
+Brand idea: One word. Every language you speak.
 
 ## Public resources
 
