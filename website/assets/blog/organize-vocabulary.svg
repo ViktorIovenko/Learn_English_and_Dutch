@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Organized multilingual vocabulary</title>
+  <desc id="desc">A ParallelLingvo illustration showing lessons, concepts and Dutch, English and Russian vocabulary organized in one system.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f8ff"/>
+      <stop offset="0.55" stop-color="#edf0ff"/>
+      <stop offset="1" stop-color="#f4edff"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b5ce2"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="15" stdDeviation="22" flood-color="#30356b" flood-opacity="0.13"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" rx="42" fill="url(#bg)"/>
+  <circle cx="1090" cy="82" r="94" fill="#5b5ce2" opacity="0.06"/>
+  <circle cx="120" cy="600" r="130" fill="#7c3aed" opacity="0.06"/>
+
+  <g filter="url(#shadow)">
+    <rect x="96" y="106" width="385" height="462" rx="34" fill="#fff"/>
+    <rect x="126" y="138" width="112" height="18" rx="9" fill="#dfe2f4"/>
+    <rect x="126" y="176" width="262" height="15" rx="7.5" fill="#eceef8"/>
+
+    <rect x="126" y="226" width="325" height="82" rx="22" fill="#f5f6ff"/>
+    <circle cx="168" cy="267" r="22" fill="#5b5ce2" opacity="0.13"/>
+    <text x="168" y="274" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#5b5ce2">1</text>
+    <rect x="207" y="250" width="172" height="13" rx="6.5" fill="#bfc4e8"/>
+    <rect x="207" y="273" width="112" height="10" rx="5" fill="#dfe2f4"/>
+
+    <rect x="126" y="326" width="325" height="82" rx="22" fill="#f8f5ff"/>
+    <circle cx="168" cy="367" r="22" fill="#7c3aed" opacity="0.12"/>
+    <text x="168" y="374" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#7c3aed">2</text>
+    <rect x="207" y="350" width="150" height="13" rx="6.5" fill="#c9b9e8"/>
+    <rect x="207" y="373" width="138" height="10" rx="5" fill="#e6ddf4"/>
+
+    <rect x="126" y="426" width="325" height="82" rx="22" fill="#f3f8ff"/>
+    <circle cx="168" cy="467" r="22" fill="#229ed9" opacity="0.12"/>
+    <text x="168" y="474" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#229ed9">3</text>
+    <rect x="207" y="450" width="184" height="13" rx="6.5" fill="#bddbed"/>
+    <rect x="207" y="473" width="126" height="10" rx="5" fill="#d9eaf5"/>
+  </g>
+
+  <path d="M482 337h104" stroke="#8b8cf1" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+  <circle cx="586" cy="337" r="8" fill="#696af0"/>
+
+  <g filter="url(#shadow)">
+    <rect x="610" y="128" width="494" height="418" rx="38" fill="#fff"/>
+    <rect x="654" y="172" width="162" height="58" rx="18" fill="url(#accent)"/>
+    <path d="M683 202h25l11 11h50" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+
+    <path d="M735 230v82M735 312h138M735 312v56M873 312v56" fill="none" stroke="#c4c7e8" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="735" cy="312" r="8" fill="#696af0"/>
+    <circle cx="873" cy="312" r="8" fill="#696af0"/>
+
+    <rect x="660" y="368" width="150" height="84" rx="22" fill="#f4f5ff"/>
+    <circle cx="700" cy="410" r="24" fill="#5b5ce2" opacity="0.12"/>
+    <path d="M692 410l7 7 14-17" fill="none" stroke="#5b5ce2" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="733" y="394" width="48" height="11" rx="5.5" fill="#bfc4e8"/>
+    <rect x="733" y="416" width="36" height="9" rx="4.5" fill="#dfe2f4"/>
+
+    <g transform="translate(836 368)">
+      <rect width="222" height="132" rx="25" fill="#faf9ff"/>
+      <rect x="22" y="24" width="52" height="40" rx="13" fill="#eef0ff"/>
+      <text x="48" y="51" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#5b5ce2">NL</text>
+      <rect x="84" y="24" width="52" height="40" rx="13" fill="#eef0ff"/>
+      <text x="110" y="51" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#5b5ce2">EN</text>
+      <rect x="146" y="24" width="52" height="40" rx="13" fill="#f4edff"/>
+      <text x="172" y="51" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#7c3aed">RU</text>
+      <rect x="22" y="82" width="176" height="12" rx="6" fill="#dfe2f4"/>
+      <rect x="22" y="104" width="122" height="9" rx="4.5" fill="#eceef8"/>
+    </g>
+  </g>
+</svg>

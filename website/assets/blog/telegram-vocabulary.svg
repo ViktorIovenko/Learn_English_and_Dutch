@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Mobile multilingual vocabulary practice</title>
+  <desc id="desc">A ParallelLingvo illustration of a mobile vocabulary interface with multilingual word cards and quick access.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#edf8ff"/>
+      <stop offset="0.55" stop-color="#f6f7ff"/>
+      <stop offset="1" stop-color="#eeeaff"/>
+    </linearGradient>
+    <linearGradient id="phone" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#20243f"/>
+      <stop offset="1" stop-color="#111427"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#27335e" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" rx="42" fill="url(#bg)"/>
+  <circle cx="102" cy="108" r="82" fill="#229ed9" opacity="0.08"/>
+  <circle cx="1080" cy="566" r="132" fill="#7c3aed" opacity="0.07"/>
+
+  <g filter="url(#shadow)">
+    <rect x="426" y="64" width="348" height="548" rx="58" fill="url(#phone)"/>
+    <rect x="444" y="84" width="312" height="508" rx="43" fill="#f9faff"/>
+    <rect x="548" y="96" width="104" height="22" rx="11" fill="#20243f"/>
+
+    <circle cx="492" cy="156" r="28" fill="#229ed9"/>
+    <path d="M475 156l35-16-8 34-12-10-8 7 2-12-9-3Z" fill="#fff" opacity="0.95"/>
+    <rect x="535" y="142" width="128" height="13" rx="6.5" fill="#c5cae6"/>
+    <rect x="535" y="166" width="82" height="10" rx="5" fill="#e1e4f2"/>
+
+    <rect x="474" y="222" width="252" height="228" rx="28" fill="#fff" stroke="#e4e6f2" stroke-width="2"/>
+    <rect x="500" y="250" width="54" height="42" rx="13" fill="#eef0ff"/>
+    <text x="527" y="278" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#5b5ce2">NL</text>
+    <rect x="568" y="260" width="116" height="13" rx="6.5" fill="#aeb5df"/>
+
+    <rect x="500" y="310" width="54" height="42" rx="13" fill="#eef0ff"/>
+    <text x="527" y="338" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#5b5ce2">EN</text>
+    <rect x="568" y="320" width="132" height="13" rx="6.5" fill="#aeb5df"/>
+
+    <rect x="500" y="370" width="54" height="42" rx="13" fill="#f4edff"/>
+    <text x="527" y="398" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#7c3aed">RU</text>
+    <rect x="568" y="380" width="92" height="13" rx="6.5" fill="#c8b5e6"/>
+
+    <rect x="485" y="482" width="230" height="62" rx="20" fill="#5b5ce2"/>
+    <circle cx="526" cy="513" r="17" fill="#fff" opacity="0.18"/>
+    <path d="M519 513h14M526 506v14" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <rect x="558" y="503" width="116" height="12" rx="6" fill="#fff" opacity="0.84"/>
+    <rect x="558" y="524" width="78" height="9" rx="4.5" fill="#fff" opacity="0.42"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="116" y="208" width="250" height="154" rx="30" fill="#fff"/>
+    <circle cx="169" cy="260" r="28" fill="#229ed9" opacity="0.12"/>
+    <path d="M157 260h24M169 248v24" stroke="#229ed9" stroke-width="5" stroke-linecap="round"/>
+    <rect x="211" y="243" width="112" height="13" rx="6.5" fill="#c4cbe3"/>
+    <rect x="211" y="267" width="78" height="10" rx="5" fill="#e1e5f0"/>
+    <path d="M146 318c15-14 27 14 42 0s27 14 42 0 27 14 42 0 27 14 42 0" fill="none" stroke="#5b5ce2" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="836" y="272" width="248" height="136" rx="30" fill="#fff"/>
+    <circle cx="888" cy="324" r="28" fill="#7c3aed" opacity="0.11"/>
+    <path d="M876 324l8 8 17-20" fill="none" stroke="#7c3aed" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="930" y="307" width="112" height="13" rx="6.5" fill="#c9bee3"/>
+    <rect x="930" y="332" width="76" height="10" rx="5" fill="#e5e0ee"/>
+    <rect x="867" y="372" width="186" height="10" rx="5" fill="#e6e8f3"/>
+  </g>
+</svg>
