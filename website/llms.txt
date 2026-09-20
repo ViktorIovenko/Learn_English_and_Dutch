@@ -1,0 +1,60 @@
+# ParallelLingvo
+
+> ParallelLingvo is a multilingual vocabulary learning application with an initial catalog of 45 learning languages. Learners can choose three or more languages and keep vocabulary, translations, pronunciation, difficult-word review, and progress connected around the same concept.
+
+Canonical public website: https://parallellingvo.app/
+Learning application: https://app.parallellingvo.app/
+Source repository: https://github.com/ViktorIovenko/Learn_English_and_Dutch
+
+## Learning-language architecture
+
+ParallelLingvo targets 45 launch languages: major European languages plus selected major world languages. The backend uses normalized `word_translations` records rather than adding one database column per language, so the catalog can expand later without redesigning the `words` table.
+
+A learner selects at least three languages. One vocabulary concept can have any number of language forms attached to it.
+
+The application catalog is the source of truth: `app/languages.py`.
+
+## Current localized website interfaces
+
+- English (EN): https://parallellingvo.app/
+- Nederlands / Dutch (NL): https://parallellingvo.app/nl/
+- Русский / Russian (RU): https://parallellingvo.app/ru/
+- Deutsch / German (DE): https://parallellingvo.app/de/
+- Français / French (FR): https://parallellingvo.app/fr/
+- Español / Spanish (ES): https://parallellingvo.app/es/
+- Italiano / Italian (IT): https://parallellingvo.app/it/
+- Português / Portuguese (PT): https://parallellingvo.app/pt/
+- Polski / Polish (PL): https://parallellingvo.app/pl/
+- 中文（普通话）/ Chinese Mandarin (ZH): https://parallellingvo.app/zh/
+- 日本語 / Japanese (JA): https://parallellingvo.app/ja/
+
+Website-interface localization and supported learning languages are separate concerns. Additional website localizations can be added progressively while the learning engine remains language-agnostic.
+
+## Core learning model
+
+Lesson -> vocabulary concept -> 3+ selected language forms -> examples/pronunciation -> learning status.
+
+## Multilingual API
+
+- `GET /api/languages` — launch language catalog.
+- `GET /api/user_languages` — current learner language selection.
+- `PUT /api/user_languages` — save three or more selected languages.
+- `GET /api/words/<word_id>/translations` — normalized translations for a word.
+- `PUT /api/words/<word_id>/translations` — create/update translations without adding database columns.
+
+Legacy NL/EN/RU fields remain temporarily for backward compatibility during migration.
+
+## Blog indexes
+
+The current editorial blog has localized indexes and article translations in English, Dutch and Russian:
+
+- English: https://parallellingvo.app/blog/
+- Nederlands: https://parallellingvo.app/nl/blog/
+- Русский: https://parallellingvo.app/ru/blog/
+
+## Machine-readable resources
+
+- Full site context: https://parallellingvo.app/llms-full.txt
+- RSS feed: https://parallellingvo.app/feed.xml
+- XML sitemap: https://parallellingvo.app/sitemap.xml
+- Robots policy: https://parallellingvo.app/robots.txt

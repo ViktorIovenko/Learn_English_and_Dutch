@@ -1,0 +1,263 @@
+/* [ИЗМЕНЕНО 2026-09-09] Языковой селектор расположен сразу после логотипа. */
+/* [ИЗМЕНЕНО 2026-09-09] Языки теперь открываются не длинным списком,
+   а большим всплывающим окном с сеткой и radio-dot индикаторами. */
+.language-dropdown{
+  position:relative;
+  flex-shrink:0;
+  z-index:70;
+}
+
+.language-dropdown>summary{
+  list-style:none;
+  min-width:94px;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  padding:4px 13px 4px 7px;
+  border:1px solid rgba(93,18,199,.14);
+  border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(249,245,255,.96));
+  color:#32113D;
+  font-size:.82rem;
+  font-weight:830;
+  letter-spacing:.015em;
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(52,16,74,.08),inset 0 1px 0 rgba(255,255,255,.9);
+  user-select:none;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease,background .18s ease;
+}
+
+.language-dropdown>summary::-webkit-details-marker{display:none}
+
+.language-dropdown>summary>span:first-child{
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  flex:0 0 32px;
+  border-radius:50%;
+  background:linear-gradient(135deg,rgba(93,18,199,.11),rgba(214,19,153,.08));
+  font-size:.95rem;
+  line-height:1;
+  box-shadow:inset 0 0 0 1px rgba(93,18,199,.07);
+}
+
+.language-dropdown>summary::after{
+  content:"";
+  width:7px;
+  height:7px;
+  margin-left:1px;
+  border-right:1.8px solid #7b6682;
+  border-bottom:1.8px solid #7b6682;
+  transform:rotate(45deg) translateY(-2px);
+  transform-origin:center;
+  transition:transform .18s ease,border-color .18s ease;
+}
+
+.language-dropdown>summary:hover,
+.language-dropdown>summary:focus-visible{
+  border-color:rgba(93,18,199,.30);
+  box-shadow:0 11px 28px rgba(93,18,199,.12),0 0 0 4px rgba(93,18,199,.045);
+  outline:none;
+  transform:translateY(-1px);
+}
+
+.language-dropdown[open]>summary{
+  border-color:rgba(93,18,199,.30);
+  background:#fff;
+  box-shadow:0 12px 30px rgba(93,18,199,.13),0 0 0 4px rgba(93,18,199,.055);
+}
+
+.language-dropdown[open]>summary::after{
+  transform:rotate(225deg) translate(-1px,-1px);
+  border-color:#5D12C7;
+}
+
+/* Всплывающее окно */
+.language-menu{
+  position:absolute;
+  top:calc(100% + 14px);
+  left:0;
+  right:auto;
+  width:min(560px,calc(100vw - 32px));
+  max-height:min(540px,72vh);
+  overflow:auto;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  padding:14px;
+  border:1px solid rgba(93,18,199,.12);
+  border-radius:24px;
+  background:rgba(255,255,255,.985);
+  box-shadow:0 28px 80px rgba(48,15,66,.20),0 8px 28px rgba(93,18,199,.08);
+  backdrop-filter:blur(22px) saturate(150%);
+  scrollbar-width:thin;
+  scrollbar-color:rgba(93,18,199,.24) transparent;
+  animation:languagePopupIn .16s ease-out;
+}
+
+.language-menu::-webkit-scrollbar{width:8px}
+.language-menu::-webkit-scrollbar-track{background:transparent}
+.language-menu::-webkit-scrollbar-thumb{background:rgba(93,18,199,.20);border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+
+.language-menu::before{
+  content:"Choose language";
+  grid-column:1/-1;
+  display:block;
+  padding:4px 5px 10px;
+  color:#32113D;
+  font-size:.92rem;
+  font-weight:850;
+  letter-spacing:-.01em;
+}
+
+/* Карточка языка */
+.language-menu a{
+  position:relative;
+  min-height:54px;
+  display:grid!important;
+  grid-template-columns:18px 26px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:9px 11px;
+  border:1px solid transparent;
+  border-radius:15px;
+  color:#382640!important;
+  background:#fff;
+  text-decoration:none;
+  font-size:.84rem;
+  font-weight:700;
+  transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease;
+}
+
+/* Круглый radio-indicator */
+.language-menu a::before{
+  content:"";
+  width:16px;
+  height:16px;
+  border:1.6px solid #c8bfd0;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:inset 0 0 0 4px #fff;
+  transition:border-color .16s ease,background .16s ease,box-shadow .16s ease;
+}
+
+.language-menu a:hover{
+  background:#FAF5FF;
+  border-color:rgba(93,18,199,.10);
+  color:#5D12C7!important;
+  transform:translateY(-1px);
+  box-shadow:0 7px 18px rgba(93,18,199,.06);
+}
+
+.language-menu a.active{
+  background:linear-gradient(135deg,rgba(93,18,199,.09),rgba(214,19,153,.055));
+  border-color:rgba(93,18,199,.15);
+  color:#5D12C7!important;
+  font-weight:820;
+}
+
+.language-menu a.active::before{
+  border-color:#7A24D6;
+  background:linear-gradient(135deg,#5D12C7,#D61399);
+  box-shadow:inset 0 0 0 4px #fff;
+}
+
+.language-menu .lang-flag{
+  width:26px;
+  text-align:center;
+  font-size:1.15rem;
+  line-height:1;
+}
+
+.language-menu .lang-code{
+  margin-left:auto;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#F5F1F7;
+  color:#978b9d;
+  font-size:.62rem;
+  font-weight:850;
+  letter-spacing:.05em;
+}
+
+.language-menu a.active .lang-code{
+  background:rgba(93,18,199,.10);
+  color:#7A24D6;
+}
+
+@keyframes languagePopupIn{
+  from{opacity:0;transform:translateY(-6px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+.supported-language-cloud{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  margin-top:22px;
+}
+.supported-language-cloud span{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 11px;
+  border:1px solid rgba(93,18,199,.10);
+  border-radius:999px;
+  background:rgba(255,255,255,.72);
+  color:#62526a;
+  font-size:.76rem;
+  font-weight:700;
+}
+
+@media(max-width:1060px){
+  nav .language-dropdown{display:block!important}
+  .language-dropdown{flex-shrink:0}
+  .language-menu a{display:grid!important}
+}
+
+@media(max-width:700px){
+  .nav-row{flex-wrap:wrap;padding:8px 0}
+  nav{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+  .language-dropdown>summary{min-height:40px;padding:4px 11px 4px 6px}
+  .language-dropdown>summary>span:first-child{width:29px;height:29px;flex-basis:29px}
+
+  /* На телефоне окно становится почти полноэкранной карточкой. */
+  .language-menu{
+    position:fixed;
+    top:76px;
+    left:14px;
+    right:14px;
+    width:auto;
+    max-height:calc(100vh - 94px);
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    border-radius:22px;
+  }
+}
+
+@media(max-width:500px){
+  .brand{width:155px;min-height:48px}
+  nav{gap:8px}
+  .language-dropdown>summary{min-width:82px;font-size:.74rem}
+  .language-menu{grid-template-columns:1fr;padding:12px}
+  .language-menu a{min-height:50px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .language-menu{animation:none}
+}
+
+/* One visual control: the details wrapper must not look like a second button. */
+.language-dropdown{
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+/* Keep header navigation on one horizontal line. */
+nav{flex-wrap:nowrap!important}
+nav a{white-space:nowrap}

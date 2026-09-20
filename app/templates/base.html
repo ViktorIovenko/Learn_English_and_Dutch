@@ -59,18 +59,32 @@
         }
       }catch(e){}
     })();
-    const params = new URLSearchParams(window.location.search);
-    const urlUid = params.get("uid") || "";
+
+    // [ИЗМЕНЕНО v6.14] Identity is now server/session verified.
+    // Never read ?uid= or localStorage uid and never send browser-controlled X-User-Id.
+    const SERVER_USER_ID = {{ (session.get("user_id") or session.get("tg_user_id") or "")|tojson }};
     const tgUserId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "";
-    if (urlUid) localStorage.setItem("uid", urlUid);
-    const USER_ID = tgUserId || localStorage.getItem("uid") || "";
-    window.USER_ID = USER_ID;
-    window.IDB_KEY_PREFIX = USER_ID ? ("uid:" + USER_ID + ":") : "uid:anon:";
-    window.apiFetch = function(url, opts = {}) {
+    let USER_ID = String(SERVER_USER_ID || tgUserId || "");
+
+    function setRuntimeUserId(uid){
+      USER_ID = String(uid || "");
+      window.USER_ID = USER_ID;
+      window.IDB_KEY_PREFIX = USER_ID ? ("uid:" + USER_ID + ":") : "uid:anon:";
+    }
+    setRuntimeUserId(USER_ID);
+
+    // Page-specific scripts are rendered after this script and may immediately call apiFetch.
+    // apiFetch waits for Telegram initData verification / existing Flask session check first.
+    window.authReady = null;
+    window.apiFetch = async function(url, opts = {}) {
+      if (window.authReady) {
+        try { await window.authReady; } catch(e) {}
+      }
       const o = Object.assign({}, opts);
-      o.headers = Object.assign({}, o.headers || {}, {"X-User-Id": USER_ID});
+      o.headers = Object.assign({}, o.headers || {});
       return fetch(url, o);
     };
+
     const termsModal = document.getElementById("termsModal");
     const termsAcceptBtn = document.getElementById("termsAcceptBtn");
     let termsUserId = "";
@@ -141,24 +155,28 @@
         _setText("acc_last", u.last_name || "");
       }catch(e){}
     }
-    (async () => {
+
+    window.authReady = (async () => {
       try {
-        const already = sessionStorage.getItem("auth_ok");
-        if (!already && tg && tg.initData) {
+        // Validate Telegram Mini App identity on the server on every fresh page load.
+        // The backend verifies initData with the configured bot token and creates the session.
+        if (tg && tg.initData) {
           const resp = await fetch("/api/auth/login_webapp", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ init_data: tg.initData })
           });
-          const js = await resp.json();
-          if (js && js.ok) sessionStorage.setItem("auth_ok", "1");
+          try { await resp.json(); } catch(e) {}
         }
       } catch(e) {}
+
       _fillFromTGUnsafe();
       try {
-        const r = await apiFetch("/api/me");
+        // Direct fetch is intentional: apiFetch itself waits for this authReady promise.
+        const r = await fetch("/api/me");
         const me = await r.json();
         if (me && me.ok && me.auth) {
+          setRuntimeUserId(me.user_id || USER_ID);
           _setText("acc_id", String(me.user_id||""));
           _setText("acc_username", me.username ? "@"+me.username : "");
           _setText("acc_first", me.first_name || "");
@@ -172,11 +190,16 @@
             document.dispatchEvent(new CustomEvent("hello-name-ready", {detail: name}));
           }
           maybeShowTerms(me.user_id || USER_ID);
-        } else {
-          _setAuth(false);
+          return me;
         }
-      } catch(e) { _setAuth(false); }
+        _setAuth(false);
+        return me || null;
+      } catch(e) {
+        _setAuth(false);
+        return null;
+      }
     })();
+
     /* ===========================================
        [ИЗМЕНЕНО v5.12] Таймер с сохранением в sessionStorage
        - НЕ сбрасывается при переходе по страницам

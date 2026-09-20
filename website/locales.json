@@ -1,0 +1,28 @@
+{
+  "default": "en",
+  "website_locales": [
+    {"code": "en", "name": "English", "native_name": "English", "flag": "🇬🇧", "path": "/"},
+    {"code": "nl", "name": "Dutch", "native_name": "Nederlands", "flag": "🇳🇱", "path": "/nl/"},
+    {"code": "ru", "name": "Russian", "native_name": "Русский", "flag": "🇷🇺", "path": "/ru/"},
+    {"code": "de", "name": "German", "native_name": "Deutsch", "flag": "🇩🇪", "path": "/de/"},
+    {"code": "fr", "name": "French", "native_name": "Français", "flag": "🇫🇷", "path": "/fr/"},
+    {"code": "es", "name": "Spanish", "native_name": "Español", "flag": "🇪🇸", "path": "/es/"},
+    {"code": "it", "name": "Italian", "native_name": "Italiano", "flag": "🇮🇹", "path": "/it/"},
+    {"code": "pt", "name": "Portuguese", "native_name": "Português", "flag": "🇵🇹", "path": "/pt/"},
+    {"code": "pl", "name": "Polish", "native_name": "Polski", "flag": "🇵🇱", "path": "/pl/"},
+    {"code": "zh", "name": "Chinese (Mandarin)", "native_name": "中文（普通话）", "flag": "🇨🇳", "path": "/zh/"},
+    {"code": "ja", "name": "Japanese", "native_name": "日本語", "flag": "🇯🇵", "path": "/ja/"}
+  ],
+  "learning_languages": [
+    "en", "nl", "de", "fr", "es", "it", "pt", "pl", "ru", "uk",
+    "cs", "sk", "hu", "ro", "bg", "hr", "sr", "bs", "sl", "el",
+    "sv", "no", "da", "fi", "et", "lv", "lt", "is", "ga", "sq",
+    "mk", "tr", "mt", "be", "rm", "ka", "hy", "az", "zh", "ja",
+    "ko", "ar", "hi", "id", "vi"
+  ],
+  "learning_language_count": 45,
+  "minimum_parallel_languages": 3,
+  "website_strategy": "Website interface localization and learning-language support are separate. The learning engine targets 45 launch languages and is architected to add more without database schema changes.",
+  "learning_model": "Users can combine three or more supported languages around one vocabulary concept.",
+  "source_of_truth": "Application learning-language metadata lives in app/languages.py. Keep public website claims synchronized with that catalog."
+}

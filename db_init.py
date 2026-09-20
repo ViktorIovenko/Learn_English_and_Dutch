@@ -1,9 +1,11 @@
+# [ИЗМЕНЕНО v6.5] Добавлена нормализованная многоязычная схема ParallelLingvo.
 # [ИЗМЕНЕНО v6.4] Приведён к актуальной схеме words (id INTEGER, lesson TEXT, number TEXT, ...)
 
 import sqlite3
 import time
 from config import Config
 from pathlib import Path
+from app.multilingual import ensure_multilingual_schema
 
 DEMO = [
     # number, lesson, nl, en, ru, ex_nl, ex_en, ex_ru, audio_nl, audio_en, audio_ru, difficult
@@ -44,10 +46,9 @@ def _conn():
     return conn
 
 def _ensure_words_schema(conn: sqlite3.Connection) -> None:
-    # Создадим базовую таблицу, если её нет (актуальная структура)
+    # Legacy columns remain for compatibility with the current UI.
     conn.executescript(SCHEMA_ACTUAL)
 
-    # Индексы
     cols = [r["name"] for r in conn.execute("PRAGMA table_info(words)")]
     if "user_id" not in cols:
         conn.execute("ALTER TABLE words ADD COLUMN user_id TEXT;")
@@ -66,7 +67,6 @@ def _ensure_words_schema(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_words_user_lesson ON words(user_id, lesson);")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS u_words_user_lesson_number ON words(user_id, lesson, number);")
 
-    # Колонка difficult (если отсутствует) — как в приложении
     cols = [r["name"] for r in conn.execute("PRAGMA table_info(words)")]
     if "difficult" not in cols:
         conn.execute("ALTER TABLE words ADD COLUMN difficult INTEGER NOT NULL DEFAULT 0;")
@@ -74,8 +74,11 @@ def _ensure_words_schema(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER;")
         conn.execute("UPDATE words SET updated_at = (strftime('%s','now') * 1000) WHERE updated_at IS NULL;")
 
+    # New normalized tables support 45 launch languages and future expansion
+    # without adding new columns to `words`.
+    ensure_multilingual_schema(conn, backfill_legacy=True)
+
 def _insert_demo(conn: sqlite3.Connection) -> None:
-    # Идемпотентная вставка/обновление демо-записей по UNIQUE(number)
     now_ms = int(time.time() * 1000)
     conn.executemany(
         """
@@ -99,8 +102,10 @@ def _insert_demo(conn: sqlite3.Connection) -> None:
         [("", "test", row[1], row[0], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], now_ms) for row in DEMO]
     )
 
+    # Copy demo NL/EN/RU values into the normalized table too.
+    ensure_multilingual_schema(conn, backfill_legacy=True)
+
 def main():
-    # Убедимся, что директория БД существует
     Path(Config.DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
     conn = _conn()
