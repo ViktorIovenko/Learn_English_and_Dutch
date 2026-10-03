@@ -8,6 +8,8 @@
 - Working directory/entrypoint: `/app`, safe command `python run.py`; container port `7001`.
 - Environment file path: `/opt/learn-words/.env` (content must never be read/indexed).
 - Nginx: container `proxy-nginx`; host config `/opt/proxy/nginx/conf.d/learn.conf`; `learn.iovenko.eu`, `/` → `http://learn-words:7001`.
+- MCP: `/mcp` and `/.well-known/oauth-protected-resource/mcp` → `mcp-gateway:8000`; OAuth issuer endpoints remain in `learn-words`.
+- MCP runtime: isolated Compose services `mcp-gateway` and `mcp-redis`; proxy network `web_proxy` plus internal application network `learn_mcp_internal`.
 - Database: host `/opt/learn-words/data/words.db` → container `/app/words.db`.
 - Static code: `/opt/learn-words/app/static`; persistent audio: `/opt/learn-words/data/audio` → `/app/app/static/audio`.
 - Bot persistence: `/opt/learn-words/data/bot_persistence.pkl` → `/app/bot_persistence.pkl`.

@@ -24,6 +24,7 @@ data class LessonsUiState(
 class LessonsViewModel : ViewModel() {
 
     private val repo = LearnWordsApp.instance.repository
+    private val prefs = LearnWordsApp.instance.preferencesManager
 
     private val _uiState = MutableStateFlow(LessonsUiState())
     val uiState: StateFlow<LessonsUiState> = _uiState
@@ -45,12 +46,21 @@ class LessonsViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(learningStreakDays = streak.data.learningStreakDays)
             }
             val childStatus = repo.getChildLearningStatus(timezoneOffsetMinutes)
+            val resolvedIsChild: Boolean
             if (childStatus is NetworkResult.Success) {
+                resolvedIsChild = childStatus.data.isChild
+                prefs.saveAccountTypeCache(if (resolvedIsChild) "child" else "standard")
                 _uiState.value = _uiState.value.copy(
-                    isChild = childStatus.data.isChild,
+                    isChild = resolvedIsChild,
                     todayCorrectWords = childStatus.data.todayCount,
                     todayGoal = childStatus.data.dailyGoal
                 )
+            } else {
+                // Request failed (e.g. stale server_url, transient network error) —
+                // fall back to the last confirmed account type instead of defaulting
+                // to "adult" and switching a child account to time-based tracking.
+                resolvedIsChild = prefs.accountTypeCache.first() == "child"
+                _uiState.value = _uiState.value.copy(isChild = resolvedIsChild)
             }
             if (!_uiState.value.isChild) {
                 val goalResult = repo.getDailyGoal()

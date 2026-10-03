@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.TimeZone
 
-enum class CheckResult { CORRECT, WRONG, NONE }
+enum class CheckResult { CORRECT, WRONG, MASTERED, NONE }
 
 data class LearnUiState(
     val isLoading: Boolean = false,
@@ -26,6 +26,7 @@ data class LearnUiState(
     val availableLangs: List<String> = listOf("nl", "en", "ru"),
     val scrambledLetters: List<Char> = emptyList(),
     val placedLetters: List<Char?> = emptyList(),
+    val placedLetterIndices: List<Int?> = emptyList(),
     val usedSlots: List<Int> = emptyList(),
     val checkResult: CheckResult = CheckResult.NONE,
     val showResultDialog: Boolean = false,
@@ -55,6 +56,8 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LearnUiState())
     val uiState: StateFlow<LearnUiState> = _uiState
+    private var hasSubscriptionAccess = false
+    private var childStatusRequestId = 0
 
     // Одноразовое событие: перейти на другой урок (название урока)
     private val _navigateToLesson = MutableSharedFlow<String>(extraBufferCapacity = 1)
@@ -67,6 +70,17 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     fun loadWords() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            val accessResult = repo.getMe()
+            hasSubscriptionAccess = (accessResult as? NetworkResult.Success)?.data?.let {
+                it.isAdmin == true || it.subscription?.isActive == true
+            } == true
+            if (!hasSubscriptionAccess) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = app.getString(R.string.no_subscription)
+                )
+                return@launch
+            }
             // Источник истины — сервер (может отличаться от локального кэша,
             // если языки были изменены с другого устройства/веба). Локальный
             // кэш используется только как офлайн-резерв.
@@ -76,7 +90,12 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                 ?: prefs.selectedLangs.first().split(",").filter { it.isNotBlank() }
 
             val me = repo.getMe()
-            val isChild = (me as? NetworkResult.Success)?.data?.accountType == "child"
+            val serverAccountType = (me as? NetworkResult.Success)?.data?.accountType
+            if (serverAccountType != null) prefs.saveAccountTypeCache(serverAccountType)
+            // Never fall back to "adult" just because this request failed — reuse the
+            // last account_type the server confirmed (fail-safe, not fail-open).
+            val effectiveAccountType = serverAccountType ?: prefs.accountTypeCache.first()
+            val isChild = effectiveAccountType == "child"
             val goalResult = repo.getDailyGoal()
             val goalType = (goalResult as? NetworkResult.Success)?.data?.goalType ?: if (isChild) "words" else "minutes"
             val goalValue = (goalResult as? NetworkResult.Success)?.data?.goalValue ?: if (isChild) 25 else 10
@@ -123,6 +142,21 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         }
     }
 
+    fun refreshLessonContent() {
+        if (!hasSubscriptionAccess || isDifficultMode || lesson.isBlank() || _uiState.value.isLoading) return
+        viewModelScope.launch {
+            val state = _uiState.value
+            val fresh = repo.refreshWordsForLesson(lesson).filterNot { state.isChild && it.learned }
+            if (fresh.isEmpty() || fresh == state.words) return@launch
+            val currentId = state.currentWord?.id
+            val newIndex = fresh.indexOfFirst { it.id == currentId }
+                .takeIf { it >= 0 }
+                ?: state.currentIndex.coerceIn(0, fresh.lastIndex)
+            _uiState.value = state.copy(words = fresh, currentIndex = newIndex)
+            showWord(newIndex)
+        }
+    }
+
     fun setActiveLang(lang: String) {
         _uiState.value = _uiState.value.copy(activeLang = lang)
         showWord(_uiState.value.currentIndex)
@@ -143,6 +177,7 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
             currentWord = word,
             scrambledLetters = letters,
             placedLetters = slots,
+            placedLetterIndices = List(wordText.length) { null },
             usedSlots = emptyList(),
             checkResult = CheckResult.NONE,
             showResultDialog = false
@@ -150,21 +185,33 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     }
 
     fun placeLetter(letterIndex: Int) {
+        placeLetterAt(letterIndex, null)
+    }
+
+    fun placeLetterAt(letterIndex: Int, requestedSlotIndex: Int?) {
         val state = _uiState.value
         val letters = state.scrambledLetters
         if (letterIndex < 0 || letterIndex >= letters.size) return
+        if (letterIndex in state.usedSlots) return
 
-        // Find first empty answer slot
         val slots = state.placedLetters.toMutableList()
+        val indices = state.placedLetterIndices.toMutableList()
         val emptySlot = slots.indexOfFirst { it == null }
         if (emptySlot == -1) return
+        val targetSlot = (requestedSlotIndex ?: emptySlot).coerceIn(0, emptySlot)
 
-        slots[emptySlot] = letters[letterIndex]
-        val usedSlots = state.usedSlots + letterIndex
+        for (position in emptySlot downTo targetSlot + 1) {
+            slots[position] = slots[position - 1]
+            indices[position] = indices[position - 1]
+        }
+
+        slots[targetSlot] = letters[letterIndex]
+        indices[targetSlot] = letterIndex
 
         _uiState.value = state.copy(
             placedLetters = slots,
-            usedSlots = usedSlots,
+            placedLetterIndices = indices,
+            usedSlots = indices.filterNotNull(),
             checkResult = CheckResult.NONE
         )
     }
@@ -172,22 +219,36 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     fun removePlacedLetter(slotIndex: Int) {
         val state = _uiState.value
         val slots = state.placedLetters.toMutableList()
+        val indices = state.placedLetterIndices.toMutableList()
         if (slotIndex < 0 || slotIndex >= slots.size || slots[slotIndex] == null) return
 
-        // Find corresponding source letter to un-use
-        val removedChar = slots[slotIndex]
         slots[slotIndex] = null
-
-        // Remove last usage of this character from usedSlots
-        val usedSlots = state.usedSlots.toMutableList()
-        val sourceIdx = state.scrambledLetters.indices
-            .filter { it in usedSlots && state.scrambledLetters[it] == removedChar }
-            .lastOrNull()
-        if (sourceIdx != null) usedSlots.remove(sourceIdx)
+        indices[slotIndex] = null
 
         _uiState.value = state.copy(
             placedLetters = slots,
-            usedSlots = usedSlots,
+            placedLetterIndices = indices,
+            usedSlots = indices.filterNotNull(),
+            checkResult = CheckResult.NONE
+        )
+    }
+
+    fun movePlacedLetter(fromSlotIndex: Int, toSlotIndex: Int) {
+        val state = _uiState.value
+        val slots = state.placedLetters.toMutableList()
+        val indices = state.placedLetterIndices.toMutableList()
+        if (fromSlotIndex !in slots.indices || toSlotIndex !in slots.indices) return
+        if (slots[fromSlotIndex] == null || fromSlotIndex == toSlotIndex) return
+
+        val movedChar = slots.removeAt(fromSlotIndex)
+        val movedIndex = indices.removeAt(fromSlotIndex)
+        slots.add(toSlotIndex.coerceIn(0, slots.size), movedChar)
+        indices.add(toSlotIndex.coerceIn(0, indices.size), movedIndex)
+
+        _uiState.value = state.copy(
+            placedLetters = slots,
+            placedLetterIndices = indices,
+            usedSlots = indices.filterNotNull(),
             checkResult = CheckResult.NONE
         )
     }
@@ -200,15 +261,24 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         val target = word.getWordByLang(state.activeLang) ?: ""
 
         val isCorrect = answer.equals(target, ignoreCase = true)
-        val result = if (isCorrect) CheckResult.CORRECT else CheckResult.WRONG
 
         val newPlacedLetters = if (!isCorrect) target.map { it } else state.placedLetters
         val newUsedSlots = if (!isCorrect) state.scrambledLetters.indices.toList() else state.usedSlots
+        val newPlacedLetterIndices = if (!isCorrect) {
+            state.scrambledLetters.indices.map { it }
+        } else state.placedLetterIndices
 
         val updatedWord = if (isCorrect && state.isChild) word.copy(
             practiceCount = word.practiceCount + 1,
             learned = word.practiceCount + 1 >= 10
         ) else word
+        // A word that just crossed the mastery threshold no longer counts toward the
+        // daily goal server-side, so it's highlighted blue instead of green.
+        val result = when {
+            !isCorrect -> CheckResult.WRONG
+            state.isChild && updatedWord.learned -> CheckResult.MASTERED
+            else -> CheckResult.CORRECT
+        }
         val updatedWords = state.words.toMutableList().apply {
             this[state.currentIndex] = updatedWord
         }
@@ -218,8 +288,12 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
             checkResult = result,
             showResultDialog = false,
             placedLetters = newPlacedLetters,
+            placedLetterIndices = newPlacedLetterIndices,
             usedSlots = newUsedSlots
         )
+        if (isCorrect && state.isChild) {
+            advanceChildGoalOptimistically()
+        }
 
         viewModelScope.launch {
             val progressState = JSONObject().apply {
@@ -244,16 +318,27 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private suspend fun refreshLearningStatus() {
         if (!_uiState.value.isChild) return
+        val requestId = ++childStatusRequestId
         val now = System.currentTimeMillis()
         val offset = -(TimeZone.getDefault().getOffset(now) / 60000)
         when (val result = repo.getChildLearningStatus(offset)) {
-            is NetworkResult.Success -> _uiState.value = _uiState.value.copy(
-                todayCount = result.data.todayCount,
-                dailyGoal = result.data.dailyGoal,
-                statusMilestone = result.data.statusMilestone
-            )
+            is NetworkResult.Success -> if (requestId == childStatusRequestId) {
+                _uiState.value = _uiState.value.copy(
+                    todayCount = result.data.todayCount,
+                    dailyGoal = result.data.dailyGoal,
+                    statusMilestone = result.data.statusMilestone
+                )
+            }
             else -> Unit
         }
+    }
+
+    private fun advanceChildGoalOptimistically() {
+        val state = _uiState.value
+        if (!state.isChild || state.todayCount >= state.dailyGoal) return
+        val todayCount = state.todayCount + 1
+        val milestone = listOf(5, 10, 15, 20, 25).lastOrNull { todayCount >= it } ?: 0
+        _uiState.value = state.copy(todayCount = todayCount, statusMilestone = milestone)
     }
 
     fun nextWord() {
@@ -438,6 +523,9 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                         placedLetters = if (!isExample && lang == state.activeLang) {
                             List(cleaned.length) { null }
                         } else state.placedLetters,
+                            placedLetterIndices = if (!isExample && lang == state.activeLang) {
+                                List(cleaned.length) { null }
+                            } else state.placedLetterIndices,
                         scrambledLetters = if (!isExample && lang == state.activeLang) {
                             cleaned.toMutableList().apply { shuffle() }
                         } else state.scrambledLetters,

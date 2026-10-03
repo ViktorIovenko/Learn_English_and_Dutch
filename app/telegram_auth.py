@@ -33,7 +33,7 @@ def verify_telegram_init_data(init_data: str, bot_token: str, max_age_seconds: i
     data_check_pairs = [f"{k}={pairs[k]}" for k in sorted(pairs.keys())]
     data_check_string = "\n".join(data_check_pairs).encode("utf-8")
 
-    secret_key = _sha256(bot_token.encode("utf-8"))
+    secret_key = _hmac_sha256(b"WebAppData", bot_token.encode("utf-8"))
     computed_hash = _hmac_sha256(secret_key, data_check_string).hex()
 
     if not hmac.compare_digest(computed_hash, received_hash):

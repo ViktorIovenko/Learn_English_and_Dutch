@@ -25,8 +25,12 @@ from app.auth_links import create_auth_token
 from app.account_types import migrate_account_types
 from app.i18n import SUPPORTED_UI_LANGUAGES
 from app.family_pairing import (
+    create_invite_code,
     create_pairing_code,
+    invite_code_details,
+    link_child_with_invite_code,
     link_parent_with_pairing_code,
+    linked_children,
     linked_parents,
     pairing_code_details,
 )
@@ -216,9 +220,10 @@ def _is_local_address(url: str) -> bool:
 
 def _build_app_url(user_id: int) -> tuple[str, bool, bool]:
     base = f"{Config.PUBLIC_BASE_URL}".rstrip("/")
-    uid_suffix = "/?" + urlencode({"auth": create_auth_token(user_id)})
-    if _is_https(base): return (base + uid_suffix, True, True)
-    url = base + uid_suffix; return (url, False, not _is_local_address(url))
+    if _is_https(base):
+        token = create_auth_token(user_id)
+        return (base + "/?" + urlencode({"auth": token}), True, True)
+    url = base + "/"; return (url, False, not _is_local_address(url))
 
 def _build_android_app_url(user_id: int) -> str:
     base = f"{Config.PUBLIC_BASE_URL}".rstrip("/")
@@ -406,15 +411,20 @@ async def _show_onboarding_step(update: Update, context: ContextTypes.DEFAULT_TY
     return True
 
 
-def _family_start_code(context: ContextTypes.DEFAULT_TYPE) -> str:
+def _family_start_payload(context: ContextTypes.DEFAULT_TYPE) -> tuple[str, str]:
+    """Returns (kind, code): kind is "family" for a child-issued code (scanned by a
+    parent) or "invite" for a parent-issued code (accepted by a child)."""
     args = list(getattr(context, "args", None) or [])
     if not args:
-        return ""
+        return "", ""
     payload = str(args[0] or "").strip()
-    if not payload.startswith("family_"):
-        return ""
-    code = payload.removeprefix("family_")
-    return code if code and len(code) <= 48 else ""
+    if payload.startswith("family_"):
+        code = payload.removeprefix("family_")
+        return ("family", code) if code and len(code) <= 48 else ("", "")
+    if payload.startswith("invite_"):
+        code = payload.removeprefix("invite_")
+        return ("invite", code) if code and len(code) <= 48 else ("", "")
+    return "", ""
 
 
 async def _send_child_pairing_invite(
@@ -469,9 +479,66 @@ async def _send_child_pairing_invite(
         return False
 
 
-def _pairing_error_text(language_code: str | None, error: str) -> str:
+async def _send_parent_invite(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    user_id: int,
+) -> bool:
+    """Reverse of _send_child_pairing_invite: a standard (parent) account invites a child."""
+    user = update.effective_user
+    language = _user_interface_language(
+        user_id,
+        user.language_code if user else None,
+    )
+    if account_type(Config.DB_PATH, user_id) != "standard":
+        await update.effective_chat.send_message(
+            onboarding_text(language, "pairing_parent_only")
+        )
+        return False
+    try:
+        code = create_invite_code(Config.DB_PATH, user_id)
+        bot_user = await context.bot.get_me()
+        bot_username = str(bot_user.username or "").lstrip("@")
+        if not bot_username:
+            raise ValueError("bot_username_required")
+        invite_url = f"https://t.me/{bot_username}?start=invite_{code}"
+
+        import qrcode
+
+        image = qrcode.make(invite_url)
+        output = BytesIO()
+        output.name = "child-invite.png"
+        image.save(output, format="PNG")
+        output.seek(0)
+        caption = onboarding_text(
+            language,
+            "invite_caption",
+            url=invite_url,
+        )
+        children = linked_children(Config.DB_PATH, user_id)
+        if children:
+            caption += "\n\n👶 " + "\n🧒 ".join(
+                child["display_name"] for child in children
+            )
+        await update.effective_chat.send_photo(
+            photo=output,
+            caption=caption,
+        )
+        return True
+    except Exception:
+        await update.effective_chat.send_message(
+            onboarding_text(language, "pairing_invalid")
+        )
+        return False
+
+
+def _pairing_error_text(language_code: str | None, error: str, kind: str = "family") -> str:
     if error == "parent_limit_reached":
         key = "pairing_parent_limit"
+    elif kind == "invite" and error in {
+        "account_type_required", "parent_cannot_be_child", "cannot_link_self",
+    }:
+        key = "pairing_child_required"
     elif error in {"account_type_required", "child_cannot_be_parent", "cannot_link_self"}:
         key = "pairing_parent_required"
     else:
@@ -486,10 +553,48 @@ async def _show_pending_family_confirmation(
     code = str(context.user_data.get("pending_family_code", "") or "")
     if not code:
         return False
+    kind = str(context.user_data.get("pending_family_kind", "") or "family")
     user = update.effective_user
     language = _user_interface_language(user.id, user.language_code)
+
+    if kind == "invite":
+        if account_type(Config.DB_PATH, user.id) != "child":
+            context.user_data.pop("pending_family_code", None)
+            context.user_data.pop("pending_family_kind", None)
+            await update.effective_chat.send_message(
+                onboarding_text(language, "pairing_child_required")
+            )
+            return False
+        details = invite_code_details(Config.DB_PATH, code)
+        if not details:
+            context.user_data.pop("pending_family_code", None)
+            context.user_data.pop("pending_family_kind", None)
+            await update.effective_chat.send_message(
+                onboarding_text(language, "pairing_invalid")
+            )
+            return False
+        await update.effective_chat.send_message(
+            onboarding_text(
+                language,
+                "pairing_join_confirm",
+                name=details["parent_display_name"],
+            ),
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    onboarding_text(language, "pairing_confirm_button"),
+                    callback_data=f"family_join:confirm:{code}",
+                )],
+                [InlineKeyboardButton(
+                    onboarding_text(language, "pairing_cancel_button"),
+                    callback_data=f"family_join:cancel:{code}",
+                )],
+            ]),
+        )
+        return True
+
     if account_type(Config.DB_PATH, user.id) != "standard":
         context.user_data.pop("pending_family_code", None)
+        context.user_data.pop("pending_family_kind", None)
         await update.effective_chat.send_message(
             onboarding_text(language, "pairing_parent_required")
         )
@@ -497,6 +602,7 @@ async def _show_pending_family_confirmation(
     details = pairing_code_details(Config.DB_PATH, code)
     if not details:
         context.user_data.pop("pending_family_code", None)
+        context.user_data.pop("pending_family_kind", None)
         await update.effective_chat.send_message(
             onboarding_text(language, "pairing_invalid")
         )
@@ -521,6 +627,40 @@ async def _show_pending_family_confirmation(
     return True
 
 
+async def family_join_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    user = update.effective_user
+    if not query or not user:
+        return
+    parts = str(query.data or "").split(":", 2)
+    if len(parts) != 3 or parts[0] != "family_join":
+        await query.answer()
+        return
+    action, code = parts[1], parts[2]
+    language = _user_interface_language(user.id, user.language_code)
+    await query.answer()
+    if context.user_data.get("pending_family_code") == code:
+        context.user_data.pop("pending_family_code", None)
+        context.user_data.pop("pending_family_kind", None)
+    if action == "cancel":
+        await query.edit_message_text(
+            onboarding_text(language, "pairing_cancelled")
+        )
+        return
+    if action != "confirm":
+        return
+    result = link_child_with_invite_code(Config.DB_PATH, user.id, code)
+    if result.get("ok"):
+        text = onboarding_text(
+            language,
+            "pairing_joined",
+            name=result.get("parent_display_name") or result.get("parent_user_id") or "",
+        )
+    else:
+        text = _pairing_error_text(language, str(result.get("error") or ""), kind="invite")
+    await query.edit_message_text(text)
+
+
 async def family_link_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     user = update.effective_user
@@ -535,6 +675,7 @@ async def family_link_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     await query.answer()
     if context.user_data.get("pending_family_code") == code:
         context.user_data.pop("pending_family_code", None)
+        context.user_data.pop("pending_family_kind", None)
     if action == "cancel":
         await query.edit_message_text(
             onboarding_text(language, "pairing_cancelled")
@@ -656,13 +797,22 @@ async def onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
     except Exception:
         await update.effective_chat.send_message(completion_text)
     context.user_data.pop("onboarding_msg_id", None)
-    if value == "standard":
-        await _show_pending_family_confirmation(update, context)
-    else:
-        if context.user_data.pop("pending_family_code", None):
+    pending_kind = str(context.user_data.get("pending_family_kind", "") or "family")
+    required_role = "child" if pending_kind == "invite" else "standard"
+    handled_pending = False
+    if context.user_data.get("pending_family_code"):
+        if value == required_role:
+            handled_pending = await _show_pending_family_confirmation(update, context)
+        else:
+            context.user_data.pop("pending_family_code", None)
+            context.user_data.pop("pending_family_kind", None)
             await update.effective_chat.send_message(
-                onboarding_text(language, "pairing_parent_required")
+                onboarding_text(
+                    language,
+                    "pairing_child_required" if required_role == "child" else "pairing_parent_required",
+                )
             )
+    if value != "standard" and not handled_pending:
         await _send_child_pairing_invite(update, context, user.id)
     await show_menu_with_keyboard(update, context, user.id)
     await _send_fresh_app_link(update, context, user.id)
@@ -707,9 +857,10 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     is_new = await _ensure_open_registration(update, context)
     if not _is_user_registered(Config.DB_PATH, user.id):
         return
-    family_code = _family_start_code(context)
+    family_kind, family_code = _family_start_payload(context)
     if family_code:
         context.user_data["pending_family_code"] = family_code
+        context.user_data["pending_family_kind"] = family_kind
     if await _show_onboarding_step(update, context):
         return
     if await _show_pending_family_confirmation(update, context):
@@ -770,7 +921,10 @@ async def family_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
     if await _show_onboarding_step(update, context):
         return
-    await _send_child_pairing_invite(update, context, user.id)
+    if account_type(Config.DB_PATH, user.id) == "standard":
+        await _send_parent_invite(update, context, user.id)
+    else:
+        await _send_child_pairing_invite(update, context, user.id)
 
 async def send_open(update: Update, context: ContextTypes.DEFAULT_TYPE, hello: str = "") -> None:
     user_id = update.effective_user.id if (update and update.effective_user) else 0
@@ -804,6 +958,10 @@ def register_auth_handlers(application: Application) -> None:
     application.add_handler(CallbackQueryHandler(
         family_link_callback,
         pattern=r"^family_link:(?:confirm|cancel):",
+    ))
+    application.add_handler(CallbackQueryHandler(
+        family_join_callback,
+        pattern=r"^family_join:(?:confirm|cancel):",
     ))
     learn_words_pattern = "^(?:" + "|".join(
         re.escape(value) for value in bot_interface_values("learn_words")

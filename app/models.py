@@ -7,7 +7,8 @@ from datetime import datetime
 
 
 def _conn(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path)
+    from app.content_db import connect
+    conn = connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -54,6 +55,7 @@ def get_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
             SELECT
                 w.lesson AS lesson,
                 COUNT(*) AS words_count,
+                MAX(w.id) AS upload_order,
                 MIN(
                     CAST(
                         SUBSTR(w.number, 1, INSTR(w.number || '.', '.') - 1) AS INTEGER
@@ -79,15 +81,15 @@ def get_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any]]:
                 "lesson_title": r["lesson"],                     # совместимость
                 "word_count": words_count,
                 "words_count": words_count,
+                "upload_order": int(r["upload_order"] or 0),
                 "lesson_index": int(r["lesson_index"] or 0),     # [ДОБАВЛЕНО]
                 "hidden": hidden
             })
-
         # Сортировка: hidden → lesson_index → title
         def _lesson_key(item):
             return (
                 item["hidden"],
-                item.get("lesson_index", 0),
+                -item.get("upload_order", 0),
                 (item["lesson"] or "")
             )
         lessons.sort(key=_lesson_key)
@@ -103,6 +105,7 @@ def get_user_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any
             SELECT
                 w.lesson AS lesson,
                 COUNT(*) AS words_count,
+                MAX(w.id) AS upload_order,
                 MIN(
                     CAST(
                         SUBSTR(w.number, 1, INSTR(w.number || '.', '.') - 1) AS INTEGER
@@ -121,10 +124,10 @@ def get_user_lessons(db_path: str, user_id: Optional[str]) -> List[Dict[str, Any
                 "lesson_title": r["lesson"],
                 "word_count": words_count,
                 "words_count": words_count,
+                "upload_order": int(r["upload_order"] or 0),
                 "lesson_index": int(r["lesson_index"] or 0),
             })
-
-        lessons.sort(key=lambda item: (item.get("lesson_index", 0), (item.get("lesson") or "")))
+        lessons.sort(key=lambda item: (-item.get("upload_order", 0), (item.get("lesson") or "")))
         return lessons
 
 

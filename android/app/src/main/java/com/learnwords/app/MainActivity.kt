@@ -21,6 +21,7 @@ import com.learnwords.app.utils.NetworkResult
 import com.learnwords.app.databinding.ActivityMainBinding
 import com.learnwords.app.utils.familyErrorMessage
 import com.learnwords.app.utils.ChildLearningReminder
+import com.learnwords.app.utils.navigateToTab
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -77,6 +78,9 @@ class MainActivity : AppCompatActivity() {
                         if (me.data.needsAccountType &&
                             navController.currentDestination?.id != R.id.accountTypeFragment) {
                             navController.navigate(R.id.accountTypeFragment)
+                        } else if (!hasSubscriptionAccess(me.data) &&
+                            navController.currentDestination?.id != R.id.subscriptionFragment) {
+                            navController.navigate(R.id.subscriptionFragment)
                         }
                     }
                 }
@@ -122,6 +126,7 @@ class MainActivity : AppCompatActivity() {
                     val userId = result.data.userId.orEmpty()
                     if (userId.isNotBlank()) {
                         app.preferencesManager.saveUserId(userId)
+                        app.preferencesManager.saveAuthToken(result.data.token.orEmpty())
                         app.preferencesManager.saveAuthMethod("Telegram")
                         Toast.makeText(this@MainActivity, getString(R.string.login_success), Toast.LENGTH_SHORT).show()
                         val me = app.repository.getMe()
@@ -129,10 +134,10 @@ class MainActivity : AppCompatActivity() {
                             syncChildLearningReminder(me.data.accountType)
                             setParentNavigationVisible(me.data.isParent)
                         }
-                        val destination = if (me is NetworkResult.Success && me.data.needsAccountType) {
-                            R.id.accountTypeFragment
-                        } else {
-                            R.id.lessonsFragment
+                        val destination = when {
+                            me is NetworkResult.Success && me.data.needsAccountType -> R.id.accountTypeFragment
+                            me !is NetworkResult.Success || !hasSubscriptionAccess(me.data) -> R.id.subscriptionFragment
+                            else -> R.id.lessonsFragment
                         }
                         if (navController.currentDestination?.id != destination) {
                             navController.navigate(destination)
@@ -155,7 +160,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleFamilyLinkIntent(intent: Intent?): Boolean {
         val data = intent?.data ?: return false
-        if (data.scheme != "https" || data.host != "learn.iovenko.eu" || data.path != "/family/link") {
+        if (data.scheme != "https" || data.host != "app.parallellingvo.app" || data.path != "/family/link") {
             return false
         }
         val token = data.getQueryParameter("token").orEmpty()
@@ -182,7 +187,7 @@ class MainActivity : AppCompatActivity() {
                         Toast.LENGTH_LONG
                     ).show()
                     if (navController.currentDestination?.id != R.id.parentDashboardFragment) {
-                        navController.navigate(R.id.parentDashboardFragment)
+                        navController.navigateToTab(R.id.parentDashboardFragment)
                     }
                 }
                 is NetworkResult.Error -> Toast.makeText(
@@ -201,8 +206,16 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNavigation.menu.findItem(R.id.parentDashboardFragment)?.isVisible = visible
     }
 
+    private fun hasSubscriptionAccess(user: com.learnwords.app.data.api.UserInfo): Boolean =
+        user.isAdmin == true || user.subscription?.isActive == true
+
     fun syncChildLearningReminder(accountType: String?) {
         val isChild = accountType == "child"
+        if (accountType != null) {
+            lifecycleScope.launch {
+                (application as LearnWordsApp).preferencesManager.saveAccountTypeCache(accountType)
+            }
+        }
         ChildLearningReminder.setEnabled(this, isChild)
         if (isChild && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=

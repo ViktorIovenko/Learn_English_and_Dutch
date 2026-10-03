@@ -1,6 +1,8 @@
 package com.learnwords.app.ui.learn
 
 import android.view.LayoutInflater
+import android.content.ClipData
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -59,6 +61,7 @@ class AnswerSlotAdapter(
             val bgColor = when {
                 char == null -> ContextCompat.getColor(context, R.color.colorSlotEmpty)
                 checkResult == CheckResult.CORRECT -> ContextCompat.getColor(context, R.color.colorGameCorrect)
+                checkResult == CheckResult.MASTERED -> ContextCompat.getColor(context, R.color.colorGameMastered)
                 checkResult == CheckResult.WRONG -> ContextCompat.getColor(context, R.color.colorGameWrong)
                 else -> ContextCompat.getColor(context, R.color.colorPrimary)
             }
@@ -66,8 +69,18 @@ class AnswerSlotAdapter(
 
             if (char != null && checkResult == CheckResult.NONE) {
                 binding.root.setOnClickListener { onSlotClick(index) }
+                binding.root.setOnLongClickListener {
+                    binding.root.startDragAndDrop(
+                        ClipData.newPlainText("slot-index", index.toString()),
+                        View.DragShadowBuilder(binding.root),
+                        LetterDragPayload(slotIndex = index),
+                        0
+                    )
+                    true
+                }
             } else {
                 binding.root.setOnClickListener(null)
+                binding.root.setOnLongClickListener(null)
             }
         }
     }

@@ -28,6 +28,7 @@ import com.learnwords.app.utils.NetworkResult
 import com.learnwords.app.utils.toast
 import com.learnwords.app.utils.copyToClipboard
 import com.learnwords.app.utils.familyErrorMessage
+import com.learnwords.app.utils.navigateToTab
 import com.learnwords.app.data.api.FamilyMemberDto
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
@@ -75,6 +76,18 @@ class LanguageSettingsFragment : Fragment() {
         loadDailyGoal()
         binding.btnSaveCacheLimit.setOnClickListener { saveCacheLimit() }
         loadCacheLimit()
+        binding.swMcpEnabled.setOnCheckedChangeListener { _, isChecked -> onMcpToggle(isChecked) }
+        binding.btnMcpManage.setOnClickListener { openMcpSettingsInBrowser() }
+        binding.btnMcpCopyName.setOnClickListener {
+            requireContext().copyToClipboard(getString(R.string.mcp_connector_name_label), mcpConnectorName)
+        }
+        binding.btnMcpCopyDescription.setOnClickListener {
+            requireContext().copyToClipboard(getString(R.string.mcp_connector_description_label), mcpConnectorDescription)
+        }
+        binding.btnMcpCopyHowto.setOnClickListener {
+            requireContext().copyToClipboard(getString(R.string.mcp_how_to_connect_label), getString(R.string.mcp_how_to_connect))
+        }
+        loadMcpStatus()
         binding.btnFamily.setOnClickListener { showFamilyDialog() }
         if (arguments?.getBoolean("show_family_pairing") == true) {
             arguments?.putBoolean("show_family_pairing", false)
@@ -202,6 +215,74 @@ class LanguageSettingsFragment : Fragment() {
         }
     }
 
+    private var ignoreMcpToggle = false
+    private var mcpConnectorName: String = ""
+    private var mcpConnectorDescription: String = ""
+
+    private fun loadMcpStatus() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            when (val result = LearnWordsApp.instance.repository.getMcpUser()) {
+                is NetworkResult.Success -> {
+                    val data = result.data
+                    ignoreMcpToggle = true
+                    binding.swMcpEnabled.isChecked = data.enabled
+                    ignoreMcpToggle = false
+                    binding.swMcpEnabled.isEnabled = true
+                    binding.tvMcpStatus.text = getString(
+                        R.string.mcp_connections_count,
+                        mcpStateLabel(data.state),
+                        data.connections.size
+                    )
+                    val connector = data.connector
+                    val isRussian = resources.configuration.locales[0].language == "ru"
+                    mcpConnectorName = connector?.name?.takeIf { it.isNotBlank() } ?: "ParallelLingvo"
+                    mcpConnectorDescription = connector
+                        ?.let { if (isRussian) it.description else (it.descriptionEn ?: it.description) }
+                        ?.takeIf { it.isNotBlank() }
+                        ?: getString(R.string.mcp_connector_description)
+                    binding.tvMcpName.text = mcpConnectorName
+                    binding.tvMcpDescription.text = mcpConnectorDescription
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    private fun mcpStateLabel(state: String): String = getString(
+        when (state) {
+            "connected" -> R.string.mcp_state_connected
+            "paused" -> R.string.mcp_state_paused
+            "ready" -> R.string.mcp_state_ready
+            else -> R.string.mcp_state_disabled
+        }
+    )
+
+    private fun onMcpToggle(enabled: Boolean) {
+        if (ignoreMcpToggle) return
+        binding.swMcpEnabled.isEnabled = false
+        viewLifecycleOwner.lifecycleScope.launch {
+            when (LearnWordsApp.instance.repository.setMcpEnabled(enabled)) {
+                is NetworkResult.Success -> loadMcpStatus()
+                else -> {
+                    requireContext().toast(getString(R.string.mcp_connector_update_failed))
+                    loadMcpStatus()
+                }
+            }
+        }
+    }
+
+    private fun openMcpSettingsInBrowser() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val base = LearnWordsApp.instance.preferencesManager.serverUrl.first().ifBlank { BuildConfig.BASE_URL }
+            val url = base.trimEnd('/') + "/settings"
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            } catch (e: Exception) {
+                requireContext().toast(url)
+            }
+        }
+    }
+
     private fun navigateToAuth() {
         val navController = findNavController()
         if (navController.currentDestination?.id == R.id.authFragment) return
@@ -276,19 +357,15 @@ class LanguageSettingsFragment : Fragment() {
                         findNavController().navigate(R.id.accountTypeFragment)
                     } else if (data.accountType == "child") {
                         showChildPairingDialog(data.parents)
-                    } else {
-                        val children = data.children.mapNotNull { it.displayName }
-                        val message = if (children.isEmpty()) {
-                            getString(R.string.family_parent_telegram_note)
-                        } else {
-                            getString(R.string.family_connected_children, children.joinToString("\n"))
-                        }
+                    } else if (data.children.isEmpty()) {
                         androidx.appcompat.app.AlertDialog.Builder(requireContext())
                             .setTitle(R.string.family_settings)
-                            .setMessage(message)
+                            .setMessage(getString(R.string.family_parent_telegram_note))
                             .setPositiveButton(android.R.string.ok, null)
-                            .setNegativeButton(android.R.string.cancel, null)
                             .show()
+                    } else {
+                        (activity as? MainActivity)?.setParentNavigationVisible(true)
+                        findNavController().navigateToTab(R.id.parentDashboardFragment)
                     }
                 }
                 is NetworkResult.Error -> requireContext().toast(requireContext().familyErrorMessage(family.message))
@@ -416,7 +493,7 @@ class LanguageSettingsFragment : Fragment() {
                     requireContext().toast(getString(R.string.family_linked_to, name))
                     (activity as? MainActivity)?.setParentNavigationVisible(true)
                     if (findNavController().currentDestination?.id != R.id.parentDashboardFragment) {
-                        findNavController().navigate(R.id.parentDashboardFragment)
+                        findNavController().navigateToTab(R.id.parentDashboardFragment)
                     }
                 }
                 is NetworkResult.Error -> requireContext().toast(requireContext().familyErrorMessage(result.message))

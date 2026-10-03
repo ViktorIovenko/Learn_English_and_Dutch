@@ -17,6 +17,7 @@ import com.learnwords.app.MainActivity
 import com.learnwords.app.R
 import com.learnwords.app.data.api.ChildDashboardDto
 import com.learnwords.app.databinding.FragmentParentDashboardBinding
+import com.learnwords.app.utils.navigateToTab
 import com.learnwords.app.utils.toast
 import java.text.DateFormat
 import java.util.Date
@@ -42,6 +43,21 @@ class ParentDashboardFragment : Fragment() {
             onDisconnect = { confirmDisconnect(it) }
         )
         binding.rvChildren.adapter = childrenAdapter
+        androidx.recyclerview.widget.PagerSnapHelper().attachToRecyclerView(binding.rvChildren)
+        binding.rvChildren.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: androidx.recyclerview.widget.RecyclerView, newState: Int) {
+                if (newState != androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE) return
+                val layoutManager = recyclerView.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager ?: return
+                val position = layoutManager.findFirstCompletelyVisibleItemPosition().takeIf { it >= 0 }
+                    ?: layoutManager.findFirstVisibleItemPosition()
+                val state = viewModel.uiState.value
+                state.children.getOrNull(position)?.let {
+                    if (it.userId != state.selectedChildId) viewModel.selectChild(it.userId)
+                }
+            }
+        })
+        binding.btnPrevChild.setOnClickListener { moveChild(-1) }
+        binding.btnNextChild.setOnClickListener { moveChild(1) }
         binding.spinnerPeriod.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
@@ -53,7 +69,7 @@ class ParentDashboardFragment : Fragment() {
             }
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit
         }
-        binding.btnConnectChild.setOnClickListener { findNavController().navigate(R.id.languageSettingsFragment) }
+        binding.btnConnectChild.setOnClickListener { findNavController().navigateToTab(R.id.languageSettingsFragment) }
         binding.btnSavePriority.setOnClickListener {
             val state = viewModel.uiState.value
             val child = state.children.firstOrNull { it.userId == state.selectedChildId }
@@ -88,6 +104,22 @@ class ParentDashboardFragment : Fragment() {
         ignoreSelections = true
         binding.spinnerPeriod.setSelection(listOf(7, 30, 90).indexOf(state.days).coerceAtLeast(1), false)
         ignoreSelections = false
+
+        val multipleChildren = state.children.size > 1
+        binding.btnPrevChild.visibility = if (multipleChildren) View.VISIBLE else View.INVISIBLE
+        binding.btnNextChild.visibility = if (multipleChildren) View.VISIBLE else View.INVISIBLE
+        binding.btnPrevChild.isEnabled = selectedIndex > 0
+        binding.btnNextChild.isEnabled = selectedIndex < state.children.size - 1
+        binding.btnPrevChild.alpha = if (binding.btnPrevChild.isEnabled) 1f else 0.3f
+        binding.btnNextChild.alpha = if (binding.btnNextChild.isEnabled) 1f else 0.3f
+        binding.tvChildCounter.text = if (multipleChildren) {
+            getString(R.string.parent_child_counter, selectedIndex + 1, state.children.size)
+        } else ""
+        val layoutManager = binding.rvChildren.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager
+        if (layoutManager?.findFirstVisibleItemPosition() != selectedIndex) {
+            binding.rvChildren.scrollToPosition(selectedIndex)
+        }
+
         val child = state.children.getOrNull(selectedIndex)
         binding.content.visibility = if (child == null) View.GONE else View.VISIBLE
         if (child != null) renderChild(child)
@@ -167,6 +199,15 @@ class ParentDashboardFragment : Fragment() {
         } else {
             getString(R.string.parent_latest_value, latest.lesson.ifBlank { "—" }, latest.passed, latest.total)
         }
+    }
+
+    private fun moveChild(delta: Int) {
+        val state = viewModel.uiState.value
+        val currentIndex = state.children.indexOfFirst { it.userId == state.selectedChildId }
+        val newIndex = currentIndex + delta
+        val target = state.children.getOrNull(newIndex) ?: return
+        viewModel.selectChild(target.userId)
+        binding.rvChildren.smoothScrollToPosition(newIndex)
     }
 
     private fun formatLearningTime(seconds: Int): String {

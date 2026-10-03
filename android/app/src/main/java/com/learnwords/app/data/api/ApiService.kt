@@ -13,6 +13,12 @@ interface ApiService {
     @POST("api/auth/login_android_token")
     suspend fun loginAndroidToken(@Body request: LoginTokenRequest): Response<LoginResponse>
 
+    @GET("api/auth/google/config")
+    suspend fun getGoogleAuthConfig(): Response<GoogleAuthConfigResponse>
+
+    @POST("api/auth/google/verify")
+    suspend fun verifyGoogleToken(@Body request: GoogleVerifyRequest): Response<GoogleVerifyResponse>
+
     @GET("api/me")
     suspend fun getMe(): Response<UserInfo>
 
@@ -37,6 +43,12 @@ interface ApiService {
 
     @POST("api/daily-goal")
     suspend fun saveDailyGoal(@Body request: SaveDailyGoalRequest): Response<DailyGoalResponse>
+
+    @GET("api/mcp/user")
+    suspend fun getMcpUser(): Response<McpUserResponse>
+
+    @POST("api/mcp/user")
+    suspend fun setMcpEnabled(@Body request: McpEnabledRequest): Response<McpEnabledResponse>
 
     @GET("api/family/pairing-code")
     suspend fun getPairingCode(): Response<PairingCodeResponse>
@@ -134,7 +146,7 @@ interface ApiService {
     // ─── Subscription ─────────────────────────────────────────────────────────
 
     @GET("api/subscription")
-    suspend fun getSubscription(): Response<SubscriptionDto>
+    suspend fun getSubscription(): Response<SubscriptionResponse>
 
     /**
      * Отправляет purchase_token от Google Play на сервер для верификации

@@ -53,6 +53,7 @@ data class LessonCacheEntity(
     @PrimaryKey val lesson: String,
     val number: String?,
     @ColumnInfo(name = "word_count") val wordCount: Int,
+    @ColumnInfo(name = "upload_order") val uploadOrder: Long = 0L,
     val hidden: Boolean = false,
     @ColumnInfo(name = "is_priority") val isPriority: Boolean = false,
     @ColumnInfo(name = "language_progress_json") val languageProgressJson: String = "[]",
@@ -130,10 +131,10 @@ interface WordDao {
 
 @Dao
 interface LessonDao {
-    @Query("SELECT * FROM lessons_cache ORDER BY is_priority DESC, hidden ASC, number ASC, lesson ASC")
+    @Query("SELECT * FROM lessons_cache ORDER BY upload_order DESC, lesson ASC")
     fun getLessons(): Flow<List<LessonCacheEntity>>
 
-    @Query("SELECT * FROM lessons_cache ORDER BY is_priority DESC, hidden ASC, number ASC, lesson ASC")
+    @Query("SELECT * FROM lessons_cache ORDER BY upload_order DESC, lesson ASC")
     suspend fun getLessonsOnce(): List<LessonCacheEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -171,7 +172,7 @@ interface ProgressQueueDao {
 
 @Database(
     entities = [WordEntity::class, LessonCacheEntity::class, ProgressQueueEntity::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -191,7 +192,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "learnwords.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                     .also { INSTANCE = it }
             }
@@ -224,6 +225,12 @@ abstract class AppDatabase : RoomDatabase() {
                 )) {
                     db.execSQL("ALTER TABLE words ADD COLUMN $column TEXT")
                 }
+            }
+        }
+
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE lessons_cache ADD COLUMN upload_order INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

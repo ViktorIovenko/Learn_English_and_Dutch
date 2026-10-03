@@ -4,7 +4,7 @@
 
 ## `GET /auth/google`
 
-- Handler: `login` — `app/google_auth.py:93`.
+- Handler: `login` — `app/google_auth.py:239`.
 - Назначение: Backend file: google_auth.py.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -14,7 +14,7 @@
 
 ## `GET /auth/google/callback`
 
-- Handler: `callback` — `app/google_auth.py:103`.
+- Handler: `callback` — `app/google_auth.py:258`.
 - Назначение: Backend file: google_auth.py.
 - Авторизация: public or handler-validated.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -22,12 +22,152 @@
 - Android consumers: нет подтверждённого Retrofit соответствия.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
+## `GET /api/auth/google/config`
+
+- Handler: `android_google_config` — `app/google_auth.py:297`.
+- Назначение: Return the public OAuth audience needed by Android Google Sign-In..
+- Авторизация: android headers/session.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt`.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
 ## `POST /api/auth/google/verify`
 
-- Handler: `verify_android_token` — `app/google_auth.py:132`.
+- Handler: `verify_android_token` — `app/google_auth.py:305`.
 - Назначение: Android sends:  { "id_token": "<JWT from Google Sign-In SDK>" }
 Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 - Авторизация: android headers/session.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt`.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `GET /api/mcp/user`
+
+- Handler: `mcp_user_status` — `app/mcp_api.py:124`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: `app/static/upload.js`, `app/templates/settings.html`.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /api/mcp/user`
+
+- Handler: `mcp_user_toggle` — `app/mcp_api.py:180`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: `app/static/upload.js`, `app/templates/settings.html`.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /api/mcp/user/revoke-all`
+
+- Handler: `mcp_user_revoke_all` — `app/mcp_api.py:200`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: `app/static/upload.js`, `app/templates/settings.html`.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `GET /admin/mcp`
+
+- Handler: `mcp_admin_page` — `app/mcp_api.py:240`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: admin.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /admin/mcp/revoke`
+
+- Handler: `mcp_admin_revoke` — `app/mcp_api.py:286`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: admin.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `GET /.well-known/oauth-authorization-server`
+
+- Handler: `oauth_metadata` — `app/mcp_api.py:308`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: admin.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /oauth/register`
+
+- Handler: `oauth_register` — `app/mcp_api.py:328`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: public or handler-validated.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `GET,POST /oauth/authorize`
+
+- Handler: `oauth_authorize` — `app/mcp_api.py:400`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /oauth/token`
+
+- Handler: `oauth_token` — `app/mcp_api.py:474`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: public or handler-validated.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /oauth/revoke`
+
+- Handler: `oauth_revoke` — `app/mcp_api.py:527`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: public or handler-validated.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /api/internal/mcp/resolve`
+
+- Handler: `internal_mcp_resolve` — `app/mcp_api.py:539`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: public or handler-validated.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /api/internal/mcp/execute`
+
+- Handler: `internal_mcp_execute` — `app/mcp_api.py:550`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: public or handler-validated.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `GET /api/internal/mcp/health`
+
+- Handler: `internal_mcp_health` — `app/mcp_api.py:606`.
+- Назначение: Backend file: mcp_api.py.
+- Авторизация: public or handler-validated.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
 - Frontend consumers: не найдены статически.
 - Android consumers: нет подтверждённого Retrofit соответствия.
@@ -35,7 +175,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /sw.js`
 
-- Handler: `service_worker` — `app/routes.py:1511`.
+- Handler: `service_worker` — `app/routes.py:1791`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -45,17 +185,17 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /`
 
-- Handler: `home` — `app/routes.py:1519`.
+- Handler: `home` — `app/routes.py:1799`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
-- Frontend consumers: `app/static/audio_worker.js`, `app/static/learn.js`, `app/static/sync.js`, `app/templates/account_type.html`, `app/templates/family_link.html`, `app/templates/parent_dashboard.html`.
+- Frontend consumers: `app/static/sync.js`, `app/templates/account_type.html`, `app/templates/admin_users.html`, `app/templates/family_link.html`, `app/templates/parent_dashboard.html`, `app/templates/share.html`, `app/templates/subscription.html`.
 - Android consumers: нет подтверждённого Retrofit соответствия.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
 ## `GET /lessons`
 
-- Handler: `lessons_alias` — `app/routes.py:1531`.
+- Handler: `lessons_alias` — `app/routes.py:1812`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -65,9 +205,9 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /lesson/<int:lesson_id>`
 
-- Handler: `lesson_page` — `app/routes.py:1543`.
+- Handler: `lesson_page` — `app/routes.py:1825`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
-- Авторизация: admin.
+- Авторизация: public or handler-validated.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
 - Frontend consumers: не найдены статически.
 - Android consumers: нет подтверждённого Retrofit соответствия.
@@ -75,7 +215,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /learn`
 
-- Handler: `learn_page` — `app/routes.py:1548`.
+- Handler: `learn_page` — `app/routes.py:1830`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: public or handler-validated.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -85,7 +225,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /difficult`
 
-- Handler: `difficult_page` — `app/routes.py:1559`.
+- Handler: `difficult_page` — `app/routes.py:1841`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -95,7 +235,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /upload`
 
-- Handler: `upload_page` — `app/routes.py:1564`.
+- Handler: `upload_page` — `app/routes.py:1846`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -105,7 +245,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /settings`
 
-- Handler: `settings_page` — `app/routes.py:1581`.
+- Handler: `settings_page` — `app/routes.py:1863`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: public or handler-validated.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -115,7 +255,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /account-type`
 
-- Handler: `account_type_page` — `app/routes.py:1591`.
+- Handler: `account_type_page` — `app/routes.py:1873`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -125,7 +265,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /family/link`
 
-- Handler: `family_link_page` — `app/routes.py:1600`.
+- Handler: `family_link_page` — `app/routes.py:1882`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -135,7 +275,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /parent`
 
-- Handler: `parent_dashboard_page` — `app/routes.py:1626`.
+- Handler: `parent_dashboard_page` — `app/routes.py:1908`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -145,7 +285,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /subscription`
 
-- Handler: `subscription_page` — `app/routes.py:1635`.
+- Handler: `subscription_page` — `app/routes.py:1917`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -155,7 +295,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /admin/users`
 
-- Handler: `admin_users_page` — `app/routes.py:1640`.
+- Handler: `admin_users_page` — `app/routes.py:1922`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -165,7 +305,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /share/<token>`
 
-- Handler: `share_page` — `app/routes.py:1832`.
+- Handler: `share_page` — `app/routes.py:2114`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -175,7 +315,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/share/create`
 
-- Handler: `api_share_create` — `app/routes.py:1896`.
+- Handler: `api_share_create` — `app/routes.py:2178`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -185,7 +325,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/share/source_lessons`
 
-- Handler: `api_share_source_lessons` — `app/routes.py:1975`.
+- Handler: `api_share_source_lessons` — `app/routes.py:2257`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -195,7 +335,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/share/assign_child`
 
-- Handler: `api_share_assign_child` — `app/routes.py:2043`.
+- Handler: `api_share_assign_child` — `app/routes.py:2334`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -205,7 +345,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/share/<token>/import`
 
-- Handler: `api_share_import` — `app/routes.py:2138`.
+- Handler: `api_share_import` — `app/routes.py:2457`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -215,7 +355,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/import-words`
 
-- Handler: `api_import_words` — `app/routes.py:2242`.
+- Handler: `api_import_words` — `app/routes.py:2561`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -225,17 +365,17 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/words`
 
-- Handler: `api_get_words` — `app/routes.py:2297`.
+- Handler: `api_get_words` — `app/routes.py:2578`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
-- Frontend consumers: `app/static/learn.js`, `app/static/upload.js`.
+- Frontend consumers: `app/static/learn.js`, `app/static/upload.js`, `app/templates/settings.html`.
 - Android consumers: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt`.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
 ## `PUT /api/words/<int:word_id>`
 
-- Handler: `api_update_word` — `app/routes.py:2355`.
+- Handler: `api_update_word` — `app/routes.py:2638`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -245,7 +385,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `DELETE /api/words/<int:word_id>`
 
-- Handler: `api_delete_word` — `app/routes.py:2443`.
+- Handler: `api_delete_word` — `app/routes.py:2772`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -255,17 +395,17 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/words/nl-list`
 
-- Handler: `api_words_nl_list` — `app/routes.py:2457`.
+- Handler: `api_words_nl_list` — `app/routes.py:2786`.
 - Назначение: Lightweight list of all NL words for the current user (used for deduplication)..
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
-- Frontend consumers: `app/static/upload.js`.
+- Frontend consumers: не найдены статически.
 - Android consumers: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt`.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
 ## `GET /api/words/duplicates`
 
-- Handler: `api_words_duplicates` — `app/routes.py:2471`.
+- Handler: `api_words_duplicates` — `app/routes.py:2800`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -275,7 +415,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/parse-file`
 
-- Handler: `api_parse_file` — `app/routes.py:2509`.
+- Handler: `api_parse_file` — `app/routes.py:2838`.
 - Назначение: Parse uploaded CSV or Excel file, return rows as JSON for preview..
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -285,7 +425,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/auth/login_android`
 
-- Handler: `login_android` — `app/routes.py:2609`.
+- Handler: `login_android` — `app/routes.py:2938`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: android headers/session.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -295,7 +435,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/auth/login_android_token`
 
-- Handler: `login_android_token` — `app/routes.py:2620`.
+- Handler: `login_android_token` — `app/routes.py:2949`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: android headers/session.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -303,9 +443,19 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 - Android consumers: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt`.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
+## `POST /api/auth/login_link`
+
+- Handler: `login_link` — `app/routes.py:2961`.
+- Назначение: Flask pages, API, sync, database and audio orchestration.
+- Авторизация: android headers/session.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: `app/templates/base.html`.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
 ## `GET /android-auth`
 
-- Handler: `android_auth_redirect` — `app/routes.py:2632`.
+- Handler: `android_auth_redirect` — `app/routes.py:2973`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: android headers/session.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -315,7 +465,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/auth/login_webapp`
 
-- Handler: `login_webapp` — `app/routes.py:2643`.
+- Handler: `login_webapp` — `app/routes.py:2986`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -325,7 +475,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/me`
 
-- Handler: `api_me` — `app/routes.py:2669`.
+- Handler: `api_me` — `app/routes.py:3018`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -335,7 +485,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/account/type`
 
-- Handler: `api_account_type_save` — `app/routes.py:2713`.
+- Handler: `api_account_type_save` — `app/routes.py:3062`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: telegram init data/session.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -345,7 +495,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/family`
 
-- Handler: `api_family_status` — `app/routes.py:2741`.
+- Handler: `api_family_status` — `app/routes.py:3090`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -355,7 +505,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/learning/streak`
 
-- Handler: `api_learning_streak` — `app/routes.py:2749`.
+- Handler: `api_learning_streak` — `app/routes.py:3098`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -365,7 +515,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/family/dashboard`
 
-- Handler: `api_family_dashboard` — `app/routes.py:2767`.
+- Handler: `api_family_dashboard` — `app/routes.py:3116`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -373,9 +523,19 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 - Android consumers: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt`.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
+## `GET /api/family/children/<child_user_id>/lesson-words`
+
+- Handler: `api_family_child_lesson_words` — `app/routes.py:3142`.
+- Назначение: Flask pages, API, sync, database and audio orchestration.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
 ## `PUT /api/family/children/<child_user_id>/priority-lesson`
 
-- Handler: `api_family_set_priority_lesson` — `app/routes.py:2792`.
+- Handler: `api_family_set_priority_lesson` — `app/routes.py:3197`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -385,7 +545,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/family/pairing-code`
 
-- Handler: `api_family_pairing_code` — `app/routes.py:2878`.
+- Handler: `api_family_pairing_code` — `app/routes.py:3286`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -395,7 +555,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/family/pairing-qr.png`
 
-- Handler: `api_family_pairing_qr` — `app/routes.py:2889`.
+- Handler: `api_family_pairing_qr` — `app/routes.py:3297`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: telegram init data/session.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -403,9 +563,39 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 - Android consumers: нет подтверждённого Retrofit соответствия.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
+## `GET /api/family/invite-code`
+
+- Handler: `api_family_invite_code` — `app/routes.py:3344`.
+- Назначение: Flask pages, API, sync, database and audio orchestration.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: `app/templates/settings.html`.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `GET /api/family/invite-qr.png`
+
+- Handler: `api_family_invite_qr` — `app/routes.py:3355`.
+- Назначение: Flask pages, API, sync, database and audio orchestration.
+- Авторизация: telegram init data/session.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /api/family/join`
+
+- Handler: `api_family_join` — `app/routes.py:3385`.
+- Назначение: Flask pages, API, sync, database and audio orchestration.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
 ## `POST /api/family/link`
 
-- Handler: `api_family_link` — `app/routes.py:2919`.
+- Handler: `api_family_link` — `app/routes.py:3402`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -415,7 +605,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `DELETE /api/family/children/<child_user_id>`
 
-- Handler: `api_family_unlink_child` — `app/routes.py:2975`.
+- Handler: `api_family_unlink_child` — `app/routes.py:3458`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -425,7 +615,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/subscription`
 
-- Handler: `api_subscription_get` — `app/routes.py:2992`.
+- Handler: `api_subscription_get` — `app/routes.py:3477`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: android headers/session.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -435,7 +625,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/subscription/verify_purchase`
 
-- Handler: `api_verify_purchase` — `app/routes.py:3022`.
+- Handler: `api_verify_purchase` — `app/routes.py:3507`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -445,7 +635,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/language-options`
 
-- Handler: `api_language_options` — `app/routes.py:3089`.
+- Handler: `api_language_options` — `app/routes.py:3551`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: android headers/session.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -455,7 +645,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/user-languages`
 
-- Handler: `api_user_languages_get` — `app/routes.py:3096`.
+- Handler: `api_user_languages_get` — `app/routes.py:3558`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: android headers/session.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -465,7 +655,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/user-languages`
 
-- Handler: `api_user_languages_save` — `app/routes.py:3112`.
+- Handler: `api_user_languages_save` — `app/routes.py:3574`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -475,7 +665,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/user-languages/missing-words`
 
-- Handler: `api_user_languages_missing_words` — `app/routes.py:3153`.
+- Handler: `api_user_languages_missing_words` — `app/routes.py:3615`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -485,7 +675,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/ui-language`
 
-- Handler: `api_ui_language_get` — `app/routes.py:3191`.
+- Handler: `api_ui_language_get` — `app/routes.py:3653`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -495,7 +685,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/ui-language`
 
-- Handler: `api_ui_language_save` — `app/routes.py:3200`.
+- Handler: `api_ui_language_save` — `app/routes.py:3662`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -505,7 +695,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/lessons`
 
-- Handler: `api_lessons` — `app/routes.py:3310`.
+- Handler: `api_lessons` — `app/routes.py:3784`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -515,17 +705,27 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/user_lessons`
 
-- Handler: `api_user_lessons` — `app/routes.py:3340`.
+- Handler: `api_user_lessons` — `app/routes.py:3815`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
-- Frontend consumers: `app/templates/index.html`.
+- Frontend consumers: `app/static/upload.js`, `app/templates/index.html`.
 - Android consumers: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt`.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `POST /api/user_lessons/rename`
+
+- Handler: `api_user_lessons_rename` — `app/routes.py:3825`.
+- Назначение: Flask pages, API, sync, database and audio orchestration.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: `app/static/upload.js`.
+- Android consumers: нет подтверждённого Retrofit соответствия.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
 ## `POST /api/user_lessons/delete`
 
-- Handler: `api_user_lessons_delete` — `app/routes.py:3350`.
+- Handler: `api_user_lessons_delete` — `app/routes.py:3940`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -535,7 +735,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/lessons/set_hidden`
 
-- Handler: `api_lessons_set_hidden` — `app/routes.py:3420`.
+- Handler: `api_lessons_set_hidden` — `app/routes.py:4014`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -545,7 +745,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/lesson_words`
 
-- Handler: `api_lesson_words_by_title` — `app/routes.py:3434`.
+- Handler: `api_lesson_words_by_title` — `app/routes.py:4028`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -555,7 +755,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/child-learning/status`
 
-- Handler: `api_child_learning_status` — `app/routes.py:3473`.
+- Handler: `api_child_learning_status` — `app/routes.py:4072`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -565,7 +765,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/daily-goal`
 
-- Handler: `api_daily_goal_get` — `app/routes.py:3502`.
+- Handler: `api_daily_goal_get` — `app/routes.py:4101`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -575,7 +775,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/daily-goal`
 
-- Handler: `api_daily_goal_save` — `app/routes.py:3510`.
+- Handler: `api_daily_goal_save` — `app/routes.py:4109`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -585,7 +785,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/lessons/<int:lesson_id>/words`
 
-- Handler: `api_lesson_words` — `app/routes.py:3535`.
+- Handler: `api_lesson_words` — `app/routes.py:4134`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -595,7 +795,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/difficult_words_user`
 
-- Handler: `api_difficult_words_user` — `app/routes.py:3571`.
+- Handler: `api_difficult_words_user` — `app/routes.py:4173`.
 - Назначение: Персональный список:
   - слова из words, у которых user_word_flags.difficult=1 для текущего пользователя
   (кастомные слова удалены).
@@ -607,7 +807,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/difficult/user_set`
 
-- Handler: `api_difficult_user_set` — `app/routes.py:3607`.
+- Handler: `api_difficult_user_set` — `app/routes.py:4214`.
 - Назначение: Body: {word_id: int, difficult: 0|1}.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -617,7 +817,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/progress/sync`
 
-- Handler: `api_progress_sync` — `app/routes.py:3645`.
+- Handler: `api_progress_sync` — `app/routes.py:4255`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -627,7 +827,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/sync/updates`
 
-- Handler: `api_sync_updates` — `app/routes.py:3705`.
+- Handler: `api_sync_updates` — `app/routes.py:4316`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -637,7 +837,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `POST /api/audio/ensure`
 
-- Handler: `api_audio_ensure` — `app/routes.py:3799`.
+- Handler: `api_audio_ensure` — `app/routes.py:4410`.
 - Назначение: Body: { ids: [int,...], langs: ["nl","en","ru"] }
 Для каждого id создаёт недостающие MP3, обновляет ссылки в words.audio_*.
 Возвращает { ok: true, items: [ {ok,id,nl,en,ru}, ... ] }.
@@ -649,7 +849,7 @@ Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }.
 
 ## `GET /api/next_lesson`
 
-- Handler: `api_next_lesson` — `app/routes.py:3821`.
+- Handler: `api_next_lesson` — `app/routes.py:4432`.
 - Назначение: Возвращает следующий ВИДИМЫЙ урок относительно текущего названия.
 Query: ?current=<lesson_title>
 Ответ: { ok: true, next: "<lesson>" } или { ok: false }.
@@ -661,7 +861,7 @@ Query: ?current=<lesson_title>
 
 ## `GET /api/prev_lesson`
 
-- Handler: `api_prev_lesson` — `app/routes.py:3839`.
+- Handler: `api_prev_lesson` — `app/routes.py:4450`.
 - Назначение: Возвращает предыдущий ВИДИМЫЙ урок относительно текущего названия.
 Query: ?current=<lesson_title>
 Ответ: { ok: true, prev: "<lesson>" } или { ok: false }.
@@ -673,7 +873,7 @@ Query: ?current=<lesson_title>
 
 ## `GET /api/admin/users`
 
-- Handler: `api_admin_users` — `app/routes.py:3881`.
+- Handler: `api_admin_users` — `app/routes.py:4492`.
 - Назначение: Список всех пользователей с их статусом подписки. Только для админов..
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -683,7 +883,7 @@ Query: ?current=<lesson_title>
 
 ## `POST /api/admin/tts_usage/limit`
 
-- Handler: `api_admin_set_tts_usage_limit` — `app/routes.py:3974`.
+- Handler: `api_admin_set_tts_usage_limit` — `app/routes.py:4585`.
 - Назначение: Sets the global or per-user monthly TTS character limit..
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -693,7 +893,7 @@ Query: ?current=<lesson_title>
 
 ## `POST /api/admin/tts_usage/reset`
 
-- Handler: `api_admin_reset_tts_usage` — `app/routes.py:4017`.
+- Handler: `api_admin_reset_tts_usage` — `app/routes.py:4628`.
 - Назначение: Сбрасывает месячный Google TTS-счётчик одного пользователя или всех пользователей..
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -703,7 +903,7 @@ Query: ?current=<lesson_title>
 
 ## `POST /api/admin/translation_usage/reset`
 
-- Handler: `api_admin_reset_translation_usage` — `app/routes.py:4053`.
+- Handler: `api_admin_reset_translation_usage` — `app/routes.py:4664`.
 - Назначение: Сбрасывает накопительную статистику токенов одного пользователя или всех..
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -713,7 +913,7 @@ Query: ?current=<lesson_title>
 
 ## `POST /api/admin/grant_access`
 
-- Handler: `api_admin_grant_access` — `app/routes.py:4084`.
+- Handler: `api_admin_grant_access` — `app/routes.py:4695`.
 - Назначение: Выдаёт пользователю безлимитный доступ (100 лет). Только для админов..
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -723,7 +923,7 @@ Query: ?current=<lesson_title>
 
 ## `POST /api/admin/revoke_access`
 
-- Handler: `api_admin_revoke_access` — `app/routes.py:4117`.
+- Handler: `api_admin_revoke_access` — `app/routes.py:4728`.
 - Назначение: Отзывает безлимитный доступ — переводит пользователя в истёкший trial. Только для админов..
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -733,7 +933,7 @@ Query: ?current=<lesson_title>
 
 ## `POST /api/admin/unlink_family`
 
-- Handler: `api_admin_unlink_family` — `app/routes.py:4143`.
+- Handler: `api_admin_unlink_family` — `app/routes.py:4754`.
 - Назначение: Remove one exact adult-child relationship. Only for admins..
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -743,7 +943,7 @@ Query: ?current=<lesson_title>
 
 ## `POST /api/admin/delete_user`
 
-- Handler: `api_admin_delete_user` — `app/routes.py:4173`.
+- Handler: `api_admin_delete_user` — `app/routes.py:4786`.
 - Назначение: Полностью удаляет пользователя и его данные, чтобы он мог зарегистрироваться заново..
 - Авторизация: admin.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -753,9 +953,9 @@ Query: ?current=<lesson_title>
 
 ## `GET /api/ai/status`
 
-- Handler: `api_ai_status` — `app/routes.py:4263`.
+- Handler: `api_ai_status` — `app/routes.py:4883`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
-- Авторизация: android headers/session.
+- Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
 - Frontend consumers: не найдены статически.
 - Android consumers: нет подтверждённого Retrofit соответствия.
@@ -763,17 +963,17 @@ Query: ?current=<lesson_title>
 
 ## `POST /api/translate/word`
 
-- Handler: `api_translate_word` — `app/routes.py:4271`.
+- Handler: `api_translate_word` — `app/routes.py:4891`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
-- Frontend consumers: `app/static/upload.js`.
+- Frontend consumers: `app/static/upload.js`, `app/templates/settings.html`.
 - Android consumers: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt`.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
 ## `POST /api/generate/topic`
 
-- Handler: `api_generate_topic` — `app/routes.py:4300`.
+- Handler: `api_generate_topic` — `app/routes.py:4924`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -783,7 +983,7 @@ Query: ?current=<lesson_title>
 
 ## `POST /api/translate/language`
 
-- Handler: `api_translate_language` — `app/routes.py:4332`.
+- Handler: `api_translate_language` — `app/routes.py:4957`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: authenticated user.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -791,9 +991,29 @@ Query: ?current=<lesson_title>
 - Android consumers: нет подтверждённого Retrofit соответствия.
 - Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
 
+## `GET /auth/status`
+
+- Handler: `auth_status` — `app/routes.py:5000`.
+- Назначение: Flask pages, API, sync, database and audio orchestration.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: `app/templates/base.html`.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
+## `GET /auth/logout`
+
+- Handler: `auth_logout` — `app/routes.py:5019`.
+- Назначение: Flask pages, API, sync, database and audio orchestration.
+- Авторизация: authenticated user.
+- Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
+- Frontend consumers: не найдены статически.
+- Android consumers: нет подтверждённого Retrofit соответствия.
+- Риск: изменения URL, метода, auth headers и JSON-полей требуют синхронной проверки Web/Telegram Mini App/Android.
+
 ## `GET /api/debug/whoami`
 
-- Handler: `api_debug_whoami` — `app/routes.py:4364`.
+- Handler: `api_debug_whoami` — `app/routes.py:5038`.
 - Назначение: Flask pages, API, sync, database and audio orchestration.
 - Авторизация: android headers/session.
 - Request/response: определяется handler; JSON-схема не формализована Flask-декоратором, поэтому перед изменением читать функцию целиком.
@@ -803,17 +1023,17 @@ Query: ?current=<lesson_title>
 
 # Telegram handlers
 
-- `command /start` → `start_cmd` (`bot/auth.py:797`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `command /open` → `open_cmd` (`bot/auth.py:798`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `command /family` → `family_cmd` (`bot/auth.py:799`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `callback r"^onboarding:(?:language|language_keep|language_change|account` → `onboarding_callback` (`bot/auth.py:800`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `callback r"^family_link:(?:confirm|cancel` → `family_link_callback` (`bot/auth.py:804`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `message filters.Regex(learn_words_pattern)` → `open_cmd` (`bot/auth.py:811`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `message filters.TEXT & (~filters.COMMAND) & exclude_import_btns` → `on_text` (`bot/auth.py:815`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `command /reminder_now` → `_cmd_reminder_now` (`bot/reminder.py:266`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `command /upload_words` → `cmd_upload_words` (`bot/upload.py:460`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `message filters.Regex(upload_words_pattern)` → `cmd_upload_words` (`bot/upload.py:461`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `message filters.Regex(r"^(Добавить слова|Импортировать слова)$")` → `cmd_upload_words` (`bot/upload.py:462`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `message filters.Document.ALL & (~filters.COMMAND)` → `on_csv_document` (`bot/upload.py:463`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `message filters.Regex(r"(?i)^(импортировать как есть)$")` → `on_confirm_import_all` (`bot/upload.py:464`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
-- `message filters.Regex(r"(?i)^(отменить импорт)$")` → `on_cancel_import` (`bot/upload.py:465`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `command /start` → `start_cmd` (`bot/auth.py:798`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `command /open` → `open_cmd` (`bot/auth.py:799`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `command /family` → `family_cmd` (`bot/auth.py:800`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `callback r"^onboarding:(?:language|language_keep|language_change|account` → `onboarding_callback` (`bot/auth.py:801`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `callback r"^family_link:(?:confirm|cancel` → `family_link_callback` (`bot/auth.py:805`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `message filters.Regex(learn_words_pattern)` → `open_cmd` (`bot/auth.py:812`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `message filters.TEXT & (~filters.COMMAND) & exclude_import_btns` → `on_text` (`bot/auth.py:816`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `command /reminder_now` → `_cmd_reminder_now` (`bot/reminder.py:264`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `command /upload_words` → `cmd_upload_words` (`bot/upload.py:435`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `message filters.Regex(upload_words_pattern)` → `cmd_upload_words` (`bot/upload.py:436`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `message filters.Regex(r"^(Добавить слова|Импортировать слова)$")` → `cmd_upload_words` (`bot/upload.py:437`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `message filters.Document.ALL & (~filters.COMMAND)` → `on_csv_document` (`bot/upload.py:438`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `message filters.Regex(r"(?i)^(импортировать как есть)$")` → `on_confirm_import_all` (`bot/upload.py:439`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.
+- `message filters.Regex(r"(?i)^(отменить импорт)$")` → `on_cancel_import` (`bot/upload.py:440`); сценарий: Telegram handler; таблицы смотреть через `table`/`query`.

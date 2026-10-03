@@ -1,7 +1,27 @@
-// upload.js — страница загрузки слов с генерацией через Ollama
+// upload.js — страница загрузки слов с генерацией через сервер
 
 let lessonCounter = 0;
 let pendingDuplicateDelete = null;
+let uploadLessons = [];
+
+async function loadUploadLessons() {
+  try {
+    const response = await apiFetch('/api/user_lessons');
+    const lessons = await response.json();
+    if (!response.ok || !Array.isArray(lessons)) throw new Error('Не удалось загрузить уроки');
+    uploadLessons = lessons;
+    document.querySelectorAll('.lesson-existing').forEach(fillLessonChoices);
+  } catch (error) {
+    document.getElementById('gen-status').textContent = '⚠ Список уроков недоступен. Можно указать название вручную.';
+  }
+}
+
+function fillLessonChoices(select) {
+  const selected = select.value;
+  select.replaceChildren(new Option('Новый урок — укажите название', ''));
+  uploadLessons.forEach(item => select.add(new Option(`${item.lesson} (${item.words_count} слов)`, item.lesson)));
+  select.value = selected;
+}
 
 function _esc(s) {
   if (s == null) return '';
@@ -47,6 +67,10 @@ function addLesson() {
       <button type="button" class="del-row-btn remove-lesson-btn" onclick="removeLesson(${idx})" title="Удалить урок">✕</button>
     </div>
     <div class="lesson-fields">
+      <label>Добавить в урок:
+        <select class="lesson-existing" aria-label="Выбрать существующий урок"></select>
+      </label>
+      <p class="lesson-hint">Название урока обязательно. Введите одно слово или список: каждое слово с новой строки.</p>
       <textarea class="words-ta" placeholder="Формат 1 — одно NL слово в строке:&#10;het huis&#10;de kamer&#10;&#10;Формат 2 — пары NL + RU (с пустой строкой между):&#10;bewegen&#10;двигаться&#10;&#10;Start&#9;de kamer&#9;&#10;комната"></textarea>
       <p class="lesson-hint">Формат определяется автоматически: если есть русский текст — NL+RU, иначе — только NL слова</p>
     </div>
@@ -60,6 +84,16 @@ function addLesson() {
     </div>
   `;
   container.appendChild(div);
+  const choice = div.querySelector('.lesson-existing');
+  fillLessonChoices(choice);
+  choice.addEventListener('change', () => {
+    const name = div.querySelector('.lesson-name');
+    name.value = choice.value;
+    name.readOnly = Boolean(choice.value);
+    if (!choice.value) name.focus();
+  });
+  div.querySelector('.lesson-name').required = true;
+  div.querySelector('.lesson-name').maxLength = 200;
   _updateRemoveButtons();
 }
 
@@ -74,40 +108,21 @@ function _updateRemoveButtons() {
   btns.forEach(b => { b.style.visibility = btns.length > 1 ? 'visible' : 'hidden'; });
 }
 
-// ── AI source toggle (Ollama локально / Облако через AI Platform) ────
+// ── AI source toggle (сервер локально / Облако через AI Platform) ────
 
-const AI_SOURCE_KEY = 'ai_source';
 
-function _getAiSource() {
-  return localStorage.getItem(AI_SOURCE_KEY) || 'ollama';
-}
 
-function _setAiSource(value) {
-  localStorage.setItem(AI_SOURCE_KEY, value);
-  document.querySelectorAll('.ai-source-select').forEach(sel => { sel.value = value; });
-  document.querySelectorAll('.ollama-only').forEach(el => {
-    if (value === 'cloud') {
-      if (el.dataset.prevDisplay === undefined) el.dataset.prevDisplay = el.style.display || '';
-      el.style.display = 'none';
-    } else {
-      el.style.display = el.dataset.prevDisplay || '';
-    }
-  });
-}
 
-function initAiSourceControls() {
-  const saved = _getAiSource();
-  document.querySelectorAll('.ai-source-select').forEach(sel => {
-    sel.addEventListener('change', () => _setAiSource(sel.value));
-  });
-  _setAiSource(saved);
-}
 
-async function _cloudTranslateWord(word, fromLang, level, knownRu) {
+
+
+
+
+async function _cloudTranslateWord(word, fromLang, level, knownRu, supplied = {}) {
   const resp = await apiFetch('/api/translate/word', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ word, from_lang: fromLang, level, known_ru: knownRu || null }),
+    body: JSON.stringify({ word, from_lang: fromLang, level, known_ru: knownRu || null, supplied, sense: supplied.content_sense || supplied.sense || '', context: supplied.content_context || supplied.context || '' }),
   });
   const data = await resp.json();
   if (!data.ok) throw new Error(data.error || 'Ошибка облака');
@@ -125,119 +140,36 @@ async function _cloudSuggestTopicWords(topic, lang, level, count, existingWords)
   return data.words || [];
 }
 
-async function _cloudTranslateLanguage(sourceWord, sourceSentence, sourceLangName, targetLangName) {
+async function _cloudTranslateLanguage(sourceWord, sourceSentence, sourceLangName, targetLangName, supplied = {}) {
   const resp = await apiFetch('/api/translate/language', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       source_word: sourceWord, source_sentence: sourceSentence,
-      source_lang_name: sourceLangName, target_lang_name: targetLangName,
+      source_lang_name: sourceLangName, target_lang_name: targetLangName, supplied, sense: supplied.content_sense || supplied.sense || '', context: supplied.content_context || supplied.context || '',
     }),
   });
   const data = await resp.json();
   if (!data.ok) throw new Error(data.error || 'Ошибка облака');
+  if (data.missing_fields?.length) throw new Error('Недостающий контент: ' + data.missing_fields.join(', ') + '. Внешний сервис ещё не подключён.');
   return { word: data.word || '', sentence: data.sentence || '' };
 }
 
-// ── Ollama helpers ──────────────────────────────────────────────
+// ── сервер helpers ──────────────────────────────────────────────
 
-function _ollamaUrl() {
-  return (document.getElementById('ollama-url').value || 'http://localhost:11434').replace(/\/$/, '');
-}
-function _ollamaModel() {
-  return document.getElementById('ollama-model').value.trim() || 'llama3.1:8b';
-}
 
-async function checkOllama() {
-  const statusEl = document.getElementById('ollama-status');
-  statusEl.textContent = '⏳ Проверка...';
-  statusEl.className = 'ollama-status';
-  try {
-    const r = await fetch(_ollamaUrl() + '/api/tags', { signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    const models = (data.models || []).map(m => m.name).join(', ');
-    statusEl.textContent = `✅ Работает. Модели: ${models || '(нет)'}`;
-    statusEl.className = 'ollama-status ok';
-  } catch(e) {
-    statusEl.textContent = `❌ Недоступна: ${e.message}. Запустите Ollama на компьютере.`;
-    statusEl.className = 'ollama-status err';
-  }
-}
+
+
+
 
 function _cefrLevel() {
   return (document.getElementById('cefr-level')?.value || 'A2');
 }
 
-function _buildPrompt(lessonName, words, lang, level) {
-  const langLabel = lang === 'nl' ? 'Dutch' : 'English';
-  const wordList  = words.map((w, i) => `${i+1}. ${w}`).join('\n');
-  return `You are a language learning assistant. Create vocabulary entries for a language course.
-Lesson: "${lessonName}"
-Input language: ${langLabel}
-CEFR level for example sentences: ${level || 'A2'}
-Words:
-${wordList}
 
-For each word return a JSON object with exactly these keys:
-- "nl": Dutch word with article if noun (e.g. "de rekening", "het huis")
-- "en": natural English translation (1-3 words)
-- "ru": natural Russian translation — use proper literary Russian, NOT word-for-word translation. For example: "de rekening" → "счёт", "betalen" → "платить". The Russian must sound like a native speaker wrote it.
-- "ex_nl": one short example sentence in Dutch (${level || 'A2'} level vocabulary and grammar). Surround the studied word (or its inflected form) with ** markers, e.g. "Ik moet de **rekening** betalen."
-- "ex_en": the same sentence translated naturally into English. Surround the corresponding word with ** markers, e.g. "I need to pay the **bill**."
-- "ex_ru": the same sentence translated naturally into Russian. Surround the corresponding word with ** markers, e.g. "Мне нужно оплатить **счёт**."
-- The value of "en" must be the base/dictionary form of the word marked with ** in "ex_en"
-- The value of "ru" must be the base/dictionary form of the word marked with ** in "ex_ru"
 
-Return ONLY a JSON array with one object per word. No markdown, no code fences, no explanation.`;
-}
-
-async function _callOllama(lessonName, words, lang, level) {
-  if (_getAiSource() === 'cloud') {
-    return _cloudTranslateWord(words[0], lang, level);
-  }
-  const body = {
-    model:   _ollamaModel(),
-    messages: [
-      { role: 'system', content: 'You are a language assistant. Return ONLY valid JSON arrays, no markdown fences, no explanations.' },
-      { role: 'user',   content: _buildPrompt(lessonName, words, lang, level) }
-    ],
-    stream: false,
-    format: 'json'
-  };
-
-  const resp = await fetch(_ollamaUrl() + '/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(120000)
-  });
-  if (!resp.ok) throw new Error(`Ollama HTTP ${resp.status}`);
-
-  const data = await resp.json();
-  const raw = (data.message?.content || data.response || '').trim();
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch(_) {
-    // Try to extract JSON array from text
-    const m = raw.match(/\[[\s\S]*\]/);
-    if (m) parsed = JSON.parse(m[0]);
-    else throw new Error('Не удалось разобрать ответ Ollama как JSON');
-  }
-
-  // Unwrap if object wrapping an array
-  if (!Array.isArray(parsed)) {
-    const keys = Object.keys(parsed);
-    if (keys.length === 1 && Array.isArray(parsed[keys[0]])) {
-      parsed = parsed[keys[0]];
-    } else {
-      // Might be a single word object — wrap it
-      parsed = [parsed];
-    }
-  }
-  return parsed;
+async function _resolveWords(lessonName, words, lang, level) {
+  return _cloudTranslateWord(words[0], lang, level);
 }
 
 // ── Detect input format ──────────────────────────────────────────
@@ -252,6 +184,14 @@ async function generateWords() {
   const blocks   = document.querySelectorAll('.lesson-block');
   const genBtn   = document.getElementById('generate-btn');
   const statusEl = document.getElementById('gen-status');
+
+  for (const block of blocks) {
+    if (block.querySelector('.words-ta').value.trim() && !block.querySelector('.lesson-name').value.trim()) {
+      statusEl.textContent = '⚠ Укажите название урока или выберите существующий урок.';
+      block.querySelector('.lesson-name').focus();
+      return;
+    }
+  }
 
   genBtn.disabled = true;
 
@@ -272,7 +212,8 @@ async function generateWords() {
     const rawWords   = fmt === 'nl+ru'
       ? parsePasteText(rawText)
       : rawText.split('\n').map(w => w.trim()).filter(Boolean).map(w => ({ nl: w, ru: null }));
-    const { unique: words, dupes } = _deduplicateWords(rawWords);
+    const words = rawWords;
+    const dupes = [];
     totalWords += words.length;
     parsedBlocks.push({
       block, words, dupes, fmt,
@@ -285,30 +226,6 @@ async function generateWords() {
     statusEl.textContent = '⚠ Нет слов. Заполните хотя бы один урок.';
     genBtn.disabled = false;
     return;
-  }
-
-  // Warmup: first Ollama request after idle loads model into VRAM (can take 2–5 min).
-  // Send a trivial request with a long timeout so the model is hot before real generation.
-  // Not needed in cloud mode — AI Platform keeps no local model to warm up.
-  if (_getAiSource() !== 'cloud') {
-    statusEl.textContent = '🔥 Прогрев модели Ollama… (может занять до 5 минут при первом запуске)';
-    try {
-      const warmupResp = await fetch(_ollamaUrl() + '/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: _ollamaModel(), prompt: 'hi', stream: false }),
-        signal: AbortSignal.timeout(300000)
-      });
-      if (!warmupResp.ok) throw new Error(`Ollama HTTP ${warmupResp.status}`);
-    } catch(e) {
-      if (e.name === 'TimeoutError' || e.message.includes('timeout') || e.message.includes('AbortError')) {
-        statusEl.textContent = '❌ Ollama не ответила за 5 минут — проверьте, что она запущена';
-      } else {
-        statusEl.textContent = `❌ Не удалось подключиться к Ollama: ${e.message}`;
-      }
-      genBtn.disabled = false;
-      return;
-    }
   }
 
   for (const { block, words, dupes, fmt, lessonName, lang } of parsedBlocks) {
@@ -346,13 +263,13 @@ async function generateWords() {
         try {
           let item;
           if (fmt === 'nl+ru') {
-            const items = await _callOllamaRuKnown(lessonName, wordObj.nl, wordObj.ru || '', level);
+            const items = await _resolveKnownTranslation(lessonName, wordObj.nl, wordObj.ru || '', level);
             item = Array.isArray(items) ? items[0] : items;
           } else {
-            const items = await _callOllama(lessonName, [wordLabel], lang, level);
+            const items = await _resolveWords(lessonName, [wordLabel], lang, level);
             item = Array.isArray(items) ? items[0] : items;
           }
-          if (!item) throw new Error('Ollama вернула пустой ответ');
+          if (!item) throw new Error('Сервер вернул пустой ответ');
           _fillRow(placeholder, {
             lesson: lessonName, word: wordLabel,
             nl:    item.nl    || wordObj.nl  || '',
@@ -386,13 +303,13 @@ async function generateWords() {
       try {
         let item;
         if (fmt === 'nl+ru') {
-          const items = await _callOllamaRuKnown(lessonName, wordObj.nl, wordObj.ru || '', level);
+          const items = await _resolveKnownTranslation(lessonName, wordObj.nl, wordObj.ru || '', level);
           item = Array.isArray(items) ? items[0] : items;
         } else {
-          const items = await _callOllama(lessonName, [wordLabel], lang, level);
+          const items = await _resolveWords(lessonName, [wordLabel], lang, level);
           item = Array.isArray(items) ? items[0] : items;
         }
-        if (!item) throw new Error('Ollama вернула пустой ответ');
+        if (!item) throw new Error('Сервер вернул пустой ответ');
         _fillRow(placeholder, {
           lesson: lessonName, word: wordLabel,
           nl:    item.nl    || wordObj.nl  || '',
@@ -463,13 +380,13 @@ function _markRowError(tr, word, err) {
     // Translate common technical errors into human-readable text
     const raw = err.message || '';
     if (raw.includes('replace is not a function') || raw.includes('is not a string')) {
-      msg = `Ollama вернула данные в неверном формате для «${word}» — нажмите 🔄 для повтора`;
+      msg = `Сервер вернул данные в неверном формате для «${word}» — нажмите 🔄 для повтора`;
     } else if (raw.includes('Failed to fetch') || raw.includes('NetworkError')) {
-      msg = 'Ollama недоступна — проверьте, что она запущена';
+      msg = 'Сервер недоступен — проверьте подключение';
     } else if (raw.includes('timeout') || raw.includes('AbortError')) {
       msg = `Время ожидания истекло для «${word}» — нажмите 🔄`;
     } else if (raw.includes('JSON') || raw.includes('разобрать')) {
-      msg = `Не удалось разобрать ответ Ollama для «${word}» — нажмите 🔄`;
+      msg = `Не удалось разобрать ответ сервера для «${word}» — нажмите 🔄`;
     } else {
       msg = raw || 'Неизвестная ошибка';
     }
@@ -506,13 +423,13 @@ async function refreshRow(btn) {
     let item;
     if (knownRu != null) {
       // RU was user-supplied — preserve it, only regenerate EN + sentences
-      const items = await _callOllamaRuKnown(lesson, word, knownRu, level);
+      const items = await _resolveKnownTranslation(lesson, word, knownRu, level);
       item = Array.isArray(items) ? items[0] : items;
     } else {
-      const items = await _callOllama(lesson, [word], lang, level);
+      const items = await _resolveWords(lesson, [word], lang, level);
       item = Array.isArray(items) ? items[0] : items;
     }
-    if (!item) throw new Error('Ollama вернула пустой ответ');
+    if (!item) throw new Error('Сервер вернул пустой ответ');
     _fillRow(tr, {
       lesson, word,
       nl:    item.nl    || '', en:    item.en    || '', ru:    item.ru    || '',
@@ -568,7 +485,7 @@ async function regenerateLesson(idx) {
     tr.style.opacity = '0.5';
 
     try {
-      const items = await _callOllama(lessonName, [word], lang, level);
+      const items = await _resolveWords(lessonName, [word], lang, level);
       const item  = Array.isArray(items) ? items[0] : items;
       if (!item) throw new Error('Пустой ответ');
       _fillRow(tr, {
@@ -605,6 +522,7 @@ function _getTableData() {
   const rows = [];
   document.querySelectorAll('#preview-body tr').forEach(tr => {
     rows.push({
+      level: tr.dataset.level || '',
       lesson: tr.querySelector('.cell-lesson').textContent.trim(),
       nl:     tr.querySelector('.cell-nl').textContent.trim(),
       en:     tr.querySelector('.cell-en').textContent.trim(),
@@ -620,7 +538,8 @@ function _getTableData() {
 function _groupByLesson(rows) {
   const map = new Map();
   rows.forEach(row => {
-    const l = row.lesson || 'Без урока';
+    const l = row.lesson.trim();
+    if (!l) throw new Error('Укажите название урока для каждой строки.');
     if (!map.has(l)) map.set(l, []);
     map.get(l).push(row);
   });
@@ -633,6 +552,7 @@ async function importWords() {
   const rows      = _getTableData();
 
   if (!rows.length) { statusEl.textContent = 'Таблица пуста'; return; }
+  if (rows.some(row => !row.lesson)) { statusEl.textContent = '⚠ Укажите название урока для каждой строки.'; return; }
 
   uploadBtn.disabled = true;
   statusEl.textContent = '⏳ Загружаю в базу данных...';
@@ -642,7 +562,7 @@ async function importWords() {
     const resp = await apiFetch('/api/import-words', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lessons })
+      body: JSON.stringify({ lessons, idempotency_key: crypto.randomUUID() })
     });
     const data = await resp.json();
 
@@ -654,6 +574,7 @@ async function importWords() {
       document.querySelectorAll('.words-ta').forEach(ta => { ta.value = ''; });
       document.querySelectorAll('.lesson-gen-status').forEach(el => { el.textContent = ''; });
       _shareLessonsLoaded = false;
+      await loadUploadLessons();
     } else {
       statusEl.textContent = `❌ Ошибка: ${data.error || 'неизвестная ошибка'}`;
     }
@@ -665,7 +586,7 @@ async function importWords() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  PASTE TAB  (NL + RU format from Ollama / Telegram)
+//  PASTE TAB  (NL + RU format from сервер / Telegram)
 // ════════════════════════════════════════════════════════════════
 
 function parsePasteText(text) {
@@ -695,189 +616,32 @@ function parsePasteText(text) {
 }
 
 
-async function _callOllamaRuKnown(lessonName, nl, ru, level) {
-  if (_getAiSource() === 'cloud') {
-    return _cloudTranslateWord(nl, 'nl', level, ru);
-  }
-  const prompt = `You are a language learning assistant for a Dutch course.
-Lesson: "${lessonName}"
-CEFR level: ${level || 'A2'}
-
-Dutch word: "${nl}"
-Russian translation (already known): "${ru}"
-
-Provide the missing fields. Return a JSON array with ONE object:
-- "nl": "${nl}" (copy exactly)
-- "ru": "${ru}" (copy exactly)
-- "en": natural English translation (1-3 words)
-- "ex_nl": one short Dutch example sentence (${level || 'A2'} level). Surround the studied word (or its inflected form) with ** markers, e.g. "Ik moet de **rekening** betalen."
-- "ex_en": that sentence in English. Surround the corresponding word with ** markers, e.g. "I need to pay the **bill**."
-- "ex_ru": that sentence in Russian. Surround the corresponding word with ** markers, e.g. "Мне нужно оплатить **счёт**."
-- The value of "en" must be the base/dictionary form of the word marked with ** in "ex_en"
-- The value of "ru" must be the base/dictionary form of the word marked with ** in "ex_ru"
-
-Return ONLY a JSON array. No markdown, no fences, no explanation.`;
-
-  const body = {
-    model:   _ollamaModel(),
-    messages: [
-      { role: 'system', content: 'Return ONLY valid JSON arrays, no markdown.' },
-      { role: 'user',   content: prompt }
-    ],
-    stream: false,
-    format: 'json'
-  };
-
-  const resp = await fetch(_ollamaUrl() + '/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(60000)
-  });
-  if (!resp.ok) throw new Error(`Ollama HTTP ${resp.status}`);
-
-  const data = await resp.json();
-  const raw  = (data.message?.content || data.response || '').trim();
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch(_) {
-    const m = raw.match(/\[[\s\S]*\]/);
-    if (m) parsed = JSON.parse(m[0]);
-    else throw new Error('Не удалось разобрать ответ Ollama');
-  }
-  if (!Array.isArray(parsed)) {
-    const keys = Object.keys(parsed);
-    if (keys.length === 1 && Array.isArray(parsed[keys[0]])) parsed = parsed[keys[0]];
-    else parsed = [parsed];
-  }
-  return parsed;
+async function _resolveKnownTranslation(lessonName, nl, ru, level) {
+  return _cloudTranslateWord(nl, 'nl', level, ru);
 }
 
 addLesson();
+loadUploadLessons();
 initAdminSubscriptionsLink();
-initAiSourceControls();
+
 
 // ════════════════════════════════════════════════════════════════
 //  TOPIC GENERATOR TAB
 // ════════════════════════════════════════════════════════════════
 
-function _topicOllamaUrl() {
-  const el = document.getElementById('topic-ollama-url');
-  return (el ? el.value : document.getElementById('ollama-url').value || 'http://localhost:11434').replace(/\/$/, '');
-}
-function _topicOllamaModel() {
-  const el = document.getElementById('topic-ollama-model');
-  return (el ? el.value : document.getElementById('ollama-model').value || 'llama3.1:8b').trim();
-}
 
-async function checkOllamaTopic() {
-  const statusEl = document.getElementById('topic-ollama-status');
-  statusEl.textContent = '⏳ Проверка...';
-  statusEl.className = 'ollama-status';
-  try {
-    const r = await fetch(_topicOllamaUrl() + '/api/tags', { signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    const models = (data.models || []).map(m => m.name).join(', ');
-    statusEl.textContent = `✅ Работает. Модели: ${models || '(нет)'}`;
-    statusEl.className = 'ollama-status ok';
-  } catch(e) {
-    statusEl.textContent = `❌ Недоступна: ${e.message}`;
-    statusEl.className = 'ollama-status err';
-  }
-}
 
-async function _fetchExistingNlWords() {
-  try {
-    const resp = await apiFetch('/api/words/nl-list');
-    const data = await resp.json();
-    return data.ok ? (data.words || []) : [];
-  } catch(e) {
-    return [];
-  }
-}
 
-function _stripArticle(w) {
-  return w.toLowerCase().trim().replace(/^(de|het|een)\s+/i, '').trim();
-}
 
-function _deduplicateWords(words) {
-  const seen = new Set();
-  const dupes = [];
-  const unique = words.filter(wordObj => {
-    const base = (wordObj.nl || '').toLowerCase().trim()
-      .replace(/^(de|het|een|the|a|an)\s+/i, '').trim();
-    if (!base) return true;
-    if (seen.has(base)) { dupes.push(wordObj.nl); return false; }
-    seen.add(base);
-    return true;
-  });
-  return { unique, dupes };
-}
+
+
+
+
+
+
 
 async function _suggestWordsByTopic(topic, lang, level, count, existingWords) {
-  if (_getAiSource() === 'cloud') {
-    return _cloudSuggestTopicWords(topic, lang, level, count, existingWords);
-  }
-  const langLabel = lang === 'nl' ? 'Dutch' : 'English';
-  const avoid = existingWords.length
-    ? `\nDo NOT suggest any of these words (already in the user's vocabulary): ${existingWords.slice(0, 150).join(', ')}`
-    : '';
-
-  const prompt = `You are a language learning assistant.
-Topic: "${topic}"
-Language: ${langLabel}
-CEFR level: ${level}
-${avoid}
-
-Suggest exactly ${count} ${langLabel} words or short phrases that are:
-- Relevant to the topic "${topic}"
-- Appropriate for ${level} level learners
-- Not repeating any words already listed above
-- Include articles (de/het) for Dutch nouns
-
-Return ONLY a JSON array of strings. No explanation, no markdown.
-Example: ["de appel", "eten", "lekker", "het restaurant", "betalen"]`;
-
-  const body = {
-    model:   _topicOllamaModel(),
-    messages: [
-      { role: 'system', content: 'Return ONLY a valid JSON array of strings. No markdown, no explanation.' },
-      { role: 'user',   content: prompt }
-    ],
-    stream: false,
-    format: 'json'
-  };
-
-  const resp = await fetch(_topicOllamaUrl() + '/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(60000)
-  });
-  if (!resp.ok) throw new Error(`Ollama HTTP ${resp.status}`);
-
-  const data = await resp.json();
-  const raw  = (data.message?.content || data.response || '').trim();
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch(_) {
-    const m = raw.match(/\[[\s\S]*\]/);
-    if (m) parsed = JSON.parse(m[0]);
-    else throw new Error('Не удалось разобрать ответ Ollama как JSON');
-  }
-
-  if (!Array.isArray(parsed)) {
-    // Maybe it's {words: [...]} or similar
-    const vals = Object.values(parsed);
-    parsed = vals.flat().filter(v => typeof v === 'string');
-  }
-
-  return parsed.filter(w => typeof w === 'string' && w.trim());
+  return _cloudSuggestTopicWords(topic, lang, level, count, existingWords);
 }
 
 async function generateByTopic() {
@@ -897,27 +661,21 @@ async function generateByTopic() {
   statusEl.textContent  = '⏳ Загружаю слова из базы данных…';
 
   // Step 1: get existing words for deduplication
-  const existingWords = await _fetchExistingNlWords();
-  const existingSet   = new Set(existingWords);                       // exact lowercase
-  const existingBase  = new Set(existingWords.map(_stripArticle));    // without article
+  const existingWords = [];
 
-  // Step 2: ask Ollama for word suggestions
-  statusEl.textContent = `⏳ Запрашиваю ${count} слов по теме «${topic}» у Ollama…`;
+  // Step 2: ask сервер for word suggestions
+  statusEl.textContent = `⏳ Запрашиваю ${count} слов по теме «${topic}» у сервер…`;
   let suggested;
   try {
     suggested = await _suggestWordsByTopic(topic, lang, level, count, existingWords);
   } catch(e) {
-    statusEl.textContent = `❌ Ошибка Ollama: ${e.message}`;
+    statusEl.textContent = `❌ Ошибка сервер: ${e.message}`;
     genBtn.disabled = false;
     return;
   }
 
   // Step 3: filter duplicates
-  const newWords = suggested.filter(w => {
-    const low  = w.toLowerCase().trim();
-    const base = _stripArticle(w);
-    return !existingSet.has(low) && !existingBase.has(base);
-  });
+  const newWords = suggested;
 
   const skipped = suggested.length - newWords.length;
 
@@ -946,9 +704,9 @@ async function generateByTopic() {
     const placeholder = _addPendingRow(lessonName, word);
 
     try {
-      const items = await _callOllamaForTopic(lessonName, word, lang, level);
+      const items = await _resolveTopicWord(lessonName, word, lang, level);
       const item  = Array.isArray(items) ? items[0] : items;
-      if (!item) throw new Error('Ollama вернула пустой ответ');
+      if (!item) throw new Error('Сервер вернул пустой ответ');
       _fillRow(placeholder, {
         lesson: lessonName, word,
         nl:    item.nl    || word,
@@ -967,65 +725,9 @@ async function generateByTopic() {
   genBtn.disabled = false;
 }
 
-// Same as _callOllama but uses topic-panel Ollama settings
-async function _callOllamaForTopic(lessonName, word, lang, level) {
-  if (_getAiSource() === 'cloud') {
-    return _cloudTranslateWord(word, lang, level);
-  }
-  const langLabel = lang === 'nl' ? 'Dutch' : 'English';
-  const prompt = `You are a language learning assistant. Create a vocabulary entry for a language course.
-Lesson: "${lessonName}"
-Input language: ${langLabel}
-CEFR level: ${level || 'A2'}
-Word: "${word}"
-
-Return a JSON array with ONE object with exactly these keys:
-- "nl": Dutch word with article if noun
-- "en": natural English translation (1-3 words)
-- "ru": natural Russian translation — proper literary Russian, NOT word-for-word
-- "ex_nl": one short Dutch example sentence (${level || 'A2'} level). Surround the studied word with ** markers, e.g. "Ik moet de **rekening** betalen."
-- "ex_en": that sentence in English. Surround the corresponding word with ** markers, e.g. "I need to pay the **bill**."
-- "ex_ru": that sentence in Russian. Surround the corresponding word with ** markers, e.g. "Мне нужно оплатить **счёт**."
-- The value of "en" must be the base/dictionary form of the word marked with ** in "ex_en"
-- The value of "ru" must be the base/dictionary form of the word marked with ** in "ex_ru"
-
-Return ONLY a JSON array. No markdown, no fences, no explanation.`;
-
-  const body = {
-    model:   _topicOllamaModel(),
-    messages: [
-      { role: 'system', content: 'Return ONLY valid JSON arrays, no markdown.' },
-      { role: 'user',   content: prompt }
-    ],
-    stream: false,
-    format: 'json'
-  };
-
-  const resp = await fetch(_topicOllamaUrl() + '/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(90000)
-  });
-  if (!resp.ok) throw new Error(`Ollama HTTP ${resp.status}`);
-
-  const data = await resp.json();
-  const raw  = (data.message?.content || data.response || '').trim();
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch(_) {
-    const m = raw.match(/\[[\s\S]*\]/);
-    if (m) parsed = JSON.parse(m[0]);
-    else throw new Error('Не удалось разобрать ответ Ollama');
-  }
-  if (!Array.isArray(parsed)) {
-    const keys = Object.keys(parsed);
-    if (keys.length === 1 && Array.isArray(parsed[keys[0]])) parsed = parsed[keys[0]];
-    else parsed = [parsed];
-  }
-  return parsed;
+// Same as _resolveWords but uses topic-panel сервер settings
+async function _resolveTopicWord(lessonName, word, lang, level) {
+  return _cloudTranslateWord(word, lang, level);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1042,6 +744,209 @@ function switchTab(name) {
   if (name === 'share') {
     shareLessonsLoad();
   }
+  if (name === 'mcp') {
+    mcpLoad();
+  }
+}
+
+// ── Personal MCP connector ─────────────────────────────────────
+let _mcpLoaded = false;
+let _mcpData = null;
+
+function _mcpIsRussian() {
+  return (window.I18N?.language || 'en') === 'ru';
+}
+
+function _mcpText(ru, en) {
+  return _mcpIsRussian() ? ru : en;
+}
+
+function _mcpDate(timestamp) {
+  if (!timestamp) return _mcpText('ещё не использовалось', 'not used yet');
+  return new Date(Number(timestamp) * 1000).toLocaleString(_mcpIsRussian() ? 'ru-RU' : 'en-GB');
+}
+
+async function mcpCopy(value, button) {
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+  } catch (_) {
+    const input = document.createElement('textarea');
+    input.value = value;
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    input.remove();
+  }
+  if (button) {
+    const previous = button.textContent;
+    button.textContent = _mcpText('Скопировано', 'Copied');
+    setTimeout(() => { button.textContent = previous; }, 1200);
+  }
+}
+
+function _mcpDetail(label, value, wide) {
+  return `<div class="mcp-detail${wide ? ' wide' : ''}">
+    <span class="mcp-detail-label">${_esc(label)}</span>
+    <div class="mcp-copy-row">
+      <span class="mcp-copy-value" title="${_esc(value)}">${_esc(value)}</span>
+      <button type="button" class="mcp-copy-btn">${_mcpText('Копировать', 'Copy')}</button>
+    </div>
+  </div>`;
+}
+
+function mcpRender(data) {
+  _mcpData = data;
+  const connector = data.connector || {};
+  const content = document.getElementById('mcp-user-content');
+  const toggle = document.getElementById('mcp-enabled-toggle');
+  const toggleLabel = document.getElementById('mcp-toggle-label');
+  const name = document.getElementById('mcp-user-name');
+  const description = document.getElementById('mcp-user-description');
+  const icon = document.getElementById('mcp-user-icon');
+  const heroImage = document.getElementById('mcp-user-art');
+  if (!content || !toggle) return;
+
+  toggle.disabled = false;
+  toggle.checked = data.enabled === true;
+  toggleLabel.textContent = data.enabled
+    ? _mcpText('Коннектор включён', 'Connector enabled')
+    : _mcpText('Коннектор выключен', 'Connector disabled');
+  name.textContent = connector.name || 'ParallelLingvo';
+  description.textContent = _mcpIsRussian() ? connector.description : (connector.description_en || connector.description);
+  if (connector.icon_url) icon.src = connector.icon_url;
+  if (connector.hero_image_url && heroImage) heroImage.src = connector.hero_image_url;
+
+  const states = {
+    connected: _mcpText('Подключён и активен', 'Connected and active'),
+    paused: _mcpText('Подключён, но приостановлен', 'Connected but paused'),
+    ready: _mcpText('Включён — ожидает подключения', 'Enabled — waiting for connection'),
+    disabled: _mcpText('Выключен', 'Disabled'),
+  };
+  const connections = Array.isArray(data.connections) ? data.connections : [];
+  const googleAccount = data.google_account || {};
+  const googleLinkResult = new URLSearchParams(window.location.search || '').get('google_link');
+  const googleMessages = {
+    linked: _mcpText('Google-аккаунт успешно привязан к вашему профилю.', 'Google account was linked to your profile.'),
+    conflict: _mcpText('Этот Google-аккаунт уже привязан к другому профилю.', 'This Google account is already linked to another profile.'),
+    auth_required: _mcpText('Сессия закончилась. Войдите через Telegram и повторите привязку.', 'Your session expired. Sign in with Telegram and try again.'),
+    user_not_found: _mcpText('Профиль пользователя не найден.', 'User profile was not found.'),
+    error: _mcpText('Не удалось привязать Google-аккаунт.', 'Could not link the Google account.'),
+  };
+  const googleMessage = googleMessages[googleLinkResult] || '';
+  const googleMessageClass = googleLinkResult === 'linked' ? '' : ' error';
+  const googleIcon = `<svg width="21" height="21" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.6 32.8 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.5 16.1 18.9 13 24 13c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.5 0-14 4.1-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.3 26.7 36 24 36c-5.2 0-9.5-3.2-11.3-7.7l-6.6 5.1C9.8 40 16.4 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.6l6.2 5.2C36.9 37.2 44 32 44 24c0-1.2-.1-2.4-.4-3.5z"/></svg>`;
+  const googleBlock = `<div class="mcp-google-card">
+    <div class="mcp-google-info">
+      <span class="mcp-google-icon">${googleIcon}</span>
+      <div><div class="mcp-google-title">${_mcpText('Google-аккаунт', 'Google account')}</div>
+      <div class="mcp-google-meta">${_esc(googleAccount.linked ? (googleAccount.email || _mcpText('Привязан к профилю ParallelLingvo', 'Linked to your ParallelLingvo profile')) : _mcpText('Используйте Google для входа в этот же профиль', 'Use Google to sign in to this same profile'))}</div></div>
+    </div>
+    ${googleAccount.linked
+      ? `<span class="mcp-google-badge">${_mcpText('Привязан', 'Linked')}</span>`
+      : `<a class="mcp-google-btn" href="/auth/google?mode=link&amp;next=%2Fupload%3Ftab%3Dmcp">${googleIcon}${_mcpText('Привязать Google', 'Link Google')}</a>`}
+  </div>`;
+  const connectorDescription = _mcpIsRussian() ? connector.description : (connector.description_en || connector.description);
+  const details = [
+    [_mcpText('URL коннектора', 'Connector URL'), connector.mcp_url, true],
+    [_mcpText('Название', 'Name'), connector.name, false],
+    [_mcpText('Краткое описание', 'Description'), connectorDescription, true],
+    [_mcpText('Версия', 'Version'), connector.version, false],
+    [_mcpText('OAuth issuer', 'OAuth issuer'), connector.issuer, true],
+    [_mcpText('Транспорт', 'Transport'), connector.transport, false],
+    [_mcpText('Авторизация', 'Authorization'), connector.authorization, false],
+    [_mcpText('OAuth metadata', 'OAuth metadata'), connector.authorization_metadata, true],
+    [_mcpText('Resource metadata', 'Resource metadata'), connector.resource_metadata, true],
+    [_mcpText('URL иконки', 'Icon URL'), connector.icon_url, true],
+  ];
+  const connectionItems = connections.map((item) => `<div class="mcp-connection-item">
+    <div><div class="mcp-connection-name">${_esc(item.client_name)}</div><div>${_esc((item.scopes || []).join(', '))}</div></div>
+    <div class="mcp-connection-meta">${_mcpText('Последнее использование', 'Last used')}:<br>${_esc(_mcpDate(item.last_used_at))}</div>
+  </div>`).join('');
+
+  content.innerHTML = `
+    ${googleMessage ? `<div class="mcp-google-message${googleMessageClass}">${_esc(googleMessage)}</div>` : ''}
+    ${googleBlock}
+    <div class="mcp-status-row">
+      <div class="mcp-status ${_esc(data.state)}">${_esc(states[data.state] || data.state)}</div>
+      <div class="mcp-connection-count">${_mcpText('Активных подключений', 'Active connections')}: ${connections.length}</div>
+    </div>
+    <div class="mcp-details-grid">${details.map(item => _mcpDetail(item[0], item[1] || '—', item[2])).join('')}</div>
+    <div class="mcp-help"><strong>${_mcpText('Как подключить:', 'How to connect:')}</strong> ${_mcpText(
+      'скопируйте URL коннектора, добавьте его как пользовательский MCP-коннектор в настройках вашего ИИ-ассистента и войдите в свой аккаунт ParallelLingvo на странице авторизации.',
+      'copy the connector URL, add it as a custom MCP connector in your AI assistant\'s settings, then sign in to your ParallelLingvo account on the authorization page.'
+    )}</div>
+    <div class="mcp-actions">
+      <button type="button" class="mcp-primary-btn" id="mcp-copy-all">${_mcpText('Скопировать данные подключения', 'Copy connection details')}</button>
+      <a class="mcp-secondary-btn" id="mcp-download-icon" href="${_esc(connector.icon_url || '')}" download="parallellingvo-mcp-icon.png">${_mcpText('Скачать значок коннектора', 'Download connector icon')}</a>
+      <button type="button" class="mcp-danger-btn" id="mcp-revoke-all" ${connections.length ? '' : 'hidden'}>${_mcpText('Отозвать все подключения', 'Revoke all connections')}</button>
+    </div>
+    <div class="mcp-connections" ${connections.length ? '' : 'hidden'}>
+      <h3 class="mcp-connections-title">${_mcpText('Подключённые клиенты', 'Connected clients')}</h3>
+      ${connectionItems}
+    </div>`;
+
+  content.querySelectorAll('.mcp-detail').forEach((detail, index) => {
+    const button = detail.querySelector('.mcp-copy-btn');
+    button?.addEventListener('click', () => mcpCopy(details[index][1] || '', button));
+  });
+  document.getElementById('mcp-copy-all')?.addEventListener('click', (event) => {
+    const text = details.map(item => `${item[0]}: ${item[1] || '—'}`).join('\n');
+    mcpCopy(text, event.currentTarget);
+  });
+  document.getElementById('mcp-revoke-all')?.addEventListener('click', mcpRevokeAll);
+}
+
+async function mcpLoad(force) {
+  if (_mcpLoaded && !force) return;
+  const content = document.getElementById('mcp-user-content');
+  try {
+    const response = await apiFetch('/api/mcp/user');
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || 'MCP status failed');
+    _mcpLoaded = true;
+    mcpRender(data);
+  } catch (error) {
+    if (content) content.innerHTML = `<div class="mcp-loading">${_esc(_mcpText('Не удалось загрузить данные MCP.', 'Could not load MCP details.'))}</div>`;
+  }
+}
+
+async function mcpToggle(enabled) {
+  const toggle = document.getElementById('mcp-enabled-toggle');
+  if (toggle) toggle.disabled = true;
+  try {
+    const response = await apiFetch('/api/mcp/user', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({enabled}),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || 'MCP update failed');
+    _mcpLoaded = false;
+    await mcpLoad(true);
+  } catch (_) {
+    if (toggle) toggle.checked = !enabled;
+  } finally {
+    if (toggle) toggle.disabled = false;
+  }
+}
+
+async function mcpRevokeAll() {
+  if (!confirm(_mcpText('Отозвать все подключения MCP? Для повторного подключения потребуется новая авторизация.', 'Revoke all MCP connections? A new authorization will be required to connect again.'))) return;
+  const response = await apiFetch('/api/mcp/user/revoke-all', {method: 'POST'});
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    alert(_mcpText('Не удалось отозвать подключения.', 'Could not revoke connections.'));
+    return;
+  }
+  _mcpLoaded = false;
+  await mcpLoad(true);
+}
+
+if (new URLSearchParams(window.location.search || '').get('tab') === 'mcp') {
+  switchTab('mcp');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1083,6 +988,89 @@ async function shareLessonsLoad(force) {
   }
 }
 
+function startShareLessonRename(button, lesson) {
+  if (!button || button.dataset.editing === '1') return;
+  const statusEl = document.getElementById('share-lessons-status');
+  const original = String(lesson || '').trim();
+  button.dataset.editing = '1';
+  button.contentEditable = 'true';
+  button.classList.add('is-editing');
+  button.focus();
+  try {
+    const range = document.createRange();
+    range.selectNodeContents(button);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  } catch (_) {}
+
+  let finished = false;
+  const stopEditing = () => {
+    button.contentEditable = 'false';
+    button.classList.remove('is-editing');
+    delete button.dataset.editing;
+    button.removeEventListener('keydown', onKeydown);
+    button.removeEventListener('blur', cancel);
+  };
+  const cancel = () => {
+    if (finished) return;
+    finished = true;
+    button.textContent = original;
+    stopEditing();
+  };
+  const commit = async () => {
+    if (finished) return;
+    const nextLesson = String(button.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!nextLesson) {
+      if (statusEl) statusEl.textContent = 'Название урока не может быть пустым.';
+      cancel();
+      return;
+    }
+    if (nextLesson === original) {
+      cancel();
+      return;
+    }
+    finished = true;
+    stopEditing();
+    button.textContent = nextLesson;
+    if (statusEl) statusEl.textContent = 'Сохраняю название урока...';
+    try {
+      const response = await apiFetch('/api/user_lessons/rename', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({lesson: original, new_lesson: nextLesson})
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        const message = data.error === 'lesson_exists'
+          ? 'Урок с таким названием уже существует.'
+          : 'Не удалось изменить название урока.';
+        throw new Error(message);
+      }
+      _shareLessonsLoaded = false;
+      await shareLessonsLoad(true);
+      const refreshedStatus = document.getElementById('share-lessons-status');
+      if (refreshedStatus) refreshedStatus.textContent = 'Название урока сохранено.';
+    } catch (error) {
+      button.textContent = original;
+      if (statusEl) statusEl.textContent = error.message || 'Не удалось изменить название урока.';
+    }
+  };
+  function onKeydown(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
+      commit();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      cancel();
+    }
+  }
+  button.addEventListener('keydown', onKeydown);
+  button.addEventListener('blur', cancel);
+}
+
 function renderShareLessons(lessons) {
   const listEl = document.getElementById('share-lessons-list');
   const statusEl = document.getElementById('share-lessons-status');
@@ -1099,6 +1087,7 @@ function renderShareLessons(lessons) {
   lessons.forEach(item => {
     const lesson = item.lesson || item.lesson_title || '';
     const count = Number(item.words_count || 0);
+    const editableName = item.editable_name === true;
     const words = Array.isArray(item.words) ? item.words : [];
     const languages = Array.isArray(item.languages) ? item.languages : [];
     const languageText = languages.map(lang => lang.native || lang.name || String(lang.code || '').toUpperCase()).join(', ');
@@ -1119,12 +1108,13 @@ function renderShareLessons(lessons) {
       <div class="share-lesson-row">
         <div class="share-lesson-main">
           <input type="checkbox" class="share-lesson-check" value="${_esc(lesson)}" aria-label="Выбрать урок ${_esc(lesson)}">
-          <button type="button" class="share-lesson-name" aria-label="Показать слова урока ${_esc(lesson)}">${_esc(lesson)}</button>
+          <button type="button" class="share-lesson-name" aria-label="${editableName ? 'Изменить название урока' : 'Название урока'} ${_esc(lesson)}">${_esc(lesson)}</button>
           ${languageText ? `<span class="share-lesson-languages">· ${_esc(languageText)}</span>` : ''}
         </div>
         <div class="share-lesson-side">
           <div class="share-lesson-language-actions">${languageButtons}</div>
           <div class="share-lesson-meta">${count} слов</div>
+          <button type="button" class="share-lesson-preview-btn" aria-label="Показать слова урока ${_esc(lesson)}">▾</button>
         </div>
       </div>
       <div class="share-lesson-words"></div>
@@ -1139,7 +1129,12 @@ function renderShareLessons(lessons) {
           </div>
         `).join('')
       : '<div style="color:#94a3b8">В этом уроке нет слов.</div>';
-    row.querySelector('.share-lesson-name').addEventListener('click', () => {
+    row.querySelector('.share-lesson-name').addEventListener('click', event => {
+      event.stopPropagation();
+      if (editableName) startShareLessonRename(event.currentTarget, lesson);
+      else row.classList.toggle('is-open');
+    });
+    row.querySelector('.share-lesson-preview-btn').addEventListener('click', () => {
       row.classList.toggle('is-open');
     });
     row.querySelector('.share-lesson-check').addEventListener('change', updateShareSelection);
@@ -1273,46 +1268,11 @@ async function saveShareLanguageCell(cell) {
 async function _generateShareLanguageValue(word, targetLanguage, level) {
   const sourceLanguage = (_shareEditingLesson.languages || [])[0];
   if (!sourceLanguage) throw new Error('В уроке нет исходного языка');
-  const sourceWord = String(word[sourceLanguage.code] || '').trim();
-  const sourceSentence = String(word[`ex_${sourceLanguage.code}`] || '').trim();
-  if (!sourceWord) throw new Error('В первом столбце отсутствует исходное слово');
-  const sourceName = sourceLanguage.name || sourceLanguage.native || sourceLanguage.code;
-  const targetName = targetLanguage.name || targetLanguage.native || targetLanguage.code;
-
-  if (_getAiSource() === 'cloud') {
-    return _cloudTranslateLanguage(sourceWord, sourceSentence, sourceName, targetName);
-  }
-  const prompt = `Translate one vocabulary entry from ${sourceName} to ${targetName}.\n\nSOURCE WORD: ${JSON.stringify(sourceWord)}\nSOURCE SENTENCE: ${JSON.stringify(sourceSentence)}\n\nRules:\n1. Translate SOURCE WORD directly and precisely into ${targetName}. Return only its normal dictionary form.\n2. Translate SOURCE SENTENCE directly and naturally into ${targetName}; preserve its exact meaning, tense, person, negation and tone.\n3. Do not invent a new example sentence. Do not use the lesson title or any context outside SOURCE WORD and SOURCE SENTENCE.\n4. Do not add explanations, alternatives, parentheses, labels or markdown.\n5. If SOURCE SENTENCE is empty, return an empty sentence.\n6. The translated sentence must contain the translated meaning of SOURCE WORD.\n\nReturn ONLY this JSON object:\n{"word":"direct translation of SOURCE WORD", "sentence":"direct translation of SOURCE SENTENCE"}`;
-  const response = await fetch(_ollamaUrl() + '/api/chat', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      model: _ollamaModel(),
-      messages: [
-        {role: 'system', content: 'Return only valid JSON with keys word and sentence.'},
-        {role: 'user', content: prompt},
-      ],
-      stream: false,
-      format: 'json',
-      options: {temperature: 0},
-    }),
-    signal: AbortSignal.timeout(120000),
-  });
-  if (!response.ok) throw new Error(`Ollama HTTP ${response.status}`);
-  const payload = await response.json();
-  const raw = String(payload.message?.content || payload.response || '').trim();
-  let result;
-  try {
-    result = JSON.parse(raw);
-  } catch (_) {
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('Ollama вернула неверный JSON');
-    result = JSON.parse(match[0]);
-  }
-  if (!result || typeof result !== 'object' || (!result.word && !result.sentence)) {
-    throw new Error('Ollama не вернула слово и предложение');
-  }
-  return {word: String(result.word || '').trim(), sentence: String(result.sentence || '').trim()};
+  return _cloudTranslateLanguage(
+    String(word[sourceLanguage.code] || '').trim(),
+    String(word[`ex_${sourceLanguage.code}`] || '').trim(),
+    sourceLanguage.code, targetLanguage.code,
+    {[targetLanguage.code]: word[targetLanguage.code] || '', [`ex_${targetLanguage.code}`]: word[`ex_${targetLanguage.code}`] || '', content_sense: word.content_sense || '', content_context: word.content_context || ''});
 }
 
 function hideShareLanguageWarning() {
@@ -1351,23 +1311,7 @@ function showShareLanguageWarning(tasks) {
   document.getElementById('share-language-warning').classList.add('open');
 }
 
-async function checkShareOllama() {
-  const status = document.getElementById('share-language-status');
-  const btn = document.getElementById('share-ollama-check-btn');
-  btn.disabled = true;
-  status.textContent = 'Проверяю подключение к Ollama...';
-  try {
-    const response = await fetch(_ollamaUrl() + '/api/tags', {signal: AbortSignal.timeout(8000)});
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    const models = (data.models || []).map(model => model.name).join(', ');
-    status.textContent = `Ollama подключена${models ? `. Модели: ${models}` : ''}.`;
-  } catch (error) {
-    status.textContent = `Ollama недоступна: ${error.message}`;
-  } finally {
-    btn.disabled = false;
-  }
-}
+
 
 async function saveGeneratedShareTranslation(word, target, generated) {
   let lastError = null;
@@ -1538,7 +1482,7 @@ async function createShareLink() {
     const resp = await apiFetch('/api/share/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lessons }),
+      body: JSON.stringify({ lessons, idempotency_key: crypto.randomUUID() }),
     });
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Не удалось создать ссылку');
@@ -1808,7 +1752,7 @@ function dbRender(words) {
       <td style="white-space:nowrap">${audioHtml}</td>
       <td class="cell-diff">${diffHtml}</td>
       <td style="white-space:nowrap">
-        <button class="refresh-row-btn" title="Перегенерировать через Ollama" onclick="dbRegenWord(${w.id},this)">🔄</button>
+        <button class="refresh-row-btn" title="Дополнить из общей базы" onclick="dbRegenWord(${w.id},this)">🔄</button>
         <button class="del-row-btn"     title="Удалить слово"                 onclick="dbDelete(${w.id},this)">✕</button>
       </td>
     `;
@@ -1901,7 +1845,7 @@ async function dbDelete(wordId, btn) {
   }
 }
 
-// ── Regenerate word via Ollama ───────────────────────────────────
+// ── Regenerate word via сервер ───────────────────────────────────
 async function dbRegenWord(wordId, btn) {
   const tr     = btn.closest('tr');
   const nl     = tr.querySelector('[data-field="nl"]')?.textContent?.trim()     || '';
@@ -1916,13 +1860,15 @@ async function dbRegenWord(wordId, btn) {
   tr.style.opacity = '0.6';
 
   try {
-    const items = await _callOllamaForTopic(lesson, nl, 'nl', level);
+    const supplied = {};
+    tr.querySelectorAll('[data-field]').forEach(cell => { supplied[cell.dataset.field] = cell.textContent.trim(); });
+    const items = await _cloudTranslateWord(nl, 'nl', '', null, supplied);
     const item  = Array.isArray(items) ? items[0] : items;
-    if (!item) throw new Error('Ollama вернула пустой ответ');
+    if (!item) throw new Error('Сервер вернул пустой ответ');
 
     const setCell = (field, val) => {
       const el = tr.querySelector(`[data-field="${field}"]`);
-      if (el) el.textContent = val || '';
+      if (el && !el.textContent.trim() && val) el.textContent = val;
     };
     setCell('en',    item.en);
     setCell('ru',    item.ru);
@@ -2072,10 +2018,12 @@ async function fileImportWords() {
 
   if (!rows.length) { statusEl.textContent = 'Таблица пуста'; return; }
 
-  // Group by lesson — reuse same API as Ollama import
+  if (rows.some(row => !row.lesson)) { statusEl.textContent = '⚠ Укажите название урока для каждой строки.'; return; }
+
+  // Group by lesson — reuse same API as сервер import
   const lessonMap = new Map();
   rows.forEach(r => {
-    const l = r.lesson || 'Без урока';
+    const l = r.lesson;
     if (!lessonMap.has(l)) lessonMap.set(l, []);
     lessonMap.get(l).push(r);
   });
@@ -2100,6 +2048,7 @@ async function fileImportWords() {
         'Перетащите CSV или Excel файл сюда';
       document.getElementById('file-input').value = '';
       _shareLessonsLoaded = false;
+      await loadUploadLessons();
     } else {
       statusEl.textContent = `❌ ${data.error || 'Неизвестная ошибка'}`;
     }

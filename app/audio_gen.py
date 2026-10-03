@@ -1,6 +1,6 @@
 # app/audio_gen.py
 # [ИЗМЕНЕНО v7.7]
-# - Имя файла: <слово>_<lang>.mp3, папки: static/audio/<lang>/<lesson>/
+# - Content-addressed audio shared across users and lessons.
 # - Генерация ТОЛЬКО для явно переданных id
 # - [НОВОЕ] Максимизация громкости: компрессия + пик-нормализация до -0.1 dBFS
 
@@ -8,7 +8,14 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 from typing import Dict, List, Any, Iterable
-from gtts import gTTS  # pip install gTTS==2.5.1
+import hashlib
+import json
+import os
+import uuid
+import unicodedata
+from app.content_db import transaction
+from app.content_providers import LANGUAGES, tts_provider
+from app.resource_lock import resource_lock
 import time
 from config import Config
 import traceback
@@ -52,28 +59,14 @@ SUPPORTED_LANGS = {"nl", "en", "ru", "de", "fr", "es", "it", "pt", "pl", "uk"}
 
 
 def _connect(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, timeout=60)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-def _lesson_slug(s: str) -> str:
-    s = (s or "").strip().replace("/", "_").replace("\\", "_")
-    return "".join(ch if ch.isalnum() or ch in "-_ ." else "_" for ch in s)[:60] or "lesson"
-
-
-def _filename_from_text(text: str, lang: str) -> str:
-    base = (text or "").strip()
-    safe = "".join(ch if ch.isalnum() else "_" for ch in base).strip("_")
-    safe = safe[:60] or "word"
-    return f"{safe}_{lang}.mp3"
-
-
 def _tts_make(text: str, lang: str, out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    # tld='com' — фикс ошибки translate.google.en
-    tts = gTTS(text=text, lang=lang, slow=False, tld="com")
-    tts.save(str(out_path))
+    tts_provider().synthesize(text,lang,out_path)
 
 
 # -------------------- Пост-обработка громкости --------------------
@@ -129,189 +122,187 @@ def _maximize_loudness(mp3_path: Path) -> None:
         traceback.print_exc()
 
 
-def _pick_word_text(row_dict: Dict[str, Any], lang: str) -> str:
-    return (row_dict.get(lang) or row_dict.get(f"{lang}_word") or row_dict.get(f"translation_{lang}") or "").strip()
-
-
-def _audio_url(lang: str, lesson_slug: str, fname: str) -> str:
-    return f"/static/audio/{lang}/{lesson_slug}/{fname}"
-
-
 def _existing_audio_path(url: str) -> Path | None:
-    """Resolve only an existing URL inside app/static/audio."""
-    raw = str(url or "").split("?", 1)[0].lstrip("/")
+    raw=str(url or "").split("?",1)[0].lstrip("/")
     if not raw.startswith("static/audio/"):
         return None
-    target = (APP_DIR / raw).resolve()
-    audio_root = AUDIO_ROOT.resolve()
-    if target != audio_root and audio_root not in target.parents:
+    target=(AUDIO_ROOT/raw[len("static/audio/"):]).resolve()
+    if AUDIO_ROOT.resolve() not in target.parents:
         return None
-    return target if target.is_file() and target.stat().st_size > 500 else None
+    return target if target.is_file() and target.stat().st_size>500 else None
 
 
-def ensure_audio_for_ids(db_path: str, ids: Iterable[int], langs: Iterable[str], user_id: str | None = None) -> Dict[str, Any]:
-    """
-    Создаёт MP3 только для указанных id и языков.
-    Возвращает { ok: true, items: [ {id, nl, en, ru, ok}, ... ] }
-    """
-    ids = [int(i) for i in (ids or []) if str(i).isdigit()]
-    langs = [str(x).strip().lower() for x in (langs or ["nl", "en", "ru"]) if str(x).strip().lower() in SUPPORTED_LANGS]
+def _file_hash(path):
+    with path.open("rb") as handle:
+        return hashlib.file_digest(handle,"sha256").hexdigest()
+
+
+def _identity(text,lang):
+    parameters=dict(tts_provider().identity)
+    parameters["postprocessing"]={key:getattr(Config,key,None) for key in (
+        "AUDIO_MAXIMIZE","AUDIO_COMP_THRESHOLD_DBFS","AUDIO_COMP_RATIO",
+        "AUDIO_COMP_ATTACK_MS","AUDIO_COMP_RELEASE_MS","AUDIO_PEAK_DBFS","AUDIO_MP3_BITRATE")}
+    parameters["processing_version"]="1"
+    parameters["text"]=unicodedata.normalize("NFC",text).strip()
+    parameters["language"]=lang
+    request=json.dumps(parameters,ensure_ascii=False,sort_keys=True,separators=(",",":"))
+    return hashlib.sha256(request.encode("utf-8")).hexdigest(),request
+
+
+def _ensure_audio_schema(conn):
+    conn.execute("""CREATE TABLE IF NOT EXISTS audio_assets(
+        cache_key TEXT PRIMARY KEY,request_json TEXT NOT NULL,url TEXT NOT NULL,
+        file_hash TEXT NOT NULL,created_at INTEGER NOT NULL,last_used_at INTEGER NOT NULL,
+        provenance TEXT NOT NULL DEFAULT 'generated')""")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_audio_assets_url ON audio_assets(url)")
+    conn.execute("CREATE TABLE IF NOT EXISTS audio_legacy_rejections(url TEXT PRIMARY KEY,reason TEXT NOT NULL,created_at INTEGER NOT NULL)")
+    columns={row["name"] for row in conn.execute("PRAGMA table_info(words)")}
+    for lang in LANGUAGES:
+        for col in (lang,f"ex_{lang}",f"audio_{lang}"):
+            if col not in columns:
+                conn.execute(f'ALTER TABLE words ADD COLUMN "{col}" TEXT')
+    if "updated_at" not in columns:
+        conn.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER")
+
+
+def _legacy_path(conn,text,lang):
+    # Only associations already stored in the DB may be adopted. Never infer
+    # text from truncated filenames. Reject URLs referenced by different texts
+    # or languages (old filename collisions cannot be trusted).
+    if tts_provider().identity.get("provider") != "gtts":
+        return None
+    rows=conn.execute(f'SELECT "{lang}","audio_{lang}" FROM words WHERE "{lang}"=? AND "audio_{lang}" IS NOT NULL AND "audio_{lang}"!=?', (text, "")).fetchall()
+    urls=[row[f"audio_{lang}"] for row in rows if unicodedata.normalize("NFC",str(row[lang] or "")).strip()==text]
+    for url in dict.fromkeys(urls):
+        if conn.execute("SELECT 1 FROM audio_legacy_rejections WHERE url=?", (url,)).fetchone():
+            continue
+        if conn.execute("SELECT 1 FROM audio_assets WHERE url=?", (url,)).fetchone() or str(url).startswith("/static/audio/cache/"):
+            continue
+        path=_existing_audio_path(url)
+        if not path:
+            continue
+        safe=True
+        for code in LANGUAGES:
+            references=conn.execute(f'SELECT "{code}" FROM words WHERE "audio_{code}"=?',(url,)).fetchall()
+            if any(code!=lang or unicodedata.normalize("NFC",str(row[code] or "")).strip()!=text for row in references):
+                safe=False
+                break
+        if safe:
+            return url,path
+        conn.execute("INSERT OR IGNORE INTO audio_legacy_rejections VALUES(?,?,?)", (url, "conflicting_text_or_language", int(time.time())))
+    return None
+
+
+def is_cached_audio(db_path,url):
+    with closing(_connect(db_path)) as conn:
+        if not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='audio_assets'").fetchone():
+            return False
+        return bool(conn.execute("SELECT 1 FROM audio_assets WHERE url=?",(url,)).fetchone())
+
+
+def ensure_audio_for_ids(db_path,ids,langs,user_id=None):
+    ids=list(dict.fromkeys(int(i) for i in (ids or []) if str(i).isdigit()))
+    langs=list(dict.fromkeys(str(x).strip().lower() for x in (langs or ["nl","en","ru"]) if str(x).strip().lower() in SUPPORTED_LANGS))
     if not ids or not langs:
-        return {"ok": True, "items": []}
-
-    items: List[Dict[str, Any]] = []
-    generated = 0
-    skipped = 0
-    blocked = 0
-
-    now_ms = int(time.time() * 1000)
-    with closing(_connect(db_path)) as c:
-        cols = [r["name"] for r in c.execute("PRAGMA table_info(words)")]
-        if "updated_at" not in cols:
-            c.execute("ALTER TABLE words ADD COLUMN updated_at INTEGER;")
-            c.execute("UPDATE words SET updated_at = (strftime('%s','now') * 1000) WHERE updated_at IS NULL;")
-            cols.append("updated_at")
+        return {"ok":True,"items":[],"generated":0,"skipped":0,"blocked":0}
+    with transaction(db_path) as conn:
+        _ensure_audio_schema(conn)
+    generated=skipped=blocked=0
+    items=[]
+    for wid in ids:
+        output={}; errors=[]
         for lang in langs:
-            for col in (lang, f"ex_{lang}", f"audio_{lang}"):
-                if col not in cols:
-                    c.execute(f"ALTER TABLE words ADD COLUMN {col} TEXT;")
-                    cols.append(col)
-        qmarks = ",".join("?" * len(ids))
-        if user_id:
-            where = f"(user_id = ? OR status = 'test') AND id IN ({qmarks})"
-            params = [str(user_id)] + ids
-        else:
-            where = f"id IN ({qmarks})"
-            params = ids
-        select_cols = ",\n                   ".join(
-            f"COALESCE({lang},'') AS {lang}, COALESCE(audio_{lang},'') AS audio_{lang}"
-            for lang in langs
-        )
-        rows = c.execute(
-            f"""
-            SELECT id, lesson,
-                   {select_cols}
-            FROM words WHERE {where}
-            """,
-            params,
-        ).fetchall()
-
-        for r in rows:
-            d = dict(r)
-            wid = int(d["id"])
-            lesson_slug = _lesson_slug(str(d.get("lesson") or "lesson"))
-
-            out_per_lang = {lang: d.get(f"audio_{lang}") or "" for lang in langs}
-            row_errors: list[dict[str, Any]] = []
-
-            for lang in langs:
-                try:
-                    text = _pick_word_text(d, lang)
-                    if not text:
-                        out_per_lang[lang] = ""
-                        continue
-
-                    stored_url = str(d.get(f"audio_{lang}") or "")
-                    if _existing_audio_path(stored_url):
-                        out_per_lang[lang] = stored_url
-                        skipped += 1
-                        continue
-
-                    fname = _filename_from_text(text, lang)
-                    out_dir = AUDIO_ROOT / lang / lesson_slug
-                    out_path = out_dir / fname
-
-                    if out_path.exists() and out_path.stat().st_size > 500:
-                        out_per_lang[lang] = _audio_url(lang, lesson_slug, fname)
-                        skipped += 1
-                    else:
-                        reserve_tts_characters(
-                            c,
-                            user_id,
-                            characters=len(text),
-                            timezone_name=Config.TTS_USAGE_TIMEZONE,
-                        )
-                        print(f"[TTS] Generate one: id={wid} {lang} -> {out_path}")
-                        try:
-                            _tts_make(text, lang, out_path)
-                        except Exception:
-                            try:
-                                record_tts_request(
-                                    c,
-                                    user_id,
-                                    successful=False,
-                                    timezone_name=Config.TTS_USAGE_TIMEZONE,
-                                )
-                            except Exception:
-                                print("[TTS][USAGE] failed to record unsuccessful request", file=sys.stderr)
-                                traceback.print_exc()
-                            raise
+            with closing(_connect(db_path)) as conn:
+                where="id=?" + (" AND (user_id=? OR status='test')" if user_id else "")
+                params=[wid,str(user_id)] if user_id else [wid]
+                row=conn.execute(f'SELECT * FROM words WHERE {where}',params).fetchone()
+            if not row:
+                continue
+            text=unicodedata.normalize("NFC",str(row[lang] or "")).strip()
+            if not text:
+                output[lang]=""
+                continue
+            key,request=_identity(text,lang)
+            try:
+                with resource_lock(AUDIO_ROOT/".locks"/(key+".lock")):
+                    with closing(_connect(db_path)) as conn:
+                        asset=conn.execute("SELECT * FROM audio_assets WHERE cache_key=?",(key,)).fetchone()
+                        path=_existing_audio_path(asset["url"]) if asset else None
+                        if path and asset["request_json"]==request and _file_hash(path)==asset["file_hash"]:
+                            url=asset["url"]
+                            skipped+=1
                         else:
-                            try:
-                                record_tts_request(
-                                    c,
-                                    user_id,
-                                    successful=True,
-                                    timezone_name=Config.TTS_USAGE_TIMEZONE,
-                                )
-                            except Exception:
-                                print("[TTS][USAGE] failed to record successful request", file=sys.stderr)
-                                traceback.print_exc()
-                        # >>> Максимизация громкости
-                        _maximize_loudness(out_path)
-                        out_per_lang[lang] = _audio_url(lang, lesson_slug, fname)
-                        generated += 1
+                            # Never adopt an altered managed-cache file as legacy.
+                            legacy=_legacy_path(conn,text,lang) if not asset else None
+                            if legacy:
+                                url,path=legacy
+                                skipped+=1
+                                provenance="legacy_db_association"
+                            else:
+                                reserve_tts_characters(conn,user_id,characters=len(text),timezone_name=Config.TTS_USAGE_TIMEZONE)
+                                path=AUDIO_ROOT/"cache"/lang/key[:2]/(key+".mp3")
+                                path.parent.mkdir(parents=True,exist_ok=True)
+                                temporary=path.with_name(key+"."+uuid.uuid4().hex+".tmp.mp3")
+                                try:
+                                    _tts_make(text,lang,temporary)
+                                    _maximize_loudness(temporary)
+                                    if not temporary.is_file() or temporary.stat().st_size<=500:
+                                        raise RuntimeError("TTS returned an empty or invalid audio file")
+                                    os.replace(temporary,path)
+                                    record_tts_request(conn,user_id,successful=True,timezone_name=Config.TTS_USAGE_TIMEZONE)
+                                except Exception:
+                                    record_tts_request(conn,user_id,successful=False,timezone_name=Config.TTS_USAGE_TIMEZONE)
+                                    raise
+                                finally:
+                                    temporary.unlink(missing_ok=True)
+                                url="/static/audio/"+path.relative_to(AUDIO_ROOT).as_posix()
+                                generated+=1
+                                provenance="generated"
+                            conn.execute("INSERT INTO audio_assets VALUES(?,?,?,?,?,?,?) ON CONFLICT(cache_key) DO UPDATE SET request_json=excluded.request_json,url=excluded.url,file_hash=excluded.file_hash,last_used_at=excluded.last_used_at,provenance=excluded.provenance",(key,request,url,_file_hash(path),int(time.time()),int(time.time()),provenance))
+                        # An edit racing TTS must not attach the old text's audio.
+                        updated = conn.execute(f'UPDATE words SET "audio_{lang}"=?,updated_at=? WHERE {where} AND "{lang}"=?',[url,int(time.time()*1000),*params,row[lang]])
+                        conn.execute("UPDATE audio_assets SET last_used_at=? WHERE cache_key=?",(int(time.time()),key))
+                        conn.commit()
+                        output[lang] = url if updated.rowcount else ""
+                        if not updated.rowcount:
+                            errors.append({"lang": lang, "error": "word_changed_retry"})
+            except TtsUsageLimitExceeded as exc:
+                blocked+=1
+                output[lang]=""
+                errors.append({"lang":lang,"error":"tts_monthly_character_limit_reached","scope":exc.scope,"limit":exc.limit,"used":exc.used,"requested":exc.requested})
+            except Exception as exc:
+                with transaction(db_path) as conn:
+                    record_tts_request(conn,user_id,successful=False,timezone_name=Config.TTS_USAGE_TIMEZONE)
+                output[lang]=""
+                errors.append({"lang":lang,"error":str(exc)})
+        if output or errors:
+            items.append({"id":wid,**output,"ok":not errors,"errors":errors})
+    return {"ok":blocked==0 and all(item["ok"] for item in items),"items":items,"generated":generated,"skipped":skipped,"blocked":blocked,"limit_reached":blocked>0,"error":"tts_monthly_character_limit_reached" if blocked else None}
 
-                except TtsUsageLimitExceeded as exc:
-                    blocked += 1
-                    row_errors.append({
-                        "lang": lang,
-                        "error": "tts_monthly_character_limit_reached",
-                        "scope": exc.scope,
-                        "limit": exc.limit,
-                        "used": exc.used,
-                        "requested": exc.requested,
-                    })
-                    print(
-                        f"[TTS][LIMIT] id={wid} lang={lang} "
-                        f"scope={exc.scope} used={exc.used} limit={exc.limit}",
-                        file=sys.stderr,
-                    )
-                    out_per_lang[lang] = ""
-                except Exception as e:
-                    print(f"[TTS][ERROR] id={wid} lang={lang}: {e}", file=sys.stderr)
-                    traceback.print_exc()
-                    row_errors.append({"lang": lang, "error": str(e)})
-                    out_per_lang[lang] = ""
 
-            if user_id:
-                set_clause = ", ".join([f"audio_{lang}=?" for lang in langs] + ["updated_at=?"])
-                c.execute(
-                    f"UPDATE words SET {set_clause} WHERE id=? AND (user_id=? OR status='test')",
-                    [out_per_lang.get(lang, "") for lang in langs] + [now_ms, wid, str(user_id)],
-                )
-            else:
-                set_clause = ", ".join([f"audio_{lang}=?" for lang in langs] + ["updated_at=?"])
-                c.execute(
-                    f"UPDATE words SET {set_clause} WHERE id=?",
-                    [out_per_lang.get(lang, "") for lang in langs] + [now_ms, wid],
-                )
-
-            items.append({
-                "id": wid,
-                **out_per_lang,
-                "ok": not row_errors,
-                "errors": row_errors,
-            })
-
-        c.commit()
-
-    return {
-        "ok": blocked == 0,
-        "items": items,
-        "generated": generated,
-        "skipped": skipped,
-        "blocked": blocked,
-        "limit_reached": blocked > 0,
-        "error": "tts_monthly_character_limit_reached" if blocked else None,
-    }
+def cleanup_unused_audio(db_path,older_than_seconds=30*86400):
+    """Explicit maintenance only; retain reusable assets by default.
+    Check every existing audio language under the generation lock before GC.
+    """
+    with transaction(db_path) as conn:
+        _ensure_audio_schema(conn)
+        assets=[dict(row) for row in conn.execute("SELECT * FROM audio_assets WHERE last_used_at<?",(int(time.time())-older_than_seconds,))]
+    deleted=0
+    for asset in assets:
+        with resource_lock(AUDIO_ROOT/".locks"/(asset["cache_key"]+".lock")):
+            with transaction(db_path) as conn:
+                current=conn.execute("SELECT * FROM audio_assets WHERE cache_key=?",(asset["cache_key"],)).fetchone()
+                if not current or current["last_used_at"]>=int(time.time())-older_than_seconds:
+                    continue
+                where=" OR ".join(f'"audio_{lang}"=?' for lang in LANGUAGES)
+                if conn.execute(f"SELECT 1 FROM words WHERE {where} LIMIT 1",[current["url"]]*len(LANGUAGES)).fetchone():
+                    continue
+                # Another parameter identity may share adopted legacy audio.
+                if conn.execute("SELECT 1 FROM audio_assets WHERE url=? AND cache_key!=?",(current["url"],asset["cache_key"])).fetchone():
+                    continue
+                path=_existing_audio_path(current["url"])
+                if path:
+                    path.unlink()
+                conn.execute("DELETE FROM audio_assets WHERE cache_key=?",(asset["cache_key"],))
+                deleted+=1
+    return deleted

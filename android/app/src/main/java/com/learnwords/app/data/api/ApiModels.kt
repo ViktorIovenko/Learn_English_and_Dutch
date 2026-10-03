@@ -16,7 +16,23 @@ data class LoginTokenRequest(
 data class LoginResponse(
     @SerializedName("ok") val ok: Boolean,
     @SerializedName("user_id") val userId: String?,
+    @SerializedName("token") val token: String? = null,
     @SerializedName("error") val error: String?
+)
+
+data class GoogleAuthConfigResponse(
+    @SerializedName("ok") val ok: Boolean,
+    @SerializedName("client_id") val clientId: String? = null,
+    @SerializedName("error") val error: String? = null
+)
+
+data class GoogleVerifyRequest(@SerializedName("id_token") val idToken: String)
+
+data class GoogleVerifyResponse(
+    @SerializedName("ok") val ok: Boolean,
+    @SerializedName("user_id") val userId: String? = null,
+    @SerializedName("token") val token: String? = null,
+    @SerializedName("error") val error: String? = null
 )
 
 data class UserInfo(
@@ -77,6 +93,47 @@ data class DailyGoalResponse(
 )
 
 data class SaveDailyGoalRequest(@SerializedName("goal_value") val goalValue: Int)
+
+// ─── MCP connector (ChatGPT) ───────────────────────────────────────────────
+
+data class McpConnectorInfo(
+    @SerializedName("name") val name: String = "",
+    @SerializedName("description") val description: String = "",
+    @SerializedName("description_en") val descriptionEn: String? = null,
+    @SerializedName("icon_url") val iconUrl: String? = null,
+    @SerializedName("mcp_url") val mcpUrl: String = "",
+    @SerializedName("version") val version: String? = null
+)
+
+data class McpGoogleAccountDto(
+    @SerializedName("linked") val linked: Boolean = false,
+    @SerializedName("email") val email: String? = null
+)
+
+data class McpConnectionDto(
+    @SerializedName("client_name") val clientName: String = "",
+    @SerializedName("scopes") val scopes: List<String> = emptyList(),
+    @SerializedName("last_used_at") val lastUsedAt: Long? = null
+)
+
+data class McpUserResponse(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("enabled") val enabled: Boolean = false,
+    @SerializedName("connected") val connected: Boolean = false,
+    @SerializedName("state") val state: String = "disabled",
+    @SerializedName("connections") val connections: List<McpConnectionDto> = emptyList(),
+    @SerializedName("google_account") val googleAccount: McpGoogleAccountDto? = null,
+    @SerializedName("connector") val connector: McpConnectorInfo? = null,
+    @SerializedName("error") val error: String? = null
+)
+
+data class McpEnabledRequest(@SerializedName("enabled") val enabled: Boolean)
+
+data class McpEnabledResponse(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("enabled") val enabled: Boolean = false,
+    @SerializedName("error") val error: String? = null
+)
 
 data class PairingCodeResponse(
     @SerializedName("ok") val ok: Boolean,
@@ -190,6 +247,7 @@ data class LessonDto(
     @SerializedName("lesson") val lesson: String,
     @SerializedName("number") val number: String?,
     @SerializedName(value = "word_count", alternate = ["words_count"]) val wordCount: Int,
+    @SerializedName("upload_order") val uploadOrder: Long = 0L,
     @SerializedName("hidden") val hidden: Boolean = false,
     @SerializedName("is_priority") val isPriority: Boolean = false,
     @SerializedName("language_progress") val languageProgress: List<LessonLanguageProgressDto> = emptyList()
@@ -250,6 +308,9 @@ data class WordDto(
     @SerializedName("difficult") val difficult: Boolean = false,
     @SerializedName("status") val status: String?,
     @SerializedName("editable") val editable: Boolean = true,
+    @SerializedName("content_sense") val contentSense: String? = null,
+    @SerializedName("content_context") val contentContext: String? = null,
+    @SerializedName("example_level") val exampleLevel: String? = null,
     @SerializedName("practice_count") val practiceCount: Int = 0,
     @SerializedName("learned") val learned: Boolean = false
 )
@@ -290,9 +351,14 @@ data class UpdateWordResponse(
     @SerializedName("error") val error: String?
 )
 
-data class ImportWordsRequest(
+data class ImportLessonRequest(
     @SerializedName("lesson") val lesson: String,
     @SerializedName("words") val words: List<Map<String, String?>>
+)
+
+data class ImportWordsRequest(
+    @SerializedName("lessons") val lessons: List<ImportLessonRequest>,
+    @SerializedName("idempotency_key") val idempotencyKey: String
 )
 
 data class ImportWordsResponse(
@@ -385,10 +451,15 @@ data class SubscriptionDto(
     @SerializedName("status") val status: String?,
     @SerializedName("trial_ends_at") val trialEndsAt: Long?,
     @SerializedName("current_period_ends_at") val currentPeriodEndsAt: Long?,
-    @SerializedName("days_remaining") val daysRemaining: Int?,
-    @SerializedName("is_active") val isActive: Boolean?,
+    @SerializedName(value = "days_left", alternate = ["days_remaining"]) val daysRemaining: Int?,
+    @SerializedName(value = "access", alternate = ["is_active"]) val isActive: Boolean?,
     @SerializedName("provider") val provider: String?,
     @SerializedName("cancel_at_period_end") val cancelAtPeriodEnd: Boolean?
+)
+
+data class SubscriptionResponse(
+    @SerializedName("ok") val ok: Boolean,
+    @SerializedName("subscription") val subscription: SubscriptionDto?
 )
 
 data class VerifyPurchaseRequest(

@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Screen/surface base colors -->
-    <color name="colorBackground">#121212</color>
-    <color name="colorSurface">#1E1E1E</color>
-    <color name="colorOnBackground">#EDEDED</color>
-    <color name="colorError">#CF6679</color>
-    <color name="colorCorrect">#66BB6A</color>
-    <color name="colorWrong">#E57373</color>
+    <!-- Screen/surface base colors (matches app.parallellingvo.app dark theme) -->
+    <color name="colorBackground">#141824</color>
+    <color name="colorSurface">#1D2333</color>
+    <color name="colorOnBackground">#EDEFF5</color>
+    <color name="colorError">#F87171</color>
+    <color name="colorCorrect">#4ADE80</color>
+    <color name="colorWrong">#F87171</color>
 
     <!-- Text shades -->
-    <color name="colorTextSecondary">#B0B0B0</color>
-    <color name="colorTextTertiary">#9E9E9E</color>
-    <color name="colorTextHint">#8A8A8A</color>
-    <color name="colorTextMedium">#C7C7C7</color>
+    <color name="colorTextSecondary">#8B93A8</color>
+    <color name="colorTextTertiary">#8B93A8</color>
+    <color name="colorTextHint">#6B7280</color>
+    <color name="colorTextMedium">#C4B4D8</color>
 
     <!-- Surfaces / dividers -->
-    <color name="colorDivider">#2C2C2C</color>
-    <color name="colorPanelBackground">#1C1C1C</color>
-    <color name="colorSlotEmpty">#333333</color>
+    <color name="colorDivider">#2C3244</color>
+    <color name="colorPanelBackground">#1D2333</color>
+    <color name="colorSlotEmpty">#2C3244</color>
 
     <!-- Info banner -->
     <color name="colorInfoBackground">#1E2A47</color>

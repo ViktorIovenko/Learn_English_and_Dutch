@@ -199,6 +199,11 @@ class AudioGenerationUsageTests(unittest.TestCase):
             audio_path.parent.mkdir(parents=True)
             audio_path.write_bytes(b"a" * 700)
             self._create_database(db_path)
+            # A legacy file is reused only through a DB text/audio association,
+            # never by guessing a truncated filename in a lesson directory.
+            with closing(sqlite3.connect(db_path)) as conn:
+                conn.execute("UPDATE words SET audio_en=? WHERE id=1", ("/static/audio/en/Lesson 1/hello_en.mp3",))
+                conn.commit()
 
             with patch("app.audio_gen.AUDIO_ROOT", root / "audio"), \
                     patch("app.audio_gen._tts_make") as tts_make:

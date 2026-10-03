@@ -29,6 +29,16 @@ class AppRepository(
         return safeApiCall { api.loginAndroidToken(LoginTokenRequest(token)) }
     }
 
+    suspend fun getGoogleAuthConfig(serverUrl: String): NetworkResult<GoogleAuthConfigResponse> {
+        prefs.saveServerUrl(serverUrl)
+        return safeApiCall { api.getGoogleAuthConfig() }
+    }
+
+    suspend fun loginWithGoogleToken(serverUrl: String, idToken: String): NetworkResult<GoogleVerifyResponse> {
+        prefs.saveServerUrl(serverUrl)
+        return safeApiCall { api.verifyGoogleToken(GoogleVerifyRequest(idToken)) }
+    }
+
     suspend fun getMe(): NetworkResult<UserInfo> {
         val result = safeApiCall { api.getMe() }
         if (result is NetworkResult.Success) {
@@ -53,6 +63,11 @@ class AppRepository(
 
     suspend fun saveDailyGoal(value: Int): NetworkResult<DailyGoalResponse> =
         safeApiCall { api.saveDailyGoal(SaveDailyGoalRequest(value)) }
+
+    suspend fun getMcpUser(): NetworkResult<McpUserResponse> = safeApiCall { api.getMcpUser() }
+
+    suspend fun setMcpEnabled(enabled: Boolean): NetworkResult<McpEnabledResponse> =
+        safeApiCall { api.setMcpEnabled(McpEnabledRequest(enabled)) }
 
     suspend fun getPairingCode(): NetworkResult<PairingCodeResponse> =
         safeApiCall { api.getPairingCode() }
@@ -82,6 +97,7 @@ class AppRepository(
                     lesson = dto.lesson,
                     number = dto.number,
                     wordCount = dto.wordCount,
+                    uploadOrder = dto.uploadOrder,
                     hidden = dto.hidden,
                     isPriority = dto.isPriority,
                     languageProgressJson = gson.toJson(dto.languageProgress),
@@ -173,7 +189,7 @@ class AppRepository(
     }
 
     suspend fun importWords(lesson: String, words: List<Map<String, String?>>): NetworkResult<ImportWordsResponse> =
-        safeApiCall { api.importWords(ImportWordsRequest(lesson, words)) }
+        safeApiCall { api.importWords(ImportWordsRequest(listOf(ImportLessonRequest(lesson, words)), java.util.UUID.randomUUID().toString())) }
 
     suspend fun getDuplicates(): NetworkResult<List<WordDto>> {
         return when (val result = safeApiCall { api.getDuplicates() }) {
@@ -241,7 +257,12 @@ class AppRepository(
     // ─── Subscription ────────────────────────────────────────────────────────
 
     suspend fun getSubscription(): NetworkResult<SubscriptionDto> =
-        safeApiCall { api.getSubscription() }
+        when (val result = safeApiCall { api.getSubscription() }) {
+            is NetworkResult.Success -> result.data.subscription?.let { NetworkResult.Success(it) }
+                ?: NetworkResult.Error("Subscription missing in response")
+            is NetworkResult.Error -> result
+            is NetworkResult.Loading -> result
+        }
 
     suspend fun verifyPurchase(
         purchaseToken: String,

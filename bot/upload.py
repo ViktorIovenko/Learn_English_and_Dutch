@@ -25,26 +25,8 @@ from bot.onboarding import (
     normalize_telegram_language,
     selected_ui_language,
 )
-from app.auth_links import create_auth_token
 
 EPHEMERAL_SECONDS = 20.0
-
-def _norm_nl(nl: str) -> str: return (nl or "").strip().lower()
-
-def _get_existing_nl_set(db_path: str, user_id: str) -> set[str]:
-    existing = set()
-    if not user_id:
-        return existing
-    try:
-        conn = sqlite3.connect(db_path)
-        try:
-            cur = conn.cursor(); cur.execute("SELECT nl FROM words WHERE user_id = ?", (str(user_id),))
-            for (nl,) in cur.fetchall(): existing.add(_norm_nl(nl))
-        finally:
-            conn.close()
-    except Exception:
-        pass
-    return existing
 
 # ---------------- [ДОБАВЛЕНО v4.29] ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ НУМЕРАЦИИ ----------------
 
@@ -200,21 +182,13 @@ async def _send_long(update: Update, text: str, chunk_limit: int = 3500) -> List
         m = await update.effective_chat.send_message(p); sent_ids.append(m.message_id)
     return sent_ids
 
-def _filter_duplicates_by_nl(rows: List[Dict[str, str]], db_path: str, user_id: str):
-    existing_db = _get_existing_nl_set(db_path, user_id)
-    seen_in_file = set(); filtered = []; skipped_in_file = []; skipped_in_db = []
-    for r in rows:
-        nl = _norm_nl(r.get("nl", ""))
-        if not nl:
-            filtered.append(r); continue
-        if nl in seen_in_file:
-            skipped_in_file.append((r.get("number", "?"), r.get("nl", ""))); continue
-        if nl in existing_db:
-            skipped_in_db.append((r.get("number", "?"), r.get("nl", ""))); continue
-        seen_in_file.add(nl); filtered.append(r)
-    return filtered, skipped_in_file, skipped_in_db
+def _prepare_import_rows(rows: List[Dict[str, str]], db_path: str, user_id: str):
+    """Preview compatibility: user repetitions are legitimate lesson records.
+    Reusable content is deduplicated by the server importer, not this client.
+    """
+    return list(rows),[],[]
 
-# ---------------- ХЕНДЛЕРЫ ----------------
+
 async def cmd_upload_words(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     user = update.effective_user
@@ -231,7 +205,7 @@ async def cmd_upload_words(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
-    upload_url = f"{Config.PUBLIC_BASE_URL}/upload?auth={create_auth_token(user.id)}"
+    upload_url = f"{Config.PUBLIC_BASE_URL}/upload"
     keyboard = InlineKeyboardMarkup([[
         InlineKeyboardButton(bot_interface_text(language, "open_upload_page"), url=upload_url)
     ]])
@@ -269,7 +243,7 @@ async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     try:
         all_rows: List[Dict[str, str]] = parse_csv_to_rows(tmp_path)
         # Фильтруем дубль-слова заранее
-        filtered_rows, skipped_in_file, skipped_in_db = _filter_duplicates_by_nl(all_rows, Config.DB_PATH, str(user.id))
+        filtered_rows, skipped_in_file, skipped_in_db = _prepare_import_rows(all_rows, Config.DB_PATH, str(user.id))
 
         if not filtered_rows:
             blocks = ["⚠ Все загруженные слова уже есть (или повторяются в файле) и были пропущены."]
@@ -280,7 +254,7 @@ async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return
 
         # ---------- [ДОБАВЛЕНО v4.29] Защита нумерации уроков ----------
-        filtered_rows, remap = _renumber_lessons_if_needed(filtered_rows, Config.DB_PATH, str(user.id))
+        remap = {}  # Numbering is assigned by the shared server importer.
         # ---------------------------------------------------------------
 
         _, bad_rows = validate_example_usage(filtered_rows)
@@ -343,9 +317,9 @@ async def on_confirm_import_all(update: Update, context: ContextTypes.DEFAULT_TY
     asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
 
     # Повторная защита: если pending появился до обновления — всё равно перенумеруем при необходимости
-    rows2, remap = _renumber_lessons_if_needed(rows, Config.DB_PATH, str(user.id))  # ← [ДОБАВЛЕНО v4.29]
+    rows2, remap = rows, {}  # Numbering is assigned by the shared server importer.
 
-    filtered_rows, skipped_in_file, skipped_in_db = _filter_duplicates_by_nl(rows2, Config.DB_PATH, str(user.id))
+    filtered_rows, skipped_in_file, skipped_in_db = _prepare_import_rows(rows2, Config.DB_PATH, str(user.id))
     if not filtered_rows:
         blocks = ["⚠ Все загруженные слова уже есть (или повторяются в файле) и были пропущены."]
         if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", "Внутри файла повторов"))
@@ -376,6 +350,7 @@ async def on_cancel_import(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     m = await update.effective_chat.send_message("❎ Импорт отменён...")
     asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
     context.user_data.pop("pending_import_all", None)
+
 
 def _find_word_in_db(db_path: str, user_id: str, word: str) -> int | None:
     """Ищет слово по полям nl или en. Возвращает id строки или None."""
@@ -438,7 +413,7 @@ async def on_single_word(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             parse_mode="HTML"
         )
     else:
-        upload_url = f"{Config.PUBLIC_BASE_URL}/upload?auth={create_auth_token(user.id)}"
+        upload_url = f"{Config.PUBLIC_BASE_URL}/upload"
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
         keyboard = InlineKeyboardMarkup([[
             InlineKeyboardButton("📤 Открыть страницу загрузки", url=upload_url)

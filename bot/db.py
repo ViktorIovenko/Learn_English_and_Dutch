@@ -159,11 +159,11 @@ def upsert_registered_user(db_path: str, tg_id: int, username: str, first_name: 
 
 # ---------------- СЛОВА ----------------
 
-# [ДОБАВЛЕНО v4.15] Гарантируем уникальность (lesson, number) и чистим дубли, если уже есть
+# Legacy lesson-number index helper; existing rows are never removed.
 def _ensure_words_unique_pair(conn: sqlite3.Connection) -> None:
     """
     Обеспечивает UNIQUE(lesson, number) в таблице words.
-    Если в таблице уже есть дубли, оставляет по одной записи (минимальный rowid).
+    Existing collisions are reported instead of deleting user records.
     """
     # Проверим, существует ли индекс
     idx = conn.execute(
@@ -179,27 +179,10 @@ def _ensure_words_unique_pair(conn: sqlite3.Connection) -> None:
         """)
         conn.commit()
         return
-    except sqlite3.OperationalError:
-        # Вероятно, дубли; удалим все повторы, оставив минимальный rowid
-        try:
-            conn.execute("""
-                DELETE FROM words
-                WHERE rowid NOT IN (
-                    SELECT MIN(rowid)
-                    FROM words
-                    GROUP BY user_id, lesson, number
-                )
-            """)
-            conn.commit()
-        except Exception:
-            # если таблицы нет или иная проблема — пробросим дальше на вставке
-            pass
-        # Повторная попытка создать индекс
-        conn.execute("""
-            CREATE UNIQUE INDEX IF NOT EXISTS u_words_user_lesson_number
-            ON words(user_id, lesson, number);
-        """)
-        conn.commit()
+    except (sqlite3.OperationalError, sqlite3.IntegrityError):
+        # Never delete existing records to manufacture uniqueness.
+        raise
+
 
 
 def _ensure_words_user_id(conn: sqlite3.Connection) -> None:
@@ -230,59 +213,11 @@ def _ensure_words_updated_at(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 def bulk_upsert_words(db_path: str, user_id: str, rows: Iterable[Dict[str, Any]]) -> int:
-    """
-    Массовая вставка/обновление слов.
-    Ожидаются ключи:
-      lesson, number, nl, en, ru, ex_nl, ex_en, ex_ru, audio_nl, audio_en, audio_ru
-    """
-    rows = list(rows)
-    user_id = str(user_id or "")
-    if not user_id:
+    """Append user records through the shared importer; never overwrite by number."""
+    from app.content_service import import_words
+    grouped = {}
+    for row in rows:
+        grouped.setdefault(str(row.get("lesson") or "").strip(), []).append(dict(row))
+    if not grouped or not str(user_id or ""):
         return 0
-    if not rows:
-        return 0
-    with _conn(db_path) as conn:
-        try:
-            _ensure_words_user_id(conn)
-            _ensure_words_updated_at(conn)
-        except Exception:
-            pass
-        # [ДОБАВЛЕНО v4.15] гарантируем UNIQUE(lesson, number) перед upsert
-        try:
-            _ensure_words_unique_pair(conn)
-        except Exception:
-            # Если не удалось — пусть падение проявится на вставке,
-            # но в большинстве случаев мы индекс создадим успешно.
-            pass
-
-        # [ИЗМЕНЕНО v4.15] upsert по паре (lesson, number)
-        now_ms = int(datetime.utcnow().timestamp() * 1000)
-        prepared = []
-        for r in rows:
-            row = dict(r)
-            row["user_id"] = user_id
-            row["status"] = "user"
-            row["updated_at"] = now_ms
-            prepared.append(row)
-
-        conn.executemany(
-            """
-            INSERT INTO words (user_id, status, lesson, number, nl, en, ru, ex_nl, ex_en, ex_ru, audio_nl, audio_en, audio_ru, updated_at)
-            VALUES (:user_id, :status, :lesson, :number, :nl, :en, :ru, :ex_nl, :ex_en, :ex_ru, :audio_nl, :audio_en, :audio_ru, :updated_at)
-            ON CONFLICT(user_id, lesson, number) DO UPDATE SET
-                nl=excluded.nl,
-                en=excluded.en,
-                ru=excluded.ru,
-                ex_nl=excluded.ex_nl,
-                ex_en=excluded.ex_en,
-                ex_ru=excluded.ex_ru,
-                audio_nl=excluded.audio_nl,
-                audio_en=excluded.audio_en,
-                audio_ru=excluded.audio_ru,
-                status=excluded.status,
-                updated_at=excluded.updated_at
-            """,
-            prepared,
-        )
-        conn.commit()
-        return len(rows)
+    return import_words(db_path,user_id,[{"lesson":title,"words":words} for title,words in grouped.items()])["imported"]

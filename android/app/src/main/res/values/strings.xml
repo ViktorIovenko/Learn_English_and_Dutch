@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">LearnWords</string>
+    <string name="app_name">ParallelLingvo</string>
 
     <!-- Navigation -->
     <string name="nav_lessons">Lessons</string>
@@ -40,6 +40,12 @@
     <string name="offline_login">Offline</string>
     <string name="enter_user_id">Enter User ID</string>
     <string name="enter_server_url">Enter server URL</string>
+    <string name="btn_telegram_login">Continue with Telegram</string>
+    <string name="telegram_login">Telegram</string>
+    <string name="telegram_login_failed">Could not open Telegram sign-in</string>
+    <string name="btn_email_login">Continue with email</string>
+    <string name="email_login_coming_soon">Email sign-in is coming soon</string>
+    <string name="manual_login_toggle">Other sign-in options</string>
     <string name="account_type_title">Who will use this account?</string>
     <string name="account_type_note">Choose once so the app can show the right tools.</string>
     <string name="account_type_child_card">🧒  Child account\n\nA parent can connect by scanning the QR code in Settings.</string>
@@ -141,7 +147,7 @@
     <string name="logged_out">You signed out</string>
     <string name="auth_method">Sign-in method: %1$s</string>
     <string name="auth_method_empty">not specified</string>
-    <string name="auth_user_id">Telegram ID: %1$s</string>
+    <string name="auth_user_id">Account ID: %1$s</string>
     <string name="auth_user_empty">not signed in</string>
     <string name="auth_server_url">Server: %1$s</string>
     <string name="settings_saved">Settings saved</string>
@@ -153,6 +159,22 @@
     <string name="choose_3_to_5_languages">Choose 3 to 5 languages</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
+
+    <!-- MCP connector -->
+    <string name="mcp_connector_title">MCP connector</string>
+    <string name="mcp_connector_description">Lets a connected AI assistant read and manage your ParallelLingvo lessons and progress.</string>
+    <string name="mcp_connector_manage">Manage connection in browser</string>
+    <string name="mcp_connector_update_failed">Could not update the MCP connector</string>
+    <string name="mcp_state_connected">Connected and active</string>
+    <string name="mcp_state_paused">Connected but paused</string>
+    <string name="mcp_state_ready">Enabled — waiting for connection</string>
+    <string name="mcp_state_disabled">Disabled</string>
+    <string name="mcp_connections_count">%1$s · active connections: %2$d</string>
+    <string name="mcp_connector_name_label">Name (for your AI assistant\'s connector form)</string>
+    <string name="mcp_connector_description_label">Description (for your AI assistant\'s connector form)</string>
+    <string name="mcp_how_to_connect_label">How to connect</string>
+    <string name="mcp_how_to_connect">Copy the connector URL, add it as a custom MCP connector in your AI assistant\'s settings, then sign in to your ParallelLingvo account on the authorization page.</string>
+    <string name="mcp_copy">Copy</string>
 
     <!-- Upload / words -->
     <string name="words_management">Word management</string>
@@ -268,6 +290,9 @@
     <string name="parent_dashboard_title">Children dashboard</string>
     <string name="parent_dashboard_note">Learning activity and progress of connected child accounts.</string>
     <string name="parent_select_child">Child account</string>
+    <string name="parent_previous_child">Previous child</string>
+    <string name="parent_next_child">Next child</string>
+    <string name="parent_child_counter">%1$d of %2$d</string>
     <string name="parent_period">Period</string>
     <string name="parent_period_7">7 days</string>
     <string name="parent_period_30">30 days</string>
@@ -286,6 +311,12 @@
     <string name="child_reminder_channel_description">Reminder for a child account to practise words every day</string>
     <string name="child_reminder_title">Time to learn words!</string>
     <string name="child_reminder_text">Open your priority lesson and practise today’s words.</string>
+    <string name="btn_google_login">Continue with Google</string>
+    <string name="google_login">Google</string>
+    <string name="google_login_cancelled">Google sign-in was cancelled</string>
+    <string name="google_login_failed">Could not sign in with Google</string>
+    <string name="child_evening_reminder_title">Today’s task is not finished</string>
+    <string name="child_evening_reminder_text">You have completed %1$d of %2$d words. Open the app and finish today’s task.</string>
     <string name="parent_disconnect">Disconnect</string>
     <string name="parent_disconnect_confirm">Disconnect the child account %1$s?</string>
     <string name="parent_words">Words in lessons</string>

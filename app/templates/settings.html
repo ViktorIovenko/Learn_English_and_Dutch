@@ -24,8 +24,32 @@
 .family-list{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:7px;text-align:left;}
 .family-list li{border:1px solid #dbeafe;border-radius:10px;background:#eff6ff;padding:9px 11px;color:#1e3a8a;}
 .family-role{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;background:#fef3c7;color:#92400e;font-size:13px;font-weight:700;margin-top:8px;}
+.family-avatar{position:relative;flex:0 0 auto;width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;overflow:hidden;text-transform:uppercase;}
+.family-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.family-child-list{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:8px;text-align:left;}
+.family-child-item{display:flex;align-items:center;gap:11px;border:1px solid #dbeafe;border-radius:12px;background:#eff6ff;padding:9px 12px;color:#0f172a;text-decoration:none;transition:background .15s,box-shadow .15s;}
+.family-child-item:hover{background:#dbeafe;box-shadow:0 2px 8px rgba(37,99,235,.12);}
+.family-child-name{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.family-child-chevron{flex:0 0 auto;color:#64748b;font-size:18px;line-height:1;}
 .family-link-box{display:flex;gap:7px;align-items:center;margin:10px auto;max-width:620px;}
 .family-link-input{min-width:0;flex:1;border:1px solid #cbd5e1;border-radius:9px;padding:9px 10px;background:#f8fafc;color:#1e3a8a;}
+.mcp-panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.mcp-switch{position:relative;width:46px;height:26px;flex:0 0 auto;display:inline-block;}
+.mcp-switch input{position:absolute;opacity:0;pointer-events:none;}
+.mcp-switch span{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;cursor:pointer;transition:.2s;}
+.mcp-switch span::after{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(15,23,42,.25);transition:.2s;}
+.mcp-switch input:checked+span{background:#16a34a;}
+.mcp-switch input:checked+span::after{transform:translateX(20px);}
+.mcp-switch input:disabled+span{opacity:.5;cursor:default;}
+.mcp-status-line{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.mcp-status-text{font-size:14px;color:#64748b;}
+.mcp-badge{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;padding:0 8px;border-radius:999px;background:#e2e8f0;color:#475569;font-size:12px;font-weight:800;flex:0 0 auto;}
+.mcp-badge.active{background:#dcfce7;color:#15803d;}
+.mcp-field{margin-top:10px;}
+.mcp-field-label{display:block;margin-bottom:4px;color:#64748b;font-size:12px;font-weight:700;}
+.mcp-field-row{display:flex;gap:7px;align-items:center;}
+.mcp-field-row .family-link-input{margin:0;}
+.mcp-copy-btn{flex:0 0 auto;width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;}
 @media (max-width:520px){
   .settings-head{flex-direction:column;align-items:flex-start;}
   .settings-nav-actions{justify-content:flex-start;}
@@ -35,7 +59,7 @@
 }
 </style>
 
-<div class="settings-page">
+<div class="settings-page" data-legacy-i18n>
   <div class="settings-head">
     <div>
       <h2 class="settings-title">{{ t("settings.title") }}</h2>
@@ -80,6 +104,54 @@
       <p class="settings-note">{{ t("common.loading") }}</p>
     </div>
   </div>
+
+  <div class="settings-panel" id="mcp-panel">
+    <div class="mcp-panel-head">
+      <div>
+        <h3 style="margin:0 0 4px;font-size:16px">{{ t("mcp.title") }}</h3>
+        <p class="settings-note">{{ t("mcp.note") }}</p>
+      </div>
+      <label class="mcp-switch">
+        <input type="checkbox" id="mcp-enabled-toggle" disabled>
+        <span></span>
+      </label>
+    </div>
+
+    <div class="mcp-status-line">
+      <span id="mcp-status" class="mcp-status-text">{{ t("common.loading") }}</span>
+      <span id="mcp-connections-badge" class="mcp-badge" title="{{ t('mcp.connections_count', count=0) }}">0</span>
+    </div>
+
+    <div class="mcp-field">
+      <span class="mcp-field-label">{{ t("mcp.connector_name") }}</span>
+      <div class="mcp-field-row">
+        <input id="mcp-connector-name" class="family-link-input" readonly aria-label="{{ t('mcp.connector_name') }}">
+        <button type="button" class="icon-btn mcp-copy-btn" id="mcp-copy-name" aria-label="{{ t('mcp.copy') }}" title="{{ t('mcp.copy') }}">{% include "_icon_copy.html" %}</button>
+      </div>
+    </div>
+
+    <div class="mcp-field">
+      <span class="mcp-field-label">{{ t("mcp.connector_description") }}</span>
+      <div class="mcp-field-row">
+        <input id="mcp-connector-description" class="family-link-input" readonly aria-label="{{ t('mcp.connector_description') }}">
+        <button type="button" class="icon-btn mcp-copy-btn" id="mcp-copy-description" aria-label="{{ t('mcp.copy') }}" title="{{ t('mcp.copy') }}">{% include "_icon_copy.html" %}</button>
+      </div>
+    </div>
+
+    <div class="mcp-field">
+      <span class="mcp-field-label">{{ t("mcp.connector_url") }}</span>
+      <div class="mcp-field-row">
+        <input id="mcp-connector-link" class="family-link-input" readonly aria-label="{{ t('mcp.connector_url') }}">
+        <button type="button" class="icon-btn mcp-copy-btn" id="mcp-copy-link" aria-label="{{ t('mcp.copy_link') }}" title="{{ t('mcp.copy_link') }}">{% include "_icon_copy.html" %}</button>
+      </div>
+    </div>
+
+    <div class="settings-actions" style="margin-top:10px">
+      <a id="mcp-download-icon" class="ghost-btn" href="#" download="parallellingvo-mcp-icon.png">{{ t("mcp.download_icon") }}</a>
+      <button type="button" class="ghost-btn" id="mcp-revoke-all" hidden>{{ t("mcp.revoke_all") }}</button>
+    </div>
+    <span id="mcp-status-msg" class="settings-status"></span>
+  </div>
 </div>
 {% endblock %}
 
@@ -109,6 +181,10 @@
   }
 
   function optionLabel(opt){
+    try {
+      const label = new Intl.DisplayNames([window.I18N.language], {type: "language"}).of(opt.code);
+      if (label) return `${label} (${opt.code.toUpperCase()})`;
+    } catch (_) {}
     return `${opt.native} (${opt.code.toUpperCase()})`;
   }
 
@@ -233,6 +309,31 @@
     return String(value || "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
   }
 
+  const AVATAR_PALETTE = ["#2563eb","#7c3aed","#db2777","#ea580c","#16a34a","#0891b2","#ca8a04","#dc2626"];
+  function avatarColor(seed){
+    const text = String(seed || "");
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+    return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
+  }
+  function avatarInitials(name){
+    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "?";
+    const first = parts[0][0] || "";
+    const second = parts.length > 1 ? (parts[1][0] || "") : "";
+    return (first + second).toUpperCase();
+  }
+  function renderAvatar(item){
+    const name = item.display_name || "";
+    const photo = item.photo_url ? String(item.photo_url) : "";
+    const initials = escapeHtml(avatarInitials(name));
+    const color = avatarColor(item.user_id || name);
+    const img = photo
+      ? `<img src="${escapeHtml(photo)}" alt="" loading="lazy" onerror="this.remove()">`
+      : "";
+    return `<span class="family-avatar" style="background:${color}">${initials}${img}</span>`;
+  }
+
   async function copyFamilyLink(value){
     try {
       await navigator.clipboard.writeText(value);
@@ -252,6 +353,16 @@
     const qr = document.getElementById("family-qr");
     input.value = data.pairing_url || "";
     qr.src = `/api/family/pairing-qr.png?code=${encodeURIComponent(data.code)}&t=${Date.now()}`;
+  }
+
+  async function refreshChildInvite(){
+    const response = await apiFetch("/api/family/invite-code");
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || "invite_link_failed");
+    const input = document.getElementById("family-invite-link");
+    const qr = document.getElementById("family-invite-qr");
+    input.value = data.invite_url || "";
+    qr.src = `/api/family/invite-qr.png?code=${encodeURIComponent(data.code)}&t=${Date.now()}`;
   }
 
   async function loadFamily(){
@@ -280,7 +391,12 @@
           <button type="button" class="ghost-btn" id="refresh-family-qr">${escapeHtml(tr("family.refresh_qr"))}</button>
           <h4>${escapeHtml(tr("family.parents"))}</h4>
           ${parents.length
-            ? `<ul class="family-list">${parents.map(item => `<li>👤 ${escapeHtml(item.display_name)}</li>`).join("")}</ul>`
+            ? `<ul class="family-child-list">${parents.map(item => `
+                <li class="family-child-item">
+                  ${renderAvatar(item)}
+                  <span class="family-child-name">${escapeHtml(item.display_name)}</span>
+                </li>
+              `).join("")}</ul>`
             : `<p class="settings-note">${escapeHtml(tr("family.none"))}</p>`}
         `;
         document.getElementById("refresh-family-qr").addEventListener("click", async () => {
@@ -299,11 +415,40 @@
       familyContent.innerHTML = `
         <span class="family-role">👤 ${escapeHtml(data.is_parent ? tr("family.parents") : tr("account_type.standard"))}</span>
         <p class="settings-note">${escapeHtml(tr("family.standard_note"))}</p>
+        <h4>${escapeHtml(tr("family.invite_child"))}</h4>
+        <p class="settings-note">${escapeHtml(tr("family.invite_note"))}</p>
+        <img class="family-qr" id="family-invite-qr" alt="Child invite QR code"
+             src="" aria-label="${escapeHtml(tr("family.invite_link"))}">
+        <div class="family-link-box">
+          <input id="family-invite-link" class="family-link-input" readonly
+                 aria-label="${escapeHtml(tr("family.invite_link"))}">
+          <button type="button" class="ghost-btn" id="copy-family-invite-link">${escapeHtml(tr("family.copy_link"))}</button>
+        </div>
+        <div id="family-invite-copy-status" class="settings-status" aria-live="polite"></div>
+        <button type="button" class="ghost-btn" id="refresh-family-invite-qr">${escapeHtml(tr("family.refresh_qr"))}</button>
         <h4>${escapeHtml(tr("family.children"))}</h4>
         ${children.length
-          ? `<ul class="family-list">${children.map(item => `<li>🧒 ${escapeHtml(item.display_name)}</li>`).join("")}</ul>`
+          ? `<ul class="family-child-list">${children.map(item => `
+              <li>
+                <a class="family-child-item" href="/parent?child=${encodeURIComponent(item.user_id)}">
+                  ${renderAvatar(item)}
+                  <span class="family-child-name">${escapeHtml(item.display_name)}</span>
+                  <span class="family-child-chevron" aria-hidden="true">›</span>
+                </a>
+              </li>
+            `).join("")}</ul>`
           : `<p class="settings-note">${escapeHtml(tr("family.none"))}</p>`}
       `;
+      document.getElementById("refresh-family-invite-qr").addEventListener("click", async () => {
+        try { await refreshChildInvite(); }
+        catch (error) { document.getElementById("family-invite-copy-status").textContent = error.message; }
+      });
+      document.getElementById("copy-family-invite-link").addEventListener("click", async () => {
+        const input = document.getElementById("family-invite-link");
+        await copyFamilyLink(input.value);
+        document.getElementById("family-invite-copy-status").textContent = tr("family.link_copied");
+      });
+      await refreshChildInvite();
     } catch (error) {
       familyContent.innerHTML = `<p class="settings-status err">${escapeHtml(error.message)}</p>`;
     }
@@ -327,7 +472,7 @@
       const missingTotal = missing.reduce((sum, x) => sum + Number(x.count || 0), 0);
       if (missingTotal > 0) {
         const text = missing.map(x => `${x.native || x.code.toUpperCase()}: ${x.count}`).join(", ");
-        const yes = window.confirm(`Сохранено. Для новых языков нужно сгенерировать ${missingTotal} слов/предложений: ${text}. Сгенерировать сейчас через локальную Ollama?`);
+        const yes = window.confirm(`Сохранено. Для новых языков нужно сгенерировать ${missingTotal} слов/предложений: ${text}. Попробовать заполнить из общей базы или подключённого сервиса?`);
         if (yes) {
           await generateMissingLanguages(missing.map(x => x.code));
           return;
@@ -351,51 +496,6 @@
     return item[`${lang}_sentence`] || item[`sentence_${lang}`] || item[`ex_${lang}`] || "";
   }
 
-  function buildGenerationPrompt(item, targetLang){
-    const target = OPTIONS.find(x => x.code === targetLang);
-    const known = OPTIONS
-      .map(x => x.code)
-      .filter(code => code !== targetLang && wordFor(item, code))
-      .map(code => `${code}: word="${wordFor(item, code)}"; sentence="${sentenceFor(item, code)}"`)
-      .join("\n");
-    return `Create one vocabulary translation for a language learning app.
-Target language: ${target?.name || targetLang} (${targetLang})
-Known translations:
-${known}
-
-Return only compact JSON with exactly these keys:
-{"word":"...","sentence":"..."}
-
-Requirements:
-- "word" is the natural dictionary/base form in the target language.
-- "sentence" is one short CEFR A2 example sentence in the target language.
-- In "sentence", surround the translated studied word or its inflected form with ** markers.
-- No markdown, no comments, no extra keys.`;
-  }
-
-  function parseOllamaJson(text){
-    const raw = String(text || "").trim();
-    try { return JSON.parse(raw); } catch(_) {}
-    const m = raw.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
-    throw new Error("Ollama вернула не JSON");
-  }
-
-  async function callOllama(prompt){
-    const resp = await fetch("http://localhost:11434/api/chat", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        model: "llama3.1:8b",
-        stream: false,
-        messages: [{role: "user", content: prompt}]
-      })
-    });
-    if (!resp.ok) throw new Error(`Ollama HTTP ${resp.status}`);
-    const data = await resp.json();
-    return parseOllamaJson(data.message?.content || data.response || "");
-  }
-
   async function generateMissingLanguages(languages){
     saveBtn.disabled = true;
     addBtn.disabled = true;
@@ -409,13 +509,21 @@ Requirements:
     for (const item of items) {
       for (const lang of (item.missing_languages || [])) {
         setStatus(`Генерация ${done + 1} / ${total}: ${lang.toUpperCase()} · ${item.lesson || ""} ${item.number || ""}`, "");
-        const generated = await callOllama(buildGenerationPrompt(item, lang));
+        const source = OPTIONS.map(x => x.code).find(code => code !== lang && wordFor(item, code));
+        if (!source) continue;
+        const response = await apiFetch('/api/translate/word', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({word:wordFor(item,source),from_lang:source,languages:[source,lang],supplied:item})
+        });
+        const content = await response.json();
+        if (!content.ok) throw new Error(content.error || tr('common.error'));
+        const generated = {word:content[lang] || '',sentence:content[`ex_${lang}`] || ''};
         const word = String(generated.word || "").trim();
         const sentence = String(generated.sentence || "").trim();
-        if (!word || !sentence) throw new Error(`Пустой результат для ${lang.toUpperCase()} word_id=${item.id}`);
+        if (!word && !sentence) continue;
         const fields = {};
-        fields[lang] = word;
-        fields[`ex_${lang}`] = sentence;
+        if (word) fields[lang] = word;
+        if (sentence) fields[`ex_${lang}`] = sentence;
         const saveResp = await apiFetch(`/api/words/${item.id}`, {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
@@ -426,7 +534,7 @@ Requirements:
         done += 1;
       }
     }
-    setStatus(`Готово. Сгенерировано: ${done}`, "ok");
+    setStatus(`Заполнено: ${done}. Отсутствующие данные ожидают подключения внешнего сервиса.`, "ok");
     loadedSelected = selected.slice();
     saveBtn.disabled = false;
     addBtn.disabled = selected.length >= 5;
@@ -463,9 +571,101 @@ Requirements:
       setStatus(tr("settings.save_error", {message: e.message}), "err");
     }
   });
+  const mcpToggleEl = document.getElementById("mcp-enabled-toggle");
+  const mcpStatusEl = document.getElementById("mcp-status");
+  const mcpBadgeEl = document.getElementById("mcp-connections-badge");
+  const mcpStatusMsgEl = document.getElementById("mcp-status-msg");
+  const mcpNameInput = document.getElementById("mcp-connector-name");
+  const mcpDescriptionInput = document.getElementById("mcp-connector-description");
+  const mcpLinkInput = document.getElementById("mcp-connector-link");
+  const mcpDownloadLink = document.getElementById("mcp-download-icon");
+  const mcpRevokeBtn = document.getElementById("mcp-revoke-all");
+  let mcpIgnoreToggle = false;
+
+  function mcpStateLabel(state){
+    const key = {connected: "mcp.state_connected", paused: "mcp.state_paused", ready: "mcp.state_ready"}[state] || "mcp.state_disabled";
+    return tr(key);
+  }
+
+  async function loadMcp(){
+    try {
+      const response = await apiFetch("/api/mcp/user");
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || tr("common.error"));
+      const connector = data.connector || {};
+      const connections = Array.isArray(data.connections) ? data.connections : [];
+      mcpIgnoreToggle = true;
+      mcpToggleEl.checked = !!data.enabled;
+      mcpIgnoreToggle = false;
+      mcpToggleEl.disabled = false;
+      mcpStatusEl.textContent = mcpStateLabel(data.state);
+      mcpBadgeEl.textContent = String(connections.length);
+      mcpBadgeEl.title = tr("mcp.connections_count", {count: connections.length});
+      mcpBadgeEl.classList.toggle("active", connections.length > 0);
+      mcpNameInput.value = connector.name || "";
+      mcpDescriptionInput.value = (window.I18N.language === "ru" ? connector.description : (connector.description_en || connector.description)) || "";
+      mcpLinkInput.value = connector.mcp_url || "";
+      if (connector.icon_url) mcpDownloadLink.href = connector.icon_url;
+      mcpRevokeBtn.hidden = connections.length === 0;
+    } catch (e) {
+      mcpStatusEl.textContent = tr("mcp.load_error");
+    }
+  }
+
+  mcpToggleEl.addEventListener("change", async () => {
+    if (mcpIgnoreToggle) return;
+    mcpToggleEl.disabled = true;
+    try {
+      const response = await apiFetch("/api/mcp/user", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({enabled: mcpToggleEl.checked}),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || tr("common.error"));
+      mcpStatusMsgEl.textContent = "";
+    } catch (e) {
+      mcpStatusMsgEl.textContent = tr("mcp.update_error");
+      mcpStatusMsgEl.className = "settings-status err";
+    }
+    await loadMcp();
+  });
+
+  async function mcpCopyInput(input, messageKey){
+    try {
+      await navigator.clipboard.writeText(input.value);
+    } catch (error) {
+      input.focus();
+      input.select();
+      document.execCommand("copy");
+    }
+    mcpStatusMsgEl.textContent = tr(messageKey);
+    mcpStatusMsgEl.className = "settings-status ok";
+  }
+
+  document.getElementById("mcp-copy-name").addEventListener("click", () => mcpCopyInput(mcpNameInput, "mcp.copied"));
+  document.getElementById("mcp-copy-description").addEventListener("click", () => mcpCopyInput(mcpDescriptionInput, "mcp.copied"));
+  document.getElementById("mcp-copy-link").addEventListener("click", () => mcpCopyInput(mcpLinkInput, "mcp.link_copied"));
+
+  mcpRevokeBtn.addEventListener("click", async () => {
+    if (!window.confirm(tr("mcp.revoke_confirm"))) return;
+    try {
+      const response = await apiFetch("/api/mcp/user/revoke-all", {method: "POST"});
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || tr("common.error"));
+      mcpStatusMsgEl.textContent = tr("mcp.revoked");
+      mcpStatusMsgEl.className = "settings-status ok";
+    } catch (e) {
+      mcpStatusMsgEl.textContent = tr("mcp.update_error");
+      mcpStatusMsgEl.className = "settings-status err";
+    }
+    await loadMcp();
+  });
+
   load();
   loadDailyGoal();
   loadFamily();
+  loadMcp();
 })();
 </script>
 {% endblock %}

@@ -314,9 +314,17 @@ body.modal-open{ overflow:hidden; }
 .lesson-meta{ font-size:12px; color:var(--muted); white-space:nowrap; }
 
 .ghost-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:9px 14px;
+  border-radius:10px;
   background:#fff;
   color:var(--fg);
   border:1px solid var(--line);
+  text-decoration:none;
+  cursor:pointer;
+  font:inherit;
 }
 .ghost-btn:hover{ background:#f8fafc; }
 .danger-btn{ background:#ef4444; }
@@ -334,6 +342,10 @@ body.modal-open{ overflow:hidden; }
 @media (prefers-reduced-motion: reduce){
   .modal-backdrop,
   .modal-backdrop .modal{ animation:none !important; }
+  .modal-backdrop.is-open,
+  .modal-backdrop.is-closing{ opacity:1; }
+  .modal-backdrop.is-open .modal,
+  .modal-backdrop.is-closing .modal{ opacity:1; transform:none; }
   .modal-backdrop .spinner{ animation:none; }
 }
 /* Конец добавления таймера */

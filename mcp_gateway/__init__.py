@@ -1,0 +1,1 @@
+"""Isolated LearnWords MCP gateway."""

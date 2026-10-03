@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title">
+  <title id="title">LearnWords</title>
+  <rect width="48" height="48" rx="10" fill="#3F51B5"/>
+  <path fill="#FFFFFF" d="M13 13h10v5h-5v17h-5V13Zm12 0h5v17h7v5H25V13Z"/>
+  <path fill="#FFC107" d="M18 22h6v4h-6v-4Zm12 0h6v4h-6v-4Z"/>
+</svg>

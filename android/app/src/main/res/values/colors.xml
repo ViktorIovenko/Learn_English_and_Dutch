@@ -1,18 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorPrimaryVariant">#5C6BC0</color>
-    <color name="colorSecondary">#FF4081</color>
-    <color name="colorAccent">#FFC107</color>
-    <color name="colorBackground">#FAFAFA</color>
+    <!-- ParallelLingvo brand palette (matches app.parallellingvo.app / parallellingvo.app) -->
+    <color name="colorPrimary">#3B4CB8</color>
+    <color name="colorPrimaryDark">#17092B</color>
+    <color name="colorPrimaryVariant">#5D12C7</color>
+    <color name="colorSecondary">#F0179B</color>
+    <color name="colorAccent">#F9A80B</color>
+    <color name="colorBackground">#F8FAFC</color>
     <color name="colorSurface">#FFFFFF</color>
-    <color name="colorError">#B00020</color>
+    <color name="colorError">#E11D48</color>
     <color name="colorOnPrimary">#FFFFFF</color>
-    <color name="colorOnBackground">#212121</color>
-    <color name="colorTextSecondary">#757575</color>
-    <color name="colorCorrect">#2E7D32</color>
-    <color name="colorWrong">#C62828</color>
+    <color name="colorOnBackground">#0F172A</color>
+    <color name="colorTextSecondary">#8A93A6</color>
+    <color name="colorCorrect">#16A34A</color>
+    <color name="colorWrong">#E11D48</color>
+    <color name="colorTelegram">#26A5E4</color>
+    <color name="colorGoogleButtonBorder">#DADCE0</color>
+
+    <!-- Launcher icon background: always white, independent of day/night theme -->
+    <color name="colorLauncherBackground">#FFFFFF</color>
 
     <!-- Text shades (adapt in values-night) -->
     <color name="colorTextTertiary">#888888</color>
@@ -57,6 +63,8 @@
     <!-- Learn screen: letter-scramble game feedback -->
     <color name="colorGameCorrect">#00CC44</color>
     <color name="colorGameWrong">#CC0000</color>
+    <color name="colorGameMastered">#2563EB</color>
     <color name="colorGameCorrectOverlay">#2200CC44</color>
     <color name="colorGameWrongOverlay">#22CC0000</color>
+    <color name="colorGameMasteredOverlay">#222563EB</color>
 </resources>

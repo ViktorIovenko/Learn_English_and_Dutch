@@ -97,6 +97,17 @@ foreach ($folder in @("bot", "app")) {
     }
 }
 
+$mcpGatewayPath = Join-Path $Root "mcp_gateway"
+if (Test-Path -LiteralPath $mcpGatewayPath -PathType Container) {
+    Get-ChildItem -LiteralPath $mcpGatewayPath -Recurse -File | ForEach-Object {
+        $relative = $_.FullName.Substring($Root.Length).TrimStart("\").Replace("\", "/")
+        if ($relative -like "*/__pycache__/*" -or $relative -like "*.pyc" -or $relative -like "*.pyo") {
+            return
+        }
+        Add-DeployFile $files $_.FullName $relative $relative $true
+    }
+}
+
 foreach ($name in @("config.py", "db_init.py", "run.py")) {
     Add-DeployFile $files (Join-Path $Root $name) $name $name
 }
@@ -158,6 +169,9 @@ fi
 if [ -d app ]; then
     find app -type f ! -path 'app/static/audio/*' ! -path '*/__pycache__/*' ! -name '*.pyc' ! -name '*.pyo' -exec sha256sum {} +
 fi
+if [ -d mcp_gateway ]; then
+    find mcp_gateway -type f ! -path '*/__pycache__/*' ! -name '*.pyc' ! -name '*.pyo' -exec sha256sum {} +
+fi
 for file in config.py db_init.py run.py requirements.txt Dockerfile .dockerignore docker-compose.yml .env; do
     if [ -f "$file" ]; then sha256sum "$file"; fi
 done
@@ -198,6 +212,9 @@ fi
 if [ -d app ]; then
     find app -type f ! -path 'app/static/audio/*' ! -path '*/__pycache__/*' ! -name '*.pyc' ! -name '*.pyo' -exec sha256sum {} +
 fi
+if [ -d mcp_gateway ]; then
+    find mcp_gateway -type f ! -path '*/__pycache__/*' ! -name '*.pyc' ! -name '*.pyo' -exec sha256sum {} +
+fi
 for file in config.py db_init.py run.py requirements.txt Dockerfile; do
     if [ -f "$file" ]; then sha256sum "$file"; fi
 done
@@ -215,6 +232,7 @@ foreach ($line in (Invoke-SshCapture $containerHashCommand)) {
 $containerComparable = @($files | Where-Object {
     $_.RemotePath -like "bot/*" -or
     $_.RemotePath -like "app/*" -or
+    $_.RemotePath -like "mcp_gateway/*" -or
     $_.RemotePath -in @("config.py", "db_init.py", "run.py", "requirements.txt", "Dockerfile")
 })
 $containerDrift = @($containerComparable | Where-Object {

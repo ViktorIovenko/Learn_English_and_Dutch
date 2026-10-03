@@ -5,6 +5,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.view.View
 import android.widget.Toast
+import androidx.navigation.NavController
+import androidx.navigation.NavOptions
 import com.learnwords.app.R
 import com.learnwords.app.data.api.WordDto
 import com.learnwords.app.data.db.WordEntity
@@ -31,6 +33,27 @@ fun Context.familyErrorMessage(error: String): String = when (error.substringAft
 fun View.visible() { visibility = View.VISIBLE }
 fun View.gone() { visibility = View.GONE }
 fun View.invisible() { visibility = View.INVISIBLE }
+
+/**
+ * Navigates to a bottom-nav tab destination from code (e.g. a button inside
+ * one tab that opens another tab). Pops back to the graph's start destination
+ * first so the target is never stacked twice — otherwise the bottom nav can
+ * get stuck unable to switch back to a destination reached this way.
+ *
+ * Deliberately does NOT use saveState/restoreState: combining that with the
+ * BottomNavigationView's own saveState-based tab switching caused the two
+ * destinations' saved states to get restored under the wrong tab (settings
+ * and child-control content swapping places). A plain popUpTo + singleTop
+ * always creates a fresh instance of the target, which is a fair trade for
+ * correctness here since both destinations reload their data on start anyway.
+ */
+fun NavController.navigateToTab(destinationId: Int) {
+    val options = NavOptions.Builder()
+        .setLaunchSingleTop(true)
+        .setPopUpTo(graph.startDestinationId, false)
+        .build()
+    navigate(destinationId, null, options)
+}
 
 fun WordDto.toEntity(): WordEntity = WordEntity(
     id = id,

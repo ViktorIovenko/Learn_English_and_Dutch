@@ -5,20 +5,72 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    environment:
+      MCP_PUBLIC_URL: https://app.parallellingvo.app/mcp
+      MCP_ISSUER_URL: https://app.parallellingvo.app
+      MCP_CONNECTOR_VERSION: ${MCP_CONNECTOR_VERSION:-1.0.0}
+      MCP_BUILD_REVISION: ${MCP_BUILD_REVISION:-local}
+      MCP_BUILD_CREATED: ${MCP_BUILD_CREATED:-unknown}
+      MCP_BUILD_SOURCE: ${MCP_BUILD_SOURCE:-Learn_English_and_Dutch}
     volumes:
       - ./data/words.db:/app/words.db
       - ./data/audio:/app/app/static/audio
       - ./data/bot_persistence.pkl:/app/bot_persistence.pkl
     networks:
-      - family_internal
-      - ai_platform_internal
+      - web_proxy
+      - learn_mcp_internal
+
+  mcp-gateway:
+    build:
+      context: .
+      dockerfile: mcp_gateway/Dockerfile
+    restart: unless-stopped
+    environment:
+      MCP_INTERNAL_API_URL: http://learn-words:7001
+      MCP_INTERNAL_TOKEN: ${MCP_INTERNAL_TOKEN}
+      MCP_PUBLIC_URL: https://app.parallellingvo.app/mcp
+      MCP_ISSUER_URL: https://app.parallellingvo.app
+      MCP_ALLOWED_HOST: app.parallellingvo.app
+      MCP_REDIS_URL: redis://mcp-redis:6379/0
+      MCP_CONNECTOR_VERSION: ${MCP_CONNECTOR_VERSION:-1.0.0}
+    labels:
+      com.learnwords.component: mcp-gateway
+      com.learnwords.version: ${MCP_CONNECTOR_VERSION:-1.0.0}
+      com.learnwords.revision: ${MCP_BUILD_REVISION:-local}
+      com.learnwords.created: ${MCP_BUILD_CREATED:-unknown}
+      com.learnwords.source: ${MCP_BUILD_SOURCE:-Learn_English_and_Dutch}
+    depends_on:
+      - learn-words
+      - mcp-redis
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - web_proxy
+      - learn_mcp_internal
+
+  mcp-redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    user: "999:999"
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "32mb", "--maxmemory-policy", "allkeys-lru"]
+    read_only: true
+    tmpfs:
+      - /data:uid=999,gid=999,mode=0700,size=32m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - learn_mcp_internal
 
 networks:
-  family_internal:
+  web_proxy:
     external: true
-    name: family-call_internal
-  # Позволяет вызывать ai-platform-api:8000 для облачной генерации слов
-  # (переключатель Ollama/Облако на странице загрузки слов).
-  ai_platform_internal:
-    external: true
-    name: sfs_internal
+    name: web_proxy
+  learn_mcp_internal:
+    internal: true

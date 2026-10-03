@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ t("learn.title") }}{% endblock %}
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='learn.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='learn.css', v='20261003-drag-anchor') }}">
 <div id="learn-root" data-lesson="{{ lesson_title }}" class="learn-page">
   <div class="topbar">
     <a href="{{ url_for('web.home') }}" class="pill-btn">
@@ -104,9 +104,9 @@
   };
 </script>
 <!-- [ДОБАВЛЕНО v8.6 AUDIO] Глобальный воркер озвучки -->
-<script defer src="{{ url_for('static', filename='audio_worker.js') }}"></script>
+<script defer src="{{ url_for('static', filename='audio_worker.js', v='20261003-shared-audio') }}"></script>
 <!-- [НЕ МЕНЯЛОСЬ] основной скрипт -->
-<script defer src="{{ url_for('static', filename='learn.js', v='20260704-italian-visibility') }}"></script>
+<script defer src="{{ url_for('static', filename='learn.js', v='20261003-drag-center') }}"></script>
 <!-- [ИЗМЕНЕНО v8.5] fallback: уважает флаг __LEARN_BOOTЕД__ -->
 <script>
 (function(){

@@ -9,6 +9,7 @@
   const WORDS_KEY_PREFIX = IDB_PREFIX + "lesson:";
   const BASE_DELAY_MS = 5000;
   const MAX_DELAY_MS = 60000;
+  const LIVE_SYNC_MS = 10000;
 
   let syncInFlight = false;
   let syncRequested = false;
@@ -92,8 +93,8 @@
     items.sort((a, b) => {
       const ah = Number(a.hidden || 0), bh = Number(b.hidden || 0);
       if (ah !== bh) return ah - bh;
-      const ai = Number(a.lesson_index || 0), bi = Number(b.lesson_index || 0);
-      if (ai !== bi) return ai - bi;
+      const ao = Number(a.upload_order || 0), bo = Number(b.upload_order || 0);
+      if (ao !== bo) return bo - ao;
       return String(a.lesson || "").localeCompare(String(b.lesson || ""), "ru");
     });
   }
@@ -130,6 +131,9 @@
       sortWords(existing);
       await IDB.set("words", existing, key);
     }
+    window.dispatchEvent(new CustomEvent("lesson-content-synced", {
+      detail: { lessons: Array.from(byLesson.keys()) }
+    }));
   }
 
   async function applyLessonsDelta(lessons, userLessons) {
@@ -206,4 +210,7 @@
   } else {
     window.addEventListener("load", () => kickSync());
   }
+  window.setInterval(() => {
+    if (document.visibilityState === "visible") kickSync();
+  }, LIVE_SYNC_MS);
 })();

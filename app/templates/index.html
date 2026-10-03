@@ -40,7 +40,6 @@
 .lesson-card-grid{display:grid;grid-template-columns:minmax(0,50%) minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;}
 .lesson-main{min-width:0;}
 .lesson-main .card-title{overflow-wrap:anywhere;}
-.lesson-priority-label{display:inline-block;margin:3px 0 5px;padding:2px 7px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;}
 .lesson-word-count{display:inline-block;margin-top:5px;color:#2563eb;font-size:13px;cursor:pointer;}
 .lesson-language-progress{display:grid;grid-template-columns:max-content;align-items:center;justify-content:end;justify-self:end;gap:6px;min-width:0;}
 .lesson-progress-row{display:grid;grid-template-columns:64px auto auto;align-items:center;justify-content:end;gap:2px;min-width:0;font-size:10px;color:#475569;}
@@ -151,7 +150,7 @@
 {% block scripts %}
 <script type="module">
   const apiFetch = window.apiFetch || fetch;
-  const tr = (key, params) => window.I18N.t(key, params);
+  const tr = (key, params) => (window.I18N && window.I18N.t) ? window.I18N.t(key, params) : key;
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[char]);
@@ -178,6 +177,9 @@
   }
   async function readLessonsFromIdb(){
     if (Array.isArray(LESSONS_CACHE)) return LESSONS_CACHE;
+    // A browser Google session has no Telegram ID during initial rendering.
+    // Never reuse the shared uid:anon cache for its account-specific lessons.
+    if (!window.USER_ID) return null;
     const cached = await idbGet("lessons", LESSONS_KEY);
     if (Array.isArray(cached)) { LESSONS_CACHE = cached; return cached; }
     return null;
@@ -185,6 +187,7 @@
   async function writeLessonsToIdb(lessons){
     if (!Array.isArray(lessons)) return;
     LESSONS_CACHE = lessons;
+    if (!window.USER_ID) return;
     await idbSet("lessons", LESSONS_KEY, lessons);
   }
   async function readLessonWordsFromIdb(lessonTitle){
@@ -651,8 +654,8 @@
       if (ap !== bp) return bp - ap;
       const ah = Number(a.dataset.hidden || 0), bh = Number(b.dataset.hidden || 0);
       if (ah !== bh) return ah - bh;
-      const ai = Number(a.dataset.index || 0),  bi = Number(b.dataset.index || 0);
-      if (ai !== bi) return ai - bi;
+      const ao = Number(a.dataset.uploadOrder || 0), bo = Number(b.dataset.uploadOrder || 0);
+      if (ao !== bo) return bo - ao;
       return (a.dataset.title || "").localeCompare(b.dataset.title || "", 'ru');
     });
     nodes.forEach(n => root.appendChild(n));
@@ -698,6 +701,7 @@
       card.className = "card";
       card.dataset.lesson = ls.lesson;
       card.dataset.index  = Number(ls.lesson_index || 0);
+      card.dataset.uploadOrder = Number(ls.upload_order || 0);
       card.dataset.title  = (ls.lesson_title || ls.lesson || "");
       card.dataset.hidden = Number(ls.hidden ? 1 : 0);
       card.dataset.priority = Number(ls.is_priority ? 1 : 0);
@@ -727,7 +731,6 @@
         <div class="lesson-card-grid">
           <div class="lesson-main">
             <div class="card-title lesson-open" data-lesson="${ls.lesson_title}">${title}</div>
-            ${ls.is_priority ? `<span class="lesson-priority-label">${escapeHtml(tr("index.priority_lesson"))}</span>` : ""}
             <span class="lesson-word-count word-toggle" data-lesson="${ls.lesson_title}">${cnt}</span>
           </div>
           <div class="lesson-language-progress">${progressHtml}</div>

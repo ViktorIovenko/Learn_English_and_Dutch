@@ -21,9 +21,9 @@ class UploadFragment : Fragment() {
     private val viewModel: UploadViewModel by viewModels()
 
     private val tabTitleRes = listOf(
-        R.string.add_tab,
-        R.string.topic_tab,
         R.string.word_database_tab,
+        R.string.topic_tab,
+        R.string.add_tab,
         R.string.share_tab
     )
 

@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
+<div data-legacy-i18n>
 <style>
 /* ── Tabs ─────────────────────────────────────────────────────── */
-.up-tabs { display: flex; gap: 0; border-bottom: 2px solid #e2e8f0; margin-bottom: 18px; }
+.up-tabs { display: flex; gap: 0; overflow-x:auto; border-bottom: 2px solid #e2e8f0; margin-bottom: 18px; }
 .up-tab {
+  flex:0 0 auto;
   padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
   border: none; background: none; color: #64748b; border-bottom: 2px solid transparent;
   margin-bottom: -2px; transition: color .15s;
@@ -13,20 +15,20 @@
 .up-panel { display: none; }
 .up-panel.active { display: block; }
 
-/* ── Ollama bar ───────────────────────────────────────────────── */
-.ollama-bar {
+/* ── сервер bar ───────────────────────────────────────────────── */
+.content-controls {
   display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
   background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
   padding: 10px 12px; margin-bottom: 14px; font-size: 13px;
 }
-.ollama-bar label { display: flex; align-items: center; gap: 6px; }
-.ollama-bar input {
+.content-controls label { display: flex; align-items: center; gap: 6px; }
+.content-controls input {
   border: 1px solid #d0d7e2; border-radius: 7px; padding: 4px 8px;
   font-size: 13px; color: #0f172a; background: #fff; width: 200px;
 }
-.ollama-status { font-size: 12px; color: #64748b; }
-.ollama-status.ok  { color: #16a34a; }
-.ollama-status.err { color: #dc2626; }
+.provider-status { font-size: 12px; color: #64748b; }
+.provider-status.ok  { color: #16a34a; }
+.provider-status.err { color: #dc2626; }
 
 /* ── Lesson blocks ────────────────────────────────────────────── */
 .lesson-block { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 10px; background: #fff; }
@@ -152,10 +154,19 @@ table.preview-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min
   text-align: left; cursor: pointer; line-height: 1.25; transition: color .15s ease, background-color .15s ease;
 }
 .share-lesson-name:hover { color: #2563eb; background: #eff6ff; }
+.share-lesson-name.is-editing {
+  min-width: 120px; background: #fff; color: #0f172a;
+  outline: 2px solid #60a5fa; outline-offset: 1px; cursor: text;
+}
 .share-lesson-languages { color: #64748b; font-size: 12px; white-space: nowrap; }
 .share-lesson-name:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
 .share-lesson-meta { font-size: 12px; color: #64748b; white-space: nowrap; }
 .share-lesson-side { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+.share-lesson-preview-btn {
+  width: 28px; height: 28px; padding: 0; border: 1px solid #dbe3ef; border-radius: 8px;
+  background: #fff; color: #64748b; line-height: 1; cursor: pointer;
+}
+.share-lesson-item.is-open .share-lesson-preview-btn { transform: rotate(180deg); }
 .share-lesson-language-actions { display:flex; align-items:center; justify-content:flex-end; gap:6px; flex-wrap:wrap; }
 .share-add-language-btn { padding:5px 9px; border-radius:8px; font-size:12px; white-space:nowrap; }
 .share-lesson-words {
@@ -304,8 +315,65 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 .file-drop-text { font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
 .file-drop-sub  { font-size: 13px; color: #64748b; }
 
+/* ── MCP connector tab ───────────────────────────────────────── */
+.mcp-user-card { border:1px solid #dfe4f3; border-radius:20px; overflow:hidden; background:#fff; box-shadow:0 10px 30px rgba(30,41,59,.07); }
+.mcp-user-hero { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:24px; color:#fff; background:linear-gradient(135deg,#27388f,#3f51b5 60%,#6372d3); }
+.mcp-user-brand { display:flex; align-items:center; gap:15px; min-width:0; }
+.mcp-user-icon { width:66px; height:66px; flex:0 0 66px; padding:7px; border-radius:18px; background:#fff; box-shadow:0 8px 22px rgba(15,23,42,.22); }
+.mcp-user-title { margin:0 0 4px; font-size:23px; line-height:1.2; }
+.mcp-user-description { margin:0; color:rgba(255,255,255,.8); font-size:13px; line-height:1.5; }
+.mcp-user-art { width:118px; height:118px; flex:0 0 118px; object-fit:contain; filter:drop-shadow(0 10px 18px rgba(15,23,42,.24)); }
+.mcp-switch-wrap { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; white-space:nowrap; }
+.mcp-switch { position:relative; width:52px; height:29px; display:inline-block; }
+.mcp-switch input { position:absolute; opacity:0; pointer-events:none; }
+.mcp-switch span { position:absolute; inset:0; border-radius:999px; background:rgba(255,255,255,.28); cursor:pointer; transition:.2s; }
+.mcp-switch span::after { content:""; position:absolute; width:23px; height:23px; left:3px; top:3px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(15,23,42,.3); transition:.2s; }
+.mcp-switch input:checked + span { background:#22c55e; }
+.mcp-switch input:checked + span::after { transform:translateX(23px); }
+.mcp-user-body { padding:22px 24px 26px; }
+.mcp-status-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+.mcp-status { display:inline-flex; align-items:center; gap:8px; font-size:14px; font-weight:750; }
+.mcp-status::before { content:""; width:10px; height:10px; border-radius:50%; background:#94a3b8; box-shadow:0 0 0 4px #f1f5f9; }
+.mcp-status.connected::before { background:#16a34a; box-shadow:0 0 0 4px #dcfce7; }
+.mcp-status.ready::before { background:#2563eb; box-shadow:0 0 0 4px #dbeafe; }
+.mcp-status.paused::before { background:#f59e0b; box-shadow:0 0 0 4px #fef3c7; }
+.mcp-status.disabled::before { background:#94a3b8; }
+.mcp-connection-count { color:#64748b; font-size:13px; }
+.mcp-details-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.mcp-detail { min-width:0; padding:12px 13px; border:1px solid #e2e8f0; border-radius:13px; background:#f8fafc; }
+.mcp-detail.wide { grid-column:1/-1; }
+.mcp-detail-label { display:block; margin-bottom:5px; color:#64748b; font-size:11px; font-weight:750; letter-spacing:.05em; text-transform:uppercase; }
+.mcp-copy-row { display:flex; align-items:center; gap:8px; }
+.mcp-copy-value { min-width:0; flex:1; overflow:hidden; color:#172033; font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace; text-overflow:ellipsis; white-space:nowrap; }
+.mcp-copy-btn { flex:0 0 auto; border:0; border-radius:8px; padding:6px 9px; color:#334155; background:#e8edf7; font-size:12px; font-weight:700; cursor:pointer; }
+.mcp-copy-btn:hover { background:#dce4f2; }
+.mcp-help { margin-top:16px; padding:14px 16px; border:1px solid #dbe5ff; border-radius:13px; color:#475569; background:#f5f8ff; font-size:13px; line-height:1.55; }
+.mcp-google-card { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; padding:15px 16px; border:1px solid #e2e8f0; border-radius:14px; background:#fff; }
+.mcp-google-info { display:flex; align-items:center; gap:12px; min-width:0; }
+.mcp-google-icon { display:grid; width:38px; height:38px; flex:0 0 38px; place-items:center; border:1px solid #e2e8f0; border-radius:11px; background:#fff; }
+.mcp-google-title { color:#172033; font-size:14px; font-weight:750; }
+.mcp-google-meta { overflow:hidden; margin-top:2px; color:#64748b; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
+.mcp-google-btn { display:inline-flex; align-items:center; gap:8px; flex:0 0 auto; padding:9px 14px; border:1px solid #d5dbe5; border-radius:10px; color:#172033; background:#fff; box-shadow:0 2px 8px rgba(15,23,42,.07); font-size:13px; font-weight:750; text-decoration:none; }
+.mcp-google-btn:hover { border-color:#b7c2d2; box-shadow:0 4px 12px rgba(15,23,42,.11); }
+.mcp-google-badge { flex:0 0 auto; padding:6px 10px; border-radius:999px; color:#15803d; background:#dcfce7; font-size:12px; font-weight:750; }
+.mcp-google-message { margin-bottom:14px; padding:10px 13px; border-radius:11px; color:#166534; background:#ecfdf3; font-size:13px; }
+.mcp-google-message.error { color:#b4232e; background:#fff1f2; }
+.mcp-actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:16px; }
+.mcp-primary-btn,.mcp-danger-btn,.mcp-secondary-btn { border:0; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:750; cursor:pointer; }
+.mcp-primary-btn { color:#fff; background:#3f51b5; }
+.mcp-danger-btn { color:#b4232e; background:#fff1f2; }
+.mcp-secondary-btn { display:inline-flex; align-items:center; gap:7px; border:1px solid #d5dbe5; color:#172033; background:#fff; text-decoration:none; }
+.mcp-secondary-btn:hover { border-color:#b7c2d2; }
+.mcp-danger-btn[hidden] { display:none; }
+.mcp-connections { margin-top:18px; }
+.mcp-connections-title { margin:0 0 9px; font-size:14px; }
+.mcp-connection-item { display:flex; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid #edf0f5; font-size:12px; }
+.mcp-connection-name { font-weight:750; color:#27344a; }
+.mcp-connection-meta { color:#7b879a; text-align:right; }
+.mcp-loading { padding:32px; color:#64748b; text-align:center; }
+
 @media (max-width: 380px) {
-  .ollama-bar input { width: 130px; }
+  .content-controls input { width: 130px; }
   .lesson-row input, .lesson-row select { min-width: 80px; }
   .up-tab { padding: 8px 12px; font-size: 13px; }
 }
@@ -314,34 +382,84 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   .share-lesson-main { flex:1 1 100%; }
   .share-lesson-side { width:100%; justify-content:space-between; }
   .share-lesson-language-actions { justify-content:flex-start; }
+  .mcp-user-hero { align-items:flex-start; flex-direction:column; }
+  .mcp-details-grid { grid-template-columns:1fr; }
+  .mcp-detail.wide { grid-column:auto; }
+  .mcp-google-card { align-items:flex-start; flex-direction:column; }
+}
+/* Upload page presentation and motion */
+.upload-page { --up-accent:#2563eb; --up-ink:#172554; --up-line:#dce5f2; }
+.upload-intro {
+  position:relative; overflow:hidden; padding:28px; margin:8px 0 22px;
+  border:1px solid #dbeafe; border-radius:24px;
+  background:linear-gradient(120deg,#eff6ff 0%,#f8faff 55%,#ecfdf5 100%);
+  animation:upload-enter .45s ease-out both;
+}
+.upload-intro::after {
+  content:''; position:absolute; width:180px; height:180px; right:-65px; top:-85px;
+  border:30px solid rgba(59,130,246,.07); border-radius:50%; pointer-events:none;
+}
+.upload-intro h1 { position:relative; margin:0 0 10px; color:var(--up-ink); font-size:clamp(24px,4vw,34px); line-height:1.2; letter-spacing:-.6px; }
+.upload-intro p { position:relative; margin:0; max-width:620px; color:#475569; font-size:15px; line-height:1.65; }
+.upload-steps { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+.upload-step { display:inline-flex; align-items:center; gap:8px; padding:7px 11px; border:1px solid rgba(255,255,255,.85); border-radius:12px; background:rgba(255,255,255,.75); color:#334155; font-size:12px; }
+.upload-step span { display:grid; place-items:center; width:22px; height:22px; border-radius:7px; color:#1d4ed8; background:#dbeafe; font-weight:700; }
+.upload-page .up-tabs { gap:5px; padding:6px; margin-bottom:20px; border:1px solid var(--up-line); border-radius:16px; background:#f1f5fb; scrollbar-width:thin; }
+.upload-page .up-tab { margin:0; padding:11px 16px; border:0; border-radius:11px; transition:color .18s,background .18s,box-shadow .18s,transform .18s; }
+.upload-page .up-tab.active { color:#1d4ed8; background:#fff; box-shadow:0 3px 10px rgba(30,64,175,.1); }
+.upload-page .up-panel.active { animation:upload-enter .3s ease-out both; }
+.upload-page .content-controls { padding:12px 16px; border-color:var(--up-line); border-radius:14px; background:#f8faff; }
+.upload-page .lesson-block { padding:20px; margin-bottom:16px; border-color:var(--up-line); border-radius:20px; box-shadow:0 4px 18px rgba(30,58,138,.04); animation:upload-enter .32s ease-out both; transition:border-color .2s,box-shadow .2s; }
+.upload-page .lesson-block:focus-within { border-color:#93b4ed; box-shadow:0 8px 28px rgba(37,99,235,.08); }
+.upload-page .lesson-head { margin-bottom:16px; gap:12px; }
+.upload-page .lesson-num { flex:0 0 auto; color:var(--up-ink); }
+.upload-page .lesson-fields > label { display:flex; flex-wrap:wrap; align-items:center; gap:10px; color:#475569; font-size:13px; font-weight:600; }
+.upload-page .lesson-existing { flex:1; min-width:160px; max-width:100%; padding:10px 12px; border:1px solid var(--up-line); border-radius:11px; background:#f8faff; color:#334155; font:inherit; }
+.upload-page .lesson-row input, .upload-page .lesson-row select { padding:10px 12px; border-radius:11px; }
+.upload-page .lesson-name[readonly] { background:#eff6ff; color:#1d4ed8; }
+.upload-page .words-ta { padding:14px; min-height:145px; border-radius:13px; line-height:1.65; }
+.upload-page :is(input,select,textarea) { transition:border-color .18s,box-shadow .18s,background .18s; }
+.upload-page :is(input,select,textarea):focus-visible { outline:2px solid #2563eb; outline-offset:2px; }
+.upload-page :is(button,a):focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
+.upload-page .lesson-hint { color:#64748b; line-height:1.5; }
+.upload-page .actions-row { gap:12px; margin:18px 0; }
+.upload-page .actions-row button { border-radius:12px; padding:11px 17px; font-weight:600; transition:transform .18s,box-shadow .18s,background .18s,opacity .18s; }
+.upload-page :is(#generate-btn,#upload-btn,#file-upload-btn) { border:1px solid #1d4ed8; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; box-shadow:0 4px 12px rgba(37,99,235,.2); }
+.upload-page button:active:not(:disabled) { transform:scale(.97); }
+.upload-page button:disabled { cursor:wait; opacity:.65; }
+.upload-page .table-wrap { border:1px solid var(--up-line); border-radius:14px; background:#fff; }
+.upload-page .preview-tbl th { padding:12px; background:#f3f6fc; color:#334155; }
+.upload-page .preview-tbl td { padding:10px; }
+.upload-page .preview-tbl tbody tr { animation:upload-row-enter .22s ease-out both; transition:background .18s; }
+.upload-page :is(#preview-section,#file-preview-section) { animation:upload-enter .35s ease-out both; }
+.upload-page .file-drop { transition:border-color .2s,background .2s,box-shadow .2s; }
+.upload-page .confirm-modal { animation:upload-enter .2s ease-out both; }
+@media (hover:hover) {
+  .upload-page .up-tab:hover:not(.active) { background:#e7edf8; }
+  .upload-page .actions-row button:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 7px 18px rgba(30,64,175,.16); }
+  .upload-page .lesson-block:hover { border-color:#b7cbed; }
+  .upload-page .preview-tbl tbody tr:hover { background:#f8faff; }
+}
+@media (max-width:600px) {
+  .upload-intro { padding:21px; border-radius:18px; }
+  .upload-page .lesson-block { padding:15px; border-radius:16px; }
+  .upload-page .lesson-head { flex-wrap:wrap; }
+  .upload-page .lesson-head > .lesson-row { order:3; flex-basis:100% !important; flex-wrap:wrap !important; }
+  .upload-page .lesson-head > .remove-lesson-btn { margin-left:auto; }
+  .upload-page .lesson-name { flex-basis:100% !important; min-width:0; }
+  .upload-page .up-tab { padding:10px 13px; }
+}
+@keyframes upload-enter { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes upload-row-enter { from { opacity:0; } to { opacity:1; } }
+@media (prefers-reduced-motion:reduce) {
+  .upload-page, .upload-page *, .upload-page *::before, .upload-page *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
 }
 </style>
 
 <div class="upload-page">
 {% if upload_access_pending %}
   <div style="border:1px solid #e2e8f0;border-radius:16px;background:#fff;padding:28px 24px;margin-top:28px;max-width:420px;margin-left:auto;margin-right:auto;text-align:center">
-    <div style="font-size:20px;font-weight:700;color:#0f172a;margin-bottom:6px">Вход в приложение</div>
-    <div style="font-size:14px;color:#64748b;margin-bottom:22px">Для загрузки слов необходимо войти</div>
-
-    <a href="/auth/google?next=/upload" style="
-      display:flex;align-items:center;justify-content:center;gap:10px;
-      background:#fff;border:1.5px solid #d0d7e2;border-radius:10px;
-      padding:11px 18px;font-size:15px;font-weight:600;color:#0f172a;
-      text-decoration:none;transition:box-shadow .15s;margin-bottom:14px;
-      box-shadow:0 1px 4px rgba(0,0,0,.07)
-    " onmouseover="this.style.boxShadow='0 3px 12px rgba(0,0,0,.13)'"
-       onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,.07)'">
-      <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M43.6 20.5H42V20H24v8h11.3C33.6 32.8 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z" fill="#FFC107"/>
-        <path d="M6.3 14.7l6.6 4.8C14.5 16.1 18.9 13 24 13c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.5 0-14 4.1-17.7 10.7z" fill="#FF3D00"/>
-        <path d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.3 26.7 36 24 36c-5.2 0-9.5-3.2-11.3-7.7l-6.6 5.1C9.8 40 16.4 44 24 44z" fill="#4CAF50"/>
-        <path d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.6l6.2 5.2C36.9 37.2 44 32 44 24c0-1.2-.1-2.4-.4-3.5z" fill="#1976D2"/>
-      </svg>
-      Войти через Google
-    </a>
-
-    <div style="font-size:12px;color:#94a3b8;margin:10px 0 4px">или</div>
-    <div id="upload-access-message" style="font-size:13px;color:#64748b">Откройте бота в Telegram и нажмите «Загрузить слова»</div>
+    <div id="upload-access-message" style="font-size:14px;color:#64748b">Откройте бота в Telegram и нажмите «Загрузить слова»</div>
   </div>
   <script>
   (function(){
@@ -371,7 +489,7 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   </script>
 {% elif upload_access_denied %}
   <div style="border:1px solid #e2e8f0;border-radius:12px;background:#fff;padding:18px;margin-top:20px;color:#64748b">
-    Пользователь не зарегистрирован. <a href="/auth/google?next=/upload" style="color:#2563eb">Войти через Google</a>
+    Пользователь не зарегистрирован. Откройте бота в Telegram и начните регистрацию там.
   </div>
 {% else %}
 
@@ -405,29 +523,28 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   </div>
 
   <!-- Tab bar -->
+  <header class="upload-intro">
+    <h1>Добавьте слова в свой урок</h1>
+    <p>Выберите существующий урок или создайте новый. Добавьте одно слово или целый список, проверьте результат и сохраните.</p>
+    <div class="upload-steps" aria-label="Порядок добавления слов">
+      <div class="upload-step"><span>1</span>Выберите урок</div>
+      <div class="upload-step"><span>2</span>Добавьте слова</div>
+      <div class="upload-step"><span>3</span>Проверьте и сохраните</div>
+    </div>
+  </header>
   <div class="up-tabs">
     <button class="up-tab active" onclick="switchTab('add')"   id="tab-add">Добавить слова</button>
     <button class="up-tab"        onclick="switchTab('topic')" id="tab-topic">По теме</button>
     <button class="up-tab"        onclick="switchTab('file')"  id="tab-file">CSV / Excel</button>
     <button class="up-tab"        onclick="switchTab('db')"    id="tab-db">База слов</button>
     <button class="up-tab"        onclick="switchTab('share')" id="tab-share">Управление уроками</button>
+    <button class="up-tab"        onclick="switchTab('mcp')"   id="tab-mcp">MCP</button>
   </div>
 
   <!-- ── Panel 1: Add words ────────────────────────────────────── -->
   <div class="up-panel active" id="panel-add">
 
-    <div class="ollama-bar">
-      <label>Источник:
-        <select class="ai-source-select">
-          <option value="ollama">🖥 Ollama (локально)</option>
-          <option value="cloud">☁ Облако</option>
-        </select>
-      </label>
-      <span class="ollama-only" style="display:contents">
-        <label>Ollama: <input id="ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434"></label>
-        <label>Модель: <input id="ollama-model" value="llama3.1:8b" placeholder="llama3.1:8b"></label>
-      </span>
-      <label>Уровень:
+    <div class="content-controls"><label>Уровень:
         <select id="cefr-level" style="border:1px solid #d0d7e2;border-radius:7px;padding:4px 8px;font-size:13px;color:#0f172a;background:#fff">
           <option value="A1">A1</option>
           <option value="A2" selected>A2</option>
@@ -437,10 +554,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
           <option value="C2">C2</option>
         </select>
       </label>
-      <span class="ollama-only" style="display:contents">
-        <button type="button" class="ghost-btn" style="padding:4px 10px;font-size:12px" onclick="checkOllama()">Проверить</button>
-        <span id="ollama-status" class="ollama-status">—</span>
-      </span>
     </div>
 
     <div id="lessons-container"></div>
@@ -456,19 +569,7 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   <!-- ── Panel 2: Topic generator ─────────────────────────────────── -->
   <div class="up-panel" id="panel-topic">
 
-    <div class="ollama-bar">
-      <label>Источник:
-        <select class="ai-source-select">
-          <option value="ollama">🖥 Ollama (локально)</option>
-          <option value="cloud">☁ Облако</option>
-        </select>
-      </label>
-      <span class="ollama-only" style="display:contents">
-        <label>Ollama: <input id="topic-ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434"></label>
-        <label>Модель: <input id="topic-ollama-model" value="llama3.1:8b" placeholder="llama3.1:8b"></label>
-        <button type="button" class="ghost-btn" style="padding:4px 10px;font-size:12px" onclick="checkOllamaTopic()">Проверить</button>
-        <span id="topic-ollama-status" class="ollama-status">—</span>
-      </span>
+    <div class="content-controls">
     </div>
 
     <div class="topic-form">
@@ -633,13 +734,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
         </div>
         <div class="share-language-controls">
           <strong id="share-language-current"></strong>
-          <label>Источник:
-            <select class="ai-source-select">
-              <option value="ollama">🖥 Ollama (локально)</option>
-              <option value="cloud">☁ Облако</option>
-            </select>
-          </label>
-          <button type="button" class="ghost-btn ollama-only" id="share-ollama-check-btn" onclick="checkShareOllama()">Проверить подключение к Ollama</button>
           <label>Уровень
             <select id="share-language-level"><option>A1</option><option selected>A2</option><option>B1</option><option>B2</option><option>C1</option></select>
           </label>
@@ -649,6 +743,32 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
       </div>
     </div>
   </div><!-- /panel-share -->
+
+  <!-- ── Panel 6: Personal MCP connector ─────────────────────── -->
+  <div class="up-panel" id="panel-mcp">
+    <div class="mcp-user-card">
+      <div class="mcp-user-hero">
+        <div class="mcp-user-brand">
+          <img id="mcp-user-icon" class="mcp-user-icon" src="{{ url_for('static', filename='mcp-icon-small.png') }}" alt="ParallelLingvo MCP">
+          <div>
+            <h2 id="mcp-user-name" class="mcp-user-title">ParallelLingvo</h2>
+            <p id="mcp-user-description" class="mcp-user-description">{% if current_ui_language == 'ru' %}Уроки, слова и прогресс ParallelLingvo в вашем ИИ-ассистенте.{% else %}ParallelLingvo lessons, words and progress in your AI assistant.{% endif %}</p>
+          </div>
+        </div>
+        <img id="mcp-user-art" class="mcp-user-art" src="{{ url_for('static', filename='mcp-icon-large.png') }}" alt="ParallelLingvo MCP">
+        <div class="mcp-switch-wrap">
+          <span id="mcp-toggle-label">{% if current_ui_language == 'ru' %}Коннектор включён{% else %}Connector enabled{% endif %}</span>
+          <label class="mcp-switch">
+            <input id="mcp-enabled-toggle" type="checkbox" onchange="mcpToggle(this.checked)" disabled>
+            <span></span>
+          </label>
+        </div>
+      </div>
+      <div id="mcp-user-content" class="mcp-user-body">
+        <div class="mcp-loading">{% if current_ui_language == 'ru' %}Загрузка данных коннектора…{% else %}Loading connector details…{% endif %}</div>
+      </div>
+    </div>
+  </div><!-- /panel-mcp -->
 
   <!-- ── Shared preview table (used by "Add words" and "By topic" panels) ── -->
   <div id="preview-section" style="display:none;margin-top:20px">
@@ -693,6 +813,7 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
     </div>
   </div>
 </div>
+</div>
 
 {% endblock %}
 {% block scripts %}
@@ -700,6 +821,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   window.PUBLIC_BASE_URL = {{ public_url | tojson }};
 </script>
 {% if not upload_access_pending and not upload_access_denied %}
-  <script defer src="{{ url_for('static', filename='upload.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='upload.js', v='20261003-lesson-picker') }}"></script>
 {% endif %}
 {% endblock %}

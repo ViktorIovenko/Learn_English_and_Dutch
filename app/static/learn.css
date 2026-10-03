@@ -47,6 +47,20 @@
 /* [ДОБАВЛЕНО v8.20] интерактивные слоты */
 .slot.clickable{ cursor:pointer; border-style:solid; }
 .slot.clickable:hover{ background:#e0ecff; border-color:#2563eb; }
+.slot.drag-over{ background:#dbeafe; border-color:#2563eb; border-style:solid; transform:scale(1.08); }
+.slot.dragging, .letter.dragging{ opacity:.45; }
+.pointer-drag-preview{
+  position:fixed !important;
+  z-index:9999;
+  pointer-events:none;
+  opacity:.92;
+  transform:none !important;
+  transition:none !important;
+  box-sizing:border-box;
+  margin:0 !important;
+  box-shadow:0 10px 24px rgba(15,23,42,.28) !important;
+  border-color:#2563eb !important;
+}
 
 /* Кнопки букв — сетка */
 .letter-grid{
@@ -67,6 +81,7 @@
 }
 .letter-btn:hover, .letter:hover{ background:#e0ecff; border-color:#2563eb; transform:scale(1.05); }
 .letter.clickable{ cursor:pointer; }
+.letter{ touch-action:none; }
 
 .builder-controls{ margin-top:10px; }
 .controls-row{ display:flex; margin:8px 0; gap:10px; }

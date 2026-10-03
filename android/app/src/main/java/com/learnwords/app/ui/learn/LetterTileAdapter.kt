@@ -1,6 +1,8 @@
 package com.learnwords.app.ui.learn
 
 import android.view.LayoutInflater
+import android.content.ClipData
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.learnwords.app.databinding.ItemLetterTileBinding
@@ -51,6 +53,16 @@ class LetterTileAdapter(
             binding.root.setOnClickListener {
                 if (!isUsed) onTileClick(index)
             }
+            binding.root.setOnLongClickListener {
+                if (isUsed) return@setOnLongClickListener false
+                binding.root.startDragAndDrop(
+                    ClipData.newPlainText("letter-index", index.toString()),
+                    View.DragShadowBuilder(binding.root),
+                    LetterDragPayload(sourceIndex = index),
+                    0
+                )
+                true
+            }
         }
     }
 
@@ -65,3 +77,8 @@ class LetterTileAdapter(
 
     override fun getItemCount() = letters.size
 }
+
+data class LetterDragPayload(
+    val sourceIndex: Int? = null,
+    val slotIndex: Int? = null
+)

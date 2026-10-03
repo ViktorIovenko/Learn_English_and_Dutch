@@ -19,7 +19,7 @@
     <string name="daily_goal_words">Цель на день (слов)</string>
     <string name="daily_goal_minutes">Цель на день (минут)</string>
     <string name="daily_goal_invalid">Введите допустимую цель</string>
-    <string name="app_name">LearnWords</string>
+    <string name="app_name">ParallelLingvo</string>
     <string name="nav_lessons">Уроки</string>
     <string name="nav_upload">Слова</string>
     <string name="nav_difficult">Сложные</string>
@@ -124,6 +124,22 @@
     <string name="choose_3_to_5_languages">Выберите от 3 до 5 языков</string>
     <string name="move_up">Вверх</string>
     <string name="move_down">Вниз</string>
+
+    <!-- MCP-коннектор -->
+    <string name="mcp_connector_title">MCP-коннектор</string>
+    <string name="mcp_connector_description">Позволяет подключённому ИИ-ассистенту читать и управлять вашими уроками и прогрессом ParallelLingvo.</string>
+    <string name="mcp_connector_manage">Управлять подключением в браузере</string>
+    <string name="mcp_connector_update_failed">Не удалось изменить MCP-коннектор</string>
+    <string name="mcp_state_connected">Подключён и активен</string>
+    <string name="mcp_state_paused">Подключён, но приостановлен</string>
+    <string name="mcp_state_ready">Включён — ожидает подключения</string>
+    <string name="mcp_state_disabled">Выключен</string>
+    <string name="mcp_connections_count">%1$s · активных подключений: %2$d</string>
+    <string name="mcp_connector_name_label">Название (для формы коннектора в вашем ИИ-ассистенте)</string>
+    <string name="mcp_connector_description_label">Краткое описание (для формы коннектора в вашем ИИ-ассистенте)</string>
+    <string name="mcp_how_to_connect_label">Как подключить</string>
+    <string name="mcp_how_to_connect">Скопируйте URL коннектора, добавьте его как пользовательский MCP-коннектор в настройках вашего ИИ-ассистента и войдите в свой аккаунт ParallelLingvo на странице авторизации.</string>
+    <string name="mcp_copy">Копировать</string>
     <string name="words_management">Управление словами</string>
     <string name="add_tab">Добавить</string>
     <string name="topic_tab">По теме</string>
@@ -258,6 +274,8 @@
     <string name="child_reminder_channel_description">Напоминание детскому аккаунту ежедневно учить слова</string>
     <string name="child_reminder_title">Время учить слова!</string>
     <string name="child_reminder_text">Открой приоритетный урок и повтори сегодняшние слова.</string>
+    <string name="child_evening_reminder_title">Задание на сегодня не выполнено</string>
+    <string name="child_evening_reminder_text">Выполнено %1$d из %2$d слов. Открой приложение и закончи сегодняшнее задание.</string>
     <string name="parent_disconnect">Отключить</string>
     <string name="parent_disconnect_confirm">Отключить детский аккаунт %1$s?</string>
     <string name="parent_words">Слов в уроках</string>
@@ -318,4 +336,37 @@
     <string name="translation_usage_reset">Сбросить токены</string>
     <string name="translation_usage_all_reset">Все AI-токены сброшены</string>
     <string name="translation_usage_user_reset">AI-токены сброшены для ID %1$s</string>
+
+    <!-- Complete locale coverage -->
+    <string name="btn_next_word">Далее</string>
+    <string name="check_duplicates">Проверьте дубликаты</string>
+    <string name="no_duplicates">Дубликатов не обнаружено</string>
+    <string name="duplicates_found">Найдено %d возможных дубликатов.</string>
+    <string name="today_timer_value">⏱ %1$s</string>
+    <string name="today_correct_words_value">%1$d / %2$d</string>
+    <string-array name="language_codes">
+        <item>nl</item>
+        <item>en</item>
+        <item>ru</item>
+        <item>de</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>it</item>
+        <item>pt</item>
+        <item>pl</item>
+        <item>uk</item>
+    </string-array>
+    <string name="btn_telegram_login">Продолжить через Telegram</string>
+    <string name="telegram_login">Telegram</string>
+    <string name="telegram_login_failed">Не удалось открыть вход через Telegram</string>
+    <string name="btn_email_login">Продолжить через почту</string>
+    <string name="email_login_coming_soon">Вход по почте скоро появится</string>
+    <string name="manual_login_toggle">Другие способы входа</string>
+    <string name="parent_previous_child">Предыдущий ребёнок</string>
+    <string name="parent_next_child">Следующий ребёнок</string>
+    <string name="parent_child_counter">%1$d из %2$d</string>
+    <string name="btn_google_login">Продолжить через Google</string>
+    <string name="google_login">Google</string>
+    <string name="google_login_cancelled">Вход через Google отменён</string>
+    <string name="google_login_failed">Не удалось войти через Google</string>
 </resources>

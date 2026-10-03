@@ -21,8 +21,10 @@ class FamilyAccountsTest(unittest.TestCase):
         Config.PUBLIC_BASE_URL = "https://learn.iovenko.eu"
         self.original_admin_ids = Config.ADMIN_IDS
         self.original_bot_username = Config.BOT_USERNAME
+        self.original_allow_legacy_uid_auth = Config.ALLOW_LEGACY_UID_AUTH
         Config.ADMIN_IDS = (999,)
         Config.BOT_USERNAME = "TestFamilyBot"
+        Config.ALLOW_LEGACY_UID_AUTH = True
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE users (
@@ -61,6 +63,7 @@ class FamilyAccountsTest(unittest.TestCase):
     def tearDown(self):
         Config.ADMIN_IDS = self.original_admin_ids
         Config.BOT_USERNAME = self.original_bot_username
+        Config.ALLOW_LEGACY_UID_AUTH = self.original_allow_legacy_uid_auth
         self.client = None
         self.app = None
         gc.collect()
@@ -82,6 +85,37 @@ class FamilyAccountsTest(unittest.TestCase):
         headers = dict(kwargs.pop("headers", {}))
         headers["X-User-Id"] = user_id
         return self.client.open(path, method=method, headers=headers, **kwargs)
+
+    def test_lesson_lists_show_latest_uploaded_first(self):
+        self.add_user("student", "standard")
+        routes._ensure_schema()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executemany(
+                """
+                INSERT INTO words (user_id, status, lesson, number, nl, en, ru)
+                VALUES ('student', 'user', ?, ?, ?, ?, ?)
+                """,
+                [
+                    ("Older lesson", "99.1", "oud", "old", "старый"),
+                    ("Latest lesson", "1.1", "nieuw", "new", "новый"),
+                ],
+            )
+            conn.commit()
+
+        learning = self.request("GET", "/api/lessons", "student").get_json()
+        management = self.request("GET", "/api/user_lessons", "student").get_json()
+        android_management = self.request(
+            "GET",
+            "/api/share/source_lessons",
+            "student",
+            headers={"X-Client": "android"},
+        ).get_json()
+
+        expected = ["Latest lesson", "Older lesson"]
+        self.assertEqual(expected, [item["lesson"] for item in learning])
+        self.assertEqual(expected, [item["lesson"] for item in management])
+        self.assertEqual(expected, [item["lesson"] for item in android_management])
+        self.assertGreater(learning[0]["upload_order"], learning[1]["upload_order"])
 
     def test_existing_users_migrate_to_standard(self):
         other_db = str(Path(self.temp_dir.name) / "legacy.db")
@@ -159,7 +193,7 @@ class FamilyAccountsTest(unittest.TestCase):
         self.assertLess(standard_timer, header_end)
         self.assertLess(header_end, terms_modal_start)
         self.assertEqual(1, template.count('id="daily-timer"'))
-        self.assertIn("style.css?v=20260714-learning-modes", template)
+        self.assertIn("style.css?v=", template)
 
     def test_hidden_learning_mode_is_not_overridden_by_timer_layout(self):
         stylesheet = (
@@ -503,6 +537,16 @@ class FamilyAccountsTest(unittest.TestCase):
             )
             conn.commit()
 
+        routes.models.set_lesson_hidden(self.db_path, "child", "Evening", 1)
+        initial_dashboard = self.request("GET", "/api/family/dashboard", "parent").get_json()
+        self.assertEqual(
+            ["Evening", "First"],
+            [
+                item["lesson"]
+                for item in initial_dashboard["children"][0]["available_lessons"]
+            ],
+        )
+
         denied = self.request(
             "PUT",
             "/api/family/children/child/priority-lesson",
@@ -545,7 +589,7 @@ class FamilyAccountsTest(unittest.TestCase):
         self.assertFalse(child_dashboard["priority_history"][1]["is_active"])
         self.assertGreaterEqual(child_dashboard["priority_history"][1]["duration_seconds"], 3599)
         self.assertEqual(
-            ["First", "Evening"],
+            ["Evening", "First"],
             [item["lesson"] for item in child_dashboard["available_lessons"]],
         )
 
@@ -565,6 +609,43 @@ class FamilyAccountsTest(unittest.TestCase):
         cleared_history = cleared_dashboard["children"][0]["priority_history"]
         self.assertFalse(any(item["is_active"] for item in cleared_history))
         self.assertTrue(all(item["ended_at"] for item in cleared_history))
+
+    def test_parent_reads_linked_child_lesson_words(self):
+        self.add_user("parent", "standard")
+        self.add_user("child", "child")
+        self.add_user("stranger", "standard")
+        routes._ensure_schema()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "INSERT INTO parent_child_links (parent_user_id, child_user_id) VALUES (?, ?)",
+                ("parent", "child"),
+            )
+            conn.executemany(
+                """
+                INSERT INTO words (user_id, status, lesson, number, nl, en, ru)
+                VALUES ('child', 'user', 'Family', ?, ?, ?, ?)
+                """,
+                [
+                    ("1", "moeder", "mother", "мама"),
+                    ("2", "vader", "father", "папа"),
+                ],
+            )
+            conn.commit()
+
+        response = self.request(
+            "GET",
+            "/api/family/children/child/lesson-words?lesson=Family",
+            "parent",
+        )
+        self.assertEqual(200, response.status_code)
+        payload = response.get_json()
+        self.assertEqual(["1", "2"], [item["number"] for item in payload["items"]])
+        self.assertEqual("mother", payload["items"][0]["words"]["en"])
+        self.assertEqual(403, self.request(
+            "GET",
+            "/api/family/children/child/lesson-words?lesson=Family",
+            "stranger",
+        ).status_code)
 
     def test_parent_assigns_selected_lesson_to_linked_child(self):
         self.add_user("parent", "standard")
@@ -695,12 +776,115 @@ class FamilyAccountsTest(unittest.TestCase):
         self.assertEqual(2, assigned.get_json()["count"])
         with sqlite3.connect(self.db_path) as conn:
             copied = conn.execute(
-                "SELECT lesson, nl, en, ru FROM words WHERE user_id='child' ORDER BY number"
+                "SELECT id, lesson, nl, en, ru FROM words WHERE user_id='child' ORDER BY number"
             ).fetchall()
         self.assertEqual(
             [("Animals", "de kat", "cat", "кот"), ("Animals", "de hond", "dog", "собака")],
-            copied,
+            [row[1:] for row in copied],
         )
+        child_first_word_id = copied[0][0]
+        with sqlite3.connect(self.db_path) as conn:
+            mapping = conn.execute(
+                """
+                SELECT parent_word_id, child_word_id
+                FROM shared_lesson_words
+                WHERE parent_user_id='parent' AND child_user_id='child'
+                ORDER BY parent_word_id
+                """
+            ).fetchall()
+        self.assertEqual(2, len(mapping))
+
+        parent_edit = self.request(
+            "PUT",
+            f"/api/words/{first_word_id}",
+            "parent",
+            json={"nl": "de huiskat", "ex_nl": "Dit is **de huiskat**."},
+        )
+        self.assertEqual(200, parent_edit.status_code)
+        with sqlite3.connect(self.db_path) as conn:
+            child_after_parent_edit = conn.execute(
+                "SELECT nl, ex_nl FROM words WHERE id=?",
+                (child_first_word_id,),
+            ).fetchone()
+        self.assertEqual(("de huiskat", "Dit is **de huiskat**."), child_after_parent_edit)
+        child_lesson = self.request(
+            "GET", "/api/lesson_words?lesson=Animals", "child"
+        ).get_json()
+        child_api_word = next(item for item in child_lesson["items"] if item["id"] == child_first_word_id)
+        self.assertEqual("de huiskat", child_api_word["nl_word"])
+        self.assertEqual("Dit is **de huiskat**.", child_api_word["nl_sentence"])
+
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("DROP TABLE shared_lesson_words")
+            conn.commit()
+        routes._ensure_family_schema()
+        with sqlite3.connect(self.db_path) as conn:
+            self.assertEqual(2, conn.execute("SELECT COUNT(*) FROM shared_lesson_words").fetchone()[0])
+
+        child_edit = self.request(
+            "PUT",
+            f"/api/words/{child_first_word_id}",
+            "child",
+            json={"en": "house cat", "ex_en": "This is a **house cat**."},
+        )
+        self.assertEqual(200, child_edit.status_code)
+        with sqlite3.connect(self.db_path) as conn:
+            parent_after_child_edit = conn.execute(
+                "SELECT en, ex_en FROM words WHERE id=?",
+                (first_word_id,),
+            ).fetchone()
+        self.assertEqual(("house cat", "This is a **house cat**."), parent_after_child_edit)
+        parent_lesson = self.request(
+            "GET", "/api/lesson_words?lesson=Animals", "parent"
+        ).get_json()
+        parent_api_word = next(item for item in parent_lesson["items"] if item["id"] == first_word_id)
+        self.assertEqual("house cat", parent_api_word["en_word"])
+        self.assertEqual("This is a **house cat**.", parent_api_word["en_sentence"])
+
+        priority = self.request(
+            "PUT",
+            "/api/family/children/child/priority-lesson",
+            "parent",
+            json={"lesson": "Animals"},
+        )
+        self.assertEqual(200, priority.status_code)
+        renamed = self.request(
+            "POST",
+            "/api/user_lessons/rename",
+            "parent",
+            json={"lesson": "Animals", "new_lesson": "Family animals"},
+        )
+        self.assertEqual(200, renamed.status_code)
+        self.assertEqual(2, renamed.get_json()["affected_accounts"])
+
+        parent_titles = [
+            item["lesson"] for item in self.request("GET", "/api/lessons", "parent").get_json()
+        ]
+        child_titles = [
+            item["lesson"] for item in self.request("GET", "/api/lessons", "child").get_json()
+        ]
+        self.assertIn("Family animals", parent_titles)
+        self.assertIn("Family animals", child_titles)
+        self.assertNotIn("Animals", parent_titles)
+        self.assertNotIn("Animals", child_titles)
+        renamed_source = self.request("GET", "/api/share/source_lessons", "parent").get_json()
+        source_lesson = next(
+            item for item in renamed_source["lessons"] if item["lesson"] == "Family animals"
+        )
+        self.assertTrue(source_lesson["editable_name"])
+        with sqlite3.connect(self.db_path) as conn:
+            self.assertEqual(
+                "Family animals",
+                conn.execute(
+                    "SELECT lesson FROM child_lesson_priorities WHERE child_user_id='child'"
+                ).fetchone()[0],
+            )
+            self.assertEqual(
+                2,
+                conn.execute(
+                    "SELECT COUNT(*) FROM shared_lesson_words WHERE lesson='Family animals'"
+                ).fetchone()[0],
+            )
 
         denied = self.request(
             "POST",
@@ -761,6 +945,38 @@ class FamilyAccountsTest(unittest.TestCase):
                 "SELECT parent_user_id, child_user_id FROM parent_child_links"
             ).fetchall()
         self.assertEqual([("parent-b", "child")], links)
+
+    def test_child_authenticated_api_merges_canonical_family_lesson_without_copying(self):
+        self.add_user("parent", "standard")
+        self.add_user("child", "child")
+        self.add_user("stranger", "standard")
+        routes._ensure_schema()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            routes._ensure_word_language_columns(conn, ["it", "fr"])
+            conn.execute("INSERT INTO parent_child_links(parent_user_id, child_user_id) VALUES ('parent', 'child')")
+            conn.executemany(
+                "INSERT INTO words(user_id,status,lesson,number,nl,en,ru,it,fr) VALUES(?,?,?,?,?,?,?,?,?)",
+                [
+                    ("child", "user", "Old child lesson", "1.1", "oud", "old", "старый", "vecchio", "vieux"),
+                    ("parent", "user", "17.1 Ik ben heel handig", "17.1", "aannemen", "to hire", "нанимать", "assumere", "embaucher"),
+                    ("parent", "user", "17.1 Ik ben heel handig", "17.2", "behulpzaam", "helpful", "полезный", "utile", "serviable"),
+                ],
+            )
+            conn.execute("INSERT INTO family_lesson_assignments(parent_user_id,child_user_id,lesson,created_at) VALUES ('parent','child','17.1 Ik ben heel handig',1)")
+            conn.execute("INSERT INTO child_lesson_priorities(child_user_id,lesson,parent_user_id,updated_at) VALUES ('child','17.1 Ik ben heel handig','parent',1)")
+            conn.commit()
+
+        lessons = self.request("GET", "/api/lessons", "child").get_json()
+        self.assertEqual("17.1 Ik ben heel handig", lessons[0]["lesson"])
+        self.assertTrue(lessons[0]["is_priority"])
+        self.assertIn("Old child lesson", [item["lesson"] for item in lessons])
+        words = self.request("GET", "/api/lesson_words?lesson=17.1%20Ik%20ben%20heel%20handig", "child").get_json()
+        self.assertEqual(2, len(words["items"]))
+        self.assertEqual("assumere", words["items"][0]["it"])
+        self.assertEqual("embaucher", words["items"][0]["fr"])
+        forbidden = self.request("GET", "/api/lesson_words?lesson=17.1%20Ik%20ben%20heel%20handig", "stranger")
+        self.assertEqual(404, forbidden.status_code)
 
 
 if __name__ == "__main__":

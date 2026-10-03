@@ -17,7 +17,6 @@ from typing import Optional, Sequence, Tuple
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from telegram.ext import ContextTypes, Application, CommandHandler
 from config import Config
-from app.auth_links import create_auth_token
 
 # ---------- КОНСТАНТЫ (МЕНЯЕМ ЗДЕСЬ) ----------
 # Ежедневный режим (по Europe/Amsterdam):
@@ -131,10 +130,9 @@ def _is_local_address(url: str) -> bool:
 
 def _build_app_url(user_id: int) -> tuple[str, bool, bool]:
     base = f"{Config.PUBLIC_BASE_URL}".rstrip("/")
-    uid_suffix = "/?" + urlencode({"auth": create_auth_token(user_id)})
     if _is_https(base):
-        return (base + uid_suffix, True, True)
-    url = base + uid_suffix
+        return (base + "/", True, True)
+    url = base + "/"
     return (url, False, not _is_local_address(url))
 
 def _learn_inline_markup(user_id: int) -> InlineKeyboardMarkup:

@@ -66,6 +66,22 @@
 - Backend: `app/routes.py` / `api_audio_ensure`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
+## `GET /api/auth/google/config` — confirmed
+
+- Android: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getGoogleAuthConfig`.
+- Request DTO: `query/path/none`; response DTO: `GoogleAuthConfigResponse`.
+- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
+- Backend: `app/google_auth.py` / `android_google_config`.
+- Примечание: Confirmed by matching local Flask method and normalized route.
+
+## `POST /api/auth/google/verify` — confirmed
+
+- Android: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `verifyGoogleToken`.
+- Request DTO: `GoogleVerifyRequest`; response DTO: `GoogleVerifyResponse`.
+- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
+- Backend: `app/google_auth.py` / `verify_android_token`.
+- Примечание: Confirmed by matching local Flask method and normalized route.
+
 ## `POST /api/auth/login_android` — confirmed
 
 - Android: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `loginAndroid`.
@@ -285,7 +301,7 @@
 ## `GET /api/subscription` — confirmed
 
 - Android: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getSubscription`.
-- Request DTO: `query/path/none`; response DTO: `SubscriptionDto`.
+- Request DTO: `query/path/none`; response DTO: `SubscriptionResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_subscription_get`.
 - Примечание: Confirmed by matching local Flask method and normalized route.

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .mcp-admin{max-width:1180px;margin:24px auto;padding:0 16px;color:#0f172a}.mcp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.mcp-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;overflow:auto}.mcp-table{width:100%;border-collapse:collapse;font-size:13px}.mcp-table th,.mcp-table td{text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;white-space:nowrap}.mcp-ok{color:#15803d}.mcp-bad{color:#b91c1c}.mcp-code{font-family:ui-monospace,monospace}.mcp-revoke{display:flex;gap:6px;align-items:center}.mcp-revoke input{width:76px}.mcp-muted{color:#64748b}
+</style>
+<section class="mcp-admin">
+  <h1>MCP connector</h1>
+  {% if access_denied %}
+    <div class="mcp-card"><strong>Доступ запрещён.</strong> Требуется активная сессия суперпользователя.</div>
+  {% else %}
+    <div class="mcp-grid">
+      <div class="mcp-card"><strong>{{ connector.name }} {{ connector.version }}</strong><div class="mcp-code" id="mcp-url">{{ connector.url }}</div><button type="button" onclick="navigator.clipboard.writeText(document.getElementById('mcp-url').textContent)">Копировать URL</button><div class="mcp-muted">{{ connector.source }} · {{ connector.revision }} · {{ connector.created }}</div></div>
+      <div class="mcp-card"><strong>OAuth issuer</strong><div class="mcp-code">{{ connector.issuer }}</div></div>
+      <div class="mcp-card"><strong>Компоненты</strong>{% for name,status in health.items() %}<div>{{ name }}: <span class="{{ 'mcp-ok' if status == 'ok' else 'mcp-bad' }}">{{ status }}</span></div>{% endfor %}</div>
+      <div class="mcp-card"><strong>Permissions</strong><div class="mcp-muted">Default: learning.read</div>{% for scope in scopes %}<div class="mcp-code">{{ scope }}</div>{% endfor %}</div>
+    </div>
+
+    <h2>OAuth clients</h2>
+    <div class="mcp-card"><table class="mcp-table"><thead><tr><th>Name</th><th>Client</th><th>Created</th><th>Last used</th><th>State</th><th>Revoke</th></tr></thead><tbody>
+      {% for item in clients %}<tr><td>{{ item.client_name }}</td><td class="mcp-code" title="{{ item.client_id }}">{{ item.client_id_short }}</td><td>{{ item.created_at }}</td><td>{{ item.last_used_at or 'never' }}</td><td>{{ 'revoked' if item.revoked_at else 'active' }}</td><td>{% if not item.revoked_at %}<form class="mcp-revoke" method="post" action="/admin/mcp/revoke"><input type="hidden" name="kind" value="client"><input type="hidden" name="identifier" value="{{ item.client_id }}"><input name="confirm" placeholder="REVOKE" required><button type="submit">Revoke</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="6">Нет зарегистрированных клиентов.</td></tr>{% endfor %}
+    </tbody></table></div>
+
+    <h2>Access grants</h2>
+    <div class="mcp-card"><table class="mcp-table"><thead><tr><th>Client</th><th>User hash</th><th>Grant hash</th><th>Scopes</th><th>Expires</th><th>Last used</th><th>State</th><th>Revoke</th></tr></thead><tbody>
+      {% for item in grants %}<tr><td>{{ item.client_name or item.client_id }}</td><td class="mcp-code">{{ item.user_hash }}</td><td class="mcp-code">{{ item.token_hash_short }}</td><td>{{ item.scopes|join(', ') }}</td><td>{{ item.expires_at }}</td><td>{{ item.last_used_at or 'never' }}</td><td>{{ 'revoked' if item.revoked_at else ('expired' if item.expires_at <= now else 'active') }}</td><td>{% if not item.revoked_at and item.expires_at > now %}<form class="mcp-revoke" method="post" action="/admin/mcp/revoke"><input type="hidden" name="kind" value="grant"><input type="hidden" name="identifier" value="{{ item.token_hash }}"><input name="confirm" placeholder="REVOKE" required><button type="submit">Revoke</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="8">Нет выданных доступов.</td></tr>{% endfor %}
+    </tbody></table></div>
+
+    <h2>Usage, 7 days</h2>
+    <div class="mcp-card"><table class="mcp-table"><thead><tr><th>Tool</th><th>Result</th><th>Calls</th><th>Items</th><th>Last used</th></tr></thead><tbody>
+      {% for item in usage %}<tr><td class="mcp-code">{{ item.operation }}</td><td>{{ 'ok' if item.success else 'error' }}</td><td>{{ item.calls }}</td><td>{{ item.items or 0 }}</td><td>{{ item.last_used_at }}</td></tr>{% else %}<tr><td colspan="5">Вызовов пока нет.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% endif %}
+</section>
+{% endblock %}

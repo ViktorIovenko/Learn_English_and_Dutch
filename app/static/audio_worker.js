@@ -3,6 +3,7 @@
  * Экспортирует window.AudioWorker: warmup(), ensureForItems(items), ensureForWord(word, lang)
  */
 (function(){
+  const LANGUAGES = ['nl','en','ru','de','fr','es','it','pt','pl','uk'];
   function hasAudio(value){
     return typeof value === "string" && value.trim() !== "";
   }
@@ -38,17 +39,17 @@
     // Обрабатывает массив слов; возвращает новый массив с дописанными audio_* где были пустые
     async ensureForItems(items){
       const ids = (items||[])
-        .filter(w => ["nl", "en", "ru"].some(lang => needForWord(w, lang)))
+        .filter(w => LANGUAGES.some(lang => (w[lang] || w[`${lang}_word`]) && needForWord(w, lang)))
         .map(w => w.id);
       if (!ids.length) return items||[];
-      const ensured = await callEnsure(ids, ["nl","en","ru"]);
+      const ensured = await callEnsure(ids, LANGUAGES);
       if (!ensured) return items||[];
       const map = new Map(ensured.map(x => [x.id, x]));
       return (items||[]).map(w => {
         const u = map.get(w.id);
         if (u){
           Object.keys(u).forEach(lang => {
-            if (lang !== "id" && lang !== "ok" && u[lang]) w[`audio_${lang}`] = u[lang];
+            if (LANGUAGES.includes(lang) && typeof u[lang] === 'string' && u[lang]) w[`audio_${lang}`] = u[lang];
           });
         }
         return w;
@@ -64,7 +65,7 @@
       if (!u) return word;
       // дописываем поля
       Object.keys(u).forEach(lang => {
-        if (lang !== "id" && lang !== "ok" && u[lang]) word[`audio_${lang}`] = u[lang];
+        if (LANGUAGES.includes(lang) && typeof u[lang] === 'string' && u[lang]) word[`audio_${lang}`] = u[lang];
       });
       return word;
     }

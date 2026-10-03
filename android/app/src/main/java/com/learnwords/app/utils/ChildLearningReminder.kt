@@ -10,16 +10,25 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.learnwords.app.LearnWordsApp
 import com.learnwords.app.MainActivity
 import com.learnwords.app.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Calendar
+import java.util.TimeZone
 
 object ChildLearningReminder {
     private const val PREFS = "child_learning_reminder"
     private const val KEY_ENABLED = "enabled"
     private const val KEY_PERMISSION_REQUESTED = "permission_requested"
-    private const val REQUEST_CODE = 1400
-    private const val NOTIFICATION_ID = 1400
+    private const val AFTERNOON_REQUEST_CODE = 1400
+    private const val EVENING_REQUEST_CODE = 2100
+    private const val AFTERNOON_NOTIFICATION_ID = 1400
+    private const val EVENING_NOTIFICATION_ID = 2100
     private const val CHANNEL_ID = "child_learning_daily"
 
     fun createChannel(context: Context) {
@@ -60,9 +69,19 @@ object ChildLearningReminder {
 
     fun scheduleNext(context: Context) {
         if (!isEnabled(context)) return
+        scheduleAt(context, 14, AFTERNOON_REQUEST_CODE, ChildLearningReminderReceiver::class.java)
+        scheduleAt(context, 21, EVENING_REQUEST_CODE, ChildLearningEveningReminderReceiver::class.java)
+    }
+
+    private fun scheduleAt(
+        context: Context,
+        hour: Int,
+        requestCode: Int,
+        receiverClass: Class<out BroadcastReceiver>
+    ) {
         val now = Calendar.getInstance()
         val next = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 14)
+            set(Calendar.HOUR_OF_DAY, hour)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
@@ -72,16 +91,35 @@ object ChildLearningReminder {
         alarmManager.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             next.timeInMillis,
-            reminderPendingIntent(context)
+            reminderPendingIntent(context, requestCode, receiverClass)
         )
     }
 
-    fun show(context: Context) {
+    fun showAfternoon(context: Context) {
         if (!isEnabled(context)) return
+        showNotification(
+            context,
+            AFTERNOON_NOTIFICATION_ID,
+            context.getString(R.string.child_reminder_title),
+            context.getString(R.string.child_reminder_text)
+        )
+    }
+
+    fun showEvening(context: Context, todayCount: Int, dailyGoal: Int) {
+        if (!isEnabled(context)) return
+        showNotification(
+            context,
+            EVENING_NOTIFICATION_ID,
+            context.getString(R.string.child_evening_reminder_title),
+            context.getString(R.string.child_evening_reminder_text, todayCount, dailyGoal)
+        )
+    }
+
+    private fun showNotification(context: Context, notificationId: Int, title: String, text: String) {
         createChannel(context)
         val openApp = PendingIntent.getActivity(
             context,
-            REQUEST_CODE,
+            notificationId,
             Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             },
@@ -89,14 +127,14 @@ object ChildLearningReminder {
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_star_24)
-            .setContentTitle(context.getString(R.string.child_reminder_title))
-            .setContentText(context.getString(R.string.child_reminder_text))
+            .setContentTitle(title)
+            .setContentText(text)
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
         try {
-            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
         } catch (_: SecurityException) {
             // Android 13+: permission may not have been granted yet.
         }
@@ -104,15 +142,25 @@ object ChildLearningReminder {
 
     private fun cancel(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        alarmManager.cancel(reminderPendingIntent(context))
-        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+        alarmManager.cancel(reminderPendingIntent(
+            context, AFTERNOON_REQUEST_CODE, ChildLearningReminderReceiver::class.java
+        ))
+        alarmManager.cancel(reminderPendingIntent(
+            context, EVENING_REQUEST_CODE, ChildLearningEveningReminderReceiver::class.java
+        ))
+        NotificationManagerCompat.from(context).cancel(AFTERNOON_NOTIFICATION_ID)
+        NotificationManagerCompat.from(context).cancel(EVENING_NOTIFICATION_ID)
     }
 
-    private fun reminderPendingIntent(context: Context): PendingIntent =
+    private fun reminderPendingIntent(
+        context: Context,
+        requestCode: Int,
+        receiverClass: Class<out BroadcastReceiver>
+    ): PendingIntent =
         PendingIntent.getBroadcast(
             context,
-            REQUEST_CODE,
-            Intent(context, ChildLearningReminderReceiver::class.java),
+            requestCode,
+            Intent(context, receiverClass),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 }
@@ -120,8 +168,40 @@ object ChildLearningReminder {
 class ChildLearningReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (!ChildLearningReminder.isEnabled(context)) return
-        ChildLearningReminder.show(context)
+        ChildLearningReminder.showAfternoon(context)
         ChildLearningReminder.scheduleNext(context)
+    }
+}
+
+class ChildLearningEveningReminderReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent?) {
+        if (!ChildLearningReminder.isEnabled(context)) return
+        val pendingResult = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val app = context.applicationContext as? LearnWordsApp ?: return@launch
+                val now = System.currentTimeMillis()
+                val timezoneOffsetMinutes = -(TimeZone.getDefault().getOffset(now) / 60_000)
+                when (val result = withTimeoutOrNull(8_000L) {
+                    app.repository.getChildLearningStatus(timezoneOffsetMinutes)
+                }) {
+                    is NetworkResult.Success -> {
+                        val status = result.data
+                        if (status.isChild && !status.goalComplete) {
+                            ChildLearningReminder.showEvening(
+                                context,
+                                status.todayCount,
+                                status.dailyGoal
+                            )
+                        }
+                    }
+                    else -> Unit
+                }
+            } finally {
+                ChildLearningReminder.scheduleNext(context)
+                pendingResult.finish()
+            }
+        }
     }
 }
 

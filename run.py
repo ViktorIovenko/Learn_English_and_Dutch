@@ -14,12 +14,20 @@ from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from app.routes import init_app as init_web
-from app.account_types import migrate_account_types
+from app.account_types import migrate_account_types, migrate_auth_identities
 from app.tts_usage import ensure_tts_usage_schema
 from app.translation_usage import ensure_translation_usage_schema
 
 from telegram import Update
-from telegram.ext import ApplicationBuilder, Defaults, JobQueue, PicklePersistence
+from telegram.constants import ChatType
+from telegram.ext import (
+    ApplicationBuilder,
+    ApplicationHandlerStop,
+    Defaults,
+    JobQueue,
+    PicklePersistence,
+    TypeHandler,
+)
 
 from bot.auth import register_auth_handlers
 from bot.upload import register_upload_handlers
@@ -110,10 +118,25 @@ def init_db(db_path: str) -> None:
             c.execute("ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'telegram';")
         if "google_id" not in user_cols:
             c.execute("ALTER TABLE users ADD COLUMN google_id TEXT;")
-            c.execute(
-                "CREATE UNIQUE INDEX IF NOT EXISTS u_users_google_id "
-                "ON users(google_id) WHERE google_id IS NOT NULL;"
-            )
+        if "google_email" not in user_cols:
+            c.execute("ALTER TABLE users ADD COLUMN google_email TEXT;")
+        c.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS u_users_google_id "
+            "ON users(google_id) WHERE google_id IS NOT NULL;"
+        )
+        migrate_auth_identities(c)
+        c.execute("CREATE INDEX IF NOT EXISTS idx_auth_identities_user ON auth_identities(user_id);")
+        c.execute("""
+            INSERT OR IGNORE INTO auth_identities (provider, external_id, user_id, email)
+            SELECT 'google', google_id, user_id, google_email
+            FROM users WHERE google_id IS NOT NULL AND google_id <> ''
+        """)
+        c.execute("""
+            INSERT OR IGNORE INTO auth_identities (provider, external_id, user_id)
+            SELECT 'telegram', user_id, user_id
+            FROM users
+            WHERE user_id GLOB '[0-9]*'
+        """)
         if "account_type" not in user_cols:
             # Existing users keep their current behaviour. Only newly created
             # users go through the account-type onboarding screen.
@@ -151,7 +174,7 @@ def create_app() -> Flask:
     app.config.from_object(Config)
 
     # безопасные cookie только при https
-    secure_cookies = _is_https_base(os.getenv("PUBLIC_BASE_URL", ""))
+    secure_cookies = _is_https_base(Config.APP_BASE_URL)
     app.config.update(
         SESSION_COOKIE_SAMESITE="None" if secure_cookies else "Lax",
         SESSION_COOKIE_SECURE=secure_cookies,
@@ -183,6 +206,13 @@ async def on_error(update: object, context) -> None:
             await context.bot.send_message(chat_id=chat_id, text="⚠ Произошла ошибка, попробуйте ещё раз.")
     except Exception:
         log.exception("Error inside error handler")
+
+
+async def stop_non_private_updates(update: Update, _context) -> None:
+    """Do not let any bot handler react outside private chats."""
+    chat = update.effective_chat
+    if chat is not None and chat.type != ChatType.PRIVATE:
+        raise ApplicationHandlerStop
 
 
 def _ensure_valid_persistence_file(path: Path) -> None:
@@ -236,6 +266,9 @@ def build_bot_application():
         jq.start()
         application.job_queue = jq
         log.info("JobQueue: фолбэк запущен.")
+
+    # Личные чаты — единственное место, где бот обрабатывает updates.
+    application.add_handler(TypeHandler(Update, stop_non_private_updates), group=-100)
 
     # порядок важен
     register_upload_handlers(application)

@@ -13,6 +13,7 @@ class PreferencesManager(private val context: Context) {
 
     companion object {
         val KEY_USER_ID = stringPreferencesKey("user_id")
+        val KEY_AUTH_TOKEN = stringPreferencesKey("auth_token")
         val KEY_SERVER_URL = stringPreferencesKey("server_url")
         val KEY_USERNAME = stringPreferencesKey("username")
         val KEY_LAST_SYNC = longPreferencesKey("last_sync_ts")
@@ -24,10 +25,21 @@ class PreferencesManager(private val context: Context) {
         val KEY_IS_ADMIN = booleanPreferencesKey("is_admin")
         val KEY_AUTH_METHOD = stringPreferencesKey("auth_method")
         val KEY_CACHE_LIMIT_MB = intPreferencesKey("cache_limit_mb")
+        // Last account_type ("child"/"standard"/"pending") confirmed by the server.
+        // Used as a fail-safe fallback when a fresh /api/me call fails (network error,
+        // stale server_url after a domain migration, transient 401/404, etc.) so a
+        // known child account is never silently treated as an adult account just
+        // because a request failed. Only ever overwritten by an explicit, successful
+        // server response — never by a failure.
+        val KEY_ACCOUNT_TYPE_CACHE = stringPreferencesKey("account_type_cache")
     }
 
     val userId: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[KEY_USER_ID] ?: ""
+    }
+
+    val authToken: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTH_TOKEN] ?: ""
     }
 
     val serverUrl: Flow<String> = context.dataStore.data.map { prefs ->
@@ -73,6 +85,10 @@ class PreferencesManager(private val context: Context) {
 
     suspend fun saveUserId(userId: String) {
         context.dataStore.edit { prefs -> prefs[KEY_USER_ID] = userId }
+    }
+
+    suspend fun saveAuthToken(token: String) {
+        context.dataStore.edit { prefs -> prefs[KEY_AUTH_TOKEN] = token }
     }
 
     suspend fun saveServerUrl(url: String) {
@@ -131,13 +147,30 @@ class PreferencesManager(private val context: Context) {
         context.dataStore.edit { prefs -> prefs[KEY_IS_ADMIN] = value }
     }
 
+    val accountTypeCache: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ACCOUNT_TYPE_CACHE] ?: ""
+    }
+
+    /**
+     * Persists the last account_type confirmed by the server. Call only with a value
+     * that actually came back from a successful server response — never to record
+     * "unknown"/failure, so a previously-known child account can't be overwritten
+     * just because a later request failed.
+     */
+    suspend fun saveAccountTypeCache(accountType: String) {
+        if (accountType.isBlank()) return
+        context.dataStore.edit { prefs -> prefs[KEY_ACCOUNT_TYPE_CACHE] = accountType }
+    }
+
     suspend fun clearUser() {
         ChildLearningReminder.setEnabled(context, false)
         context.dataStore.edit { prefs ->
             prefs.remove(KEY_USER_ID)
+            prefs.remove(KEY_AUTH_TOKEN)
             prefs.remove(KEY_USERNAME)
             prefs.remove(KEY_AUTH_METHOD)
             prefs.remove(KEY_IS_ADMIN)
+            prefs.remove(KEY_ACCOUNT_TYPE_CACHE)
         }
     }
 }

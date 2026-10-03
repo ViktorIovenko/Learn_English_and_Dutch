@@ -8,6 +8,7 @@ import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
+import android.view.DragEvent
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -61,6 +62,12 @@ class LearnFragment : Fragment() {
     private var renderedLangs: List<String> = emptyList()
     private var renderedActiveLang: String = ""
     private val timerHandler = Handler(Looper.getMainLooper())
+    private val contentSyncRunnable = object : Runnable {
+        override fun run() {
+            viewModel.refreshLessonContent()
+            timerHandler.postDelayed(this, 10_000L)
+        }
+    }
     private var timerSeconds = 0
     private var timerRunning = false
     private var timerGoalMinutes = 0
@@ -110,6 +117,21 @@ class LearnFragment : Fragment() {
             }
             layoutManager = flex
             adapter = slotAdapter
+        }
+        binding.rvAnswerSlots.setOnDragListener { view, event ->
+            when (event.action) {
+                DragEvent.ACTION_DRAG_STARTED -> event.localState is LetterDragPayload
+                DragEvent.ACTION_DROP -> {
+                    val payload = event.localState as? LetterDragPayload ?: return@setOnDragListener false
+                    val targetPosition = answerSlotPosition(view, event.x, event.y)
+                    when {
+                        payload.sourceIndex != null -> viewModel.placeLetterAt(payload.sourceIndex, targetPosition)
+                        payload.slotIndex != null -> viewModel.movePlacedLetter(payload.slotIndex, targetPosition)
+                    }
+                    true
+                }
+                else -> true
+            }
         }
 
         binding.btnNext.setOnClickListener { viewModel.nextWord() }
@@ -258,6 +280,9 @@ class LearnFragment : Fragment() {
             CheckResult.CORRECT -> {
                 binding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorGameCorrectOverlay))
             }
+            CheckResult.MASTERED -> {
+                binding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorGameMasteredOverlay))
+            }
             CheckResult.WRONG -> {
                 binding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorGameWrongOverlay))
             }
@@ -312,6 +337,8 @@ class LearnFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        timerHandler.removeCallbacks(contentSyncRunnable)
+        timerHandler.post(contentSyncRunnable)
         if (!viewModel.uiState.value.isChild && timerGoalMinutes > 0 &&
             timerRunning && timerSeconds > 0) {
             timerHandler.removeCallbacks(timerRunnable)
@@ -321,6 +348,7 @@ class LearnFragment : Fragment() {
 
     override fun onPause() {
         timerHandler.removeCallbacks(timerRunnable)
+        timerHandler.removeCallbacks(contentSyncRunnable)
         saveTimerState()
         super.onPause()
     }
@@ -374,6 +402,20 @@ class LearnFragment : Fragment() {
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun answerSlotPosition(container: View, x: Float, y: Float): Int {
+        val recyclerView = container as androidx.recyclerview.widget.RecyclerView
+        val child = recyclerView.findChildViewUnder(x, y)
+        if (child != null) {
+            val position = recyclerView.getChildAdapterPosition(child)
+            if (position != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                val beforeCenter = x < child.left + child.width / 2f
+                return (position + if (beforeCenter) 0 else 1)
+                    .coerceIn(0, slotAdapter.itemCount)
+            }
+        }
+        return slotAdapter.itemCount
+    }
 
     private fun cleanLearnText(value: String): String =
         value.replace("**", "").trim()

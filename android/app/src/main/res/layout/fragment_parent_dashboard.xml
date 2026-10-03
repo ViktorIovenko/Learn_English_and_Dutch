@@ -10,8 +10,16 @@
         android:layout_height="wrap_content">
         <com.google.android.material.appbar.MaterialToolbar
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:title="@string/parent_dashboard_title" />
+            android:layout_height="?attr/actionBarSize">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_gravity="center"
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/logo_wordmark" />
+        </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -47,16 +55,51 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="14dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="@string/parent_select_child" android:textStyle="bold" />
-                        <androidx.recyclerview.widget.RecyclerView
-                            android:id="@+id/rv_children"
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+                            <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                                android:text="@string/parent_select_child" android:textStyle="bold" />
+                            <TextView
+                                android:id="@+id/tv_child_counter"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/colorTextSecondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:clipToPadding="false"
-                            android:orientation="horizontal"
-                            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+                            <ImageButton
+                                android:id="@+id/btn_prev_child"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="4dp"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/parent_previous_child"
+                                android:src="@drawable/ic_chevron_left" />
+                            <androidx.recyclerview.widget.RecyclerView
+                                android:id="@+id/rv_children"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:clipToPadding="false"
+                                android:orientation="horizontal"
+                                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                            <ImageButton
+                                android:id="@+id/btn_next_child"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:layout_marginStart="4dp"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/parent_next_child"
+                                android:src="@drawable/ic_chevron_right" />
+                        </LinearLayout>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                             android:text="@string/parent_period" android:textStyle="bold" android:layout_marginTop="8dp" />
                         <Spinner android:id="@+id/spinner_period" android:layout_width="match_parent"

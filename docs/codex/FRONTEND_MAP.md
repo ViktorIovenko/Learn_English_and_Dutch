@@ -4,8 +4,8 @@ HTML-шаблоны рендерятся Flask, используют общие 
 
 ## `app/static/audio_worker.js`
 
-- api: `/api/audio/ensure` (`app/static/audio_worker.js:20`).
-- global: `AudioWorker` (`app/static/audio_worker.js:35`).
+- api: `/api/audio/ensure` (`app/static/audio_worker.js:21`).
+- global: `AudioWorker` (`app/static/audio_worker.js:36`).
 
 ## `app/static/idb.js`
 
@@ -15,10 +15,10 @@ HTML-шаблоны рендерятся Flask, используют общие 
 ## `app/static/learn.js`
 
 - global: `__LEARN_BOOTED__` (`app/static/learn.js:11`).
-- global: `updateChildGoalOptimistic` (`app/static/learn.js:568`).
-- api: `/api/words/${current.id}` (`app/static/learn.js:737`).
-- api: `/api/lessons/set_hidden` (`app/static/learn.js:807`).
-- api: `/api/words/${current.id}` (`app/static/learn.js:936`).
+- global: `updateChildGoalOptimistic` (`app/static/learn.js:721`).
+- api: `/api/words/${current.id}` (`app/static/learn.js:890`).
+- api: `/api/lessons/set_hidden` (`app/static/learn.js:960`).
+- api: `/api/words/${current.id}` (`app/static/learn.js:1089`).
 
 ## `app/static/sync.js`
 
@@ -26,24 +26,28 @@ HTML-шаблоны рендерятся Flask, используют общие 
 
 ## `app/static/upload.js`
 
-- api: `/api/me` (`app/static/upload.js:23`).
-- api: `/api/translate/word` (`app/static/upload.js:107`).
-- api: `/api/generate/topic` (`app/static/upload.js:118`).
-- api: `/api/translate/language` (`app/static/upload.js:129`).
-- api: `/api/import-words` (`app/static/upload.js:642`).
-- api: `/api/words/nl-list` (`app/static/upload.js:794`).
-- api: `/api/share/source_lessons` (`app/static/upload.js:1072`).
-- api: `/api/words/${wordId}` (`app/static/upload.js:1251`).
-- api: `/api/words/${word.id}` (`app/static/upload.js:1376`).
-- api: `/api/share/assign_child` (`app/static/upload.js:1495`).
-- api: `/api/share/create` (`app/static/upload.js:1538`).
-- api: `/api/words?` (`app/static/upload.js:1609`).
-- api: `/api/words/duplicates` (`app/static/upload.js:1642`).
-- api: `/api/words/${wordId}` (`app/static/upload.js:1750`).
-- api: `/api/words/${wordId}` (`app/static/upload.js:1871`).
-- api: `/api/words/${wordId}` (`app/static/upload.js:1893`).
-- api: `/api/parse-file` (`app/static/upload.js:2017`).
-- api: `/api/import-words` (`app/static/upload.js:2088`).
+- api: `/api/user_lessons` (`app/static/upload.js:9`).
+- api: `/api/me` (`app/static/upload.js:43`).
+- api: `/api/translate/word` (`app/static/upload.js:122`).
+- api: `/api/generate/topic` (`app/static/upload.js:133`).
+- api: `/api/translate/language` (`app/static/upload.js:144`).
+- api: `/api/import-words` (`app/static/upload.js:562`).
+- api: `/api/mcp/user` (`app/static/upload.js:906`).
+- api: `/api/mcp/user` (`app/static/upload.js:920`).
+- api: `/api/mcp/user/revoke-all` (`app/static/upload.js:938`).
+- api: `/api/share/source_lessons` (`app/static/upload.js:977`).
+- api: `/api/user_lessons/rename` (`app/static/upload.js:1038`).
+- api: `/api/words/${wordId}` (`app/static/upload.js:1246`).
+- api: `/api/words/${word.id}` (`app/static/upload.js:1320`).
+- api: `/api/share/assign_child` (`app/static/upload.js:1439`).
+- api: `/api/share/create` (`app/static/upload.js:1482`).
+- api: `/api/words?` (`app/static/upload.js:1553`).
+- api: `/api/words/duplicates` (`app/static/upload.js:1586`).
+- api: `/api/words/${wordId}` (`app/static/upload.js:1694`).
+- api: `/api/words/${wordId}` (`app/static/upload.js:1815`).
+- api: `/api/words/${wordId}` (`app/static/upload.js:1837`).
+- api: `/api/parse-file` (`app/static/upload.js:1963`).
+- api: `/api/import-words` (`app/static/upload.js:2036`).
 
 ## `app/templates/account_type.html`
 
@@ -56,21 +60,28 @@ HTML-шаблоны рендерятся Flask, используют общие 
 ## `app/templates/base.html`
 
 - template_script: `https://telegram.org/js/telegram-web-app.js` (`app/templates/base.html:8`).
-- template_style: `{{ url_for(` (`app/templates/base.html:9`).
-- global: `I18N` (`app/templates/base.html:54`).
-- global: `_HELLO_NAME_` (`app/templates/base.html:76`).
-- global: `USER_ID` (`app/templates/base.html:86`).
-- global: `IDB_KEY_PREFIX` (`app/templates/base.html:87`).
-- global: `apiFetch` (`app/templates/base.html:88`).
-- api: `/api/auth/login_webapp` (`app/templates/base.html:166`).
-- api: `/api/me` (`app/templates/base.html:177`).
-- global: `_HELLO_NAME_` (`app/templates/base.html:195`).
-- global: `updateChildGoalOptimistic` (`app/templates/base.html:267`).
-- api: `/api/child-learning/status?tz_offset=${tzOffset}` (`app/templates/base.html:282`).
-- api: `/api/daily-goal` (`app/templates/base.html:306`).
-- template_script: `{{ url_for(` (`app/templates/base.html:594`).
-- template_script: `{{ url_for(` (`app/templates/base.html:595`).
-- service_worker: `/sw.js` (`app/templates/base.html:599`).
+- template_style: `https://fonts.googleapis.com` (`app/templates/base.html:19`).
+- template_style: `https://fonts.gstatic.com` (`app/templates/base.html:20`).
+- template_style: `https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap` (`app/templates/base.html:21`).
+- template_style: `{{ url_for(` (`app/templates/base.html:131`).
+- template_style: `{{ url_for(` (`app/templates/base.html:132`).
+- global: `AUTH_GATE_ENABLED` (`app/templates/base.html:227`).
+- global: `I18N` (`app/templates/base.html:228`).
+- global: `_HELLO_NAME_` (`app/templates/base.html:290`).
+- global: `USER_ID` (`app/templates/base.html:301`).
+- global: `IDB_KEY_PREFIX` (`app/templates/base.html:302`).
+- global: `apiFetch` (`app/templates/base.html:303`).
+- api: `/api/auth/login_webapp` (`app/templates/base.html:419`).
+- api: `/api/auth/login_link` (`app/templates/base.html:431`).
+- api: `/auth/status` (`app/templates/base.html:448`).
+- api: `/api/me` (`app/templates/base.html:461`).
+- global: `_HELLO_NAME_` (`app/templates/base.html:482`).
+- global: `updateChildGoalOptimistic` (`app/templates/base.html:543`).
+- api: `/api/child-learning/status?tz_offset=${tzOffset}` (`app/templates/base.html:558`).
+- api: `/api/daily-goal` (`app/templates/base.html:582`).
+- template_script: `{{ url_for(` (`app/templates/base.html:870`).
+- template_script: `{{ url_for(` (`app/templates/base.html:871`).
+- service_worker: `/sw.js` (`app/templates/base.html:875`).
 
 ## `app/templates/difficult.html`
 
@@ -84,13 +95,13 @@ HTML-шаблоны рендерятся Flask, используют общие 
 
 ## `app/templates/index.html`
 
-- api: `/api/learning/streak?tz_offset=${offset}` (`app/templates/index.html:215`).
-- api: `/api/user_lessons` (`app/templates/index.html:490`).
-- api: `/api/user_lessons/delete` (`app/templates/index.html:571`).
-- api: `/api/lesson_words?lesson=${encodeURIComponent(lessonTitle)}` (`app/templates/index.html:635`).
-- api: `/api/lessons` (`app/templates/index.html:666`).
-- api: `/api/lessons` (`app/templates/index.html:685`).
-- api: `/api/lessons/set_hidden` (`app/templates/index.html:766`).
+- api: `/api/learning/streak?tz_offset=${offset}` (`app/templates/index.html:219`).
+- api: `/api/user_lessons` (`app/templates/index.html:494`).
+- api: `/api/user_lessons/delete` (`app/templates/index.html:575`).
+- api: `/api/lesson_words?lesson=${encodeURIComponent(lessonTitle)}` (`app/templates/index.html:639`).
+- api: `/api/lessons` (`app/templates/index.html:670`).
+- api: `/api/lessons` (`app/templates/index.html:689`).
+- api: `/api/lessons/set_hidden` (`app/templates/index.html:771`).
 
 ## `app/templates/learn.html`
 
@@ -101,25 +112,34 @@ HTML-шаблоны рендерятся Flask, используют общие 
 - template_script: `{{ url_for(` (`app/templates/learn.html:109`).
 - api: `/api/lesson_words?lesson=` (`app/templates/learn.html:143`).
 
+## `app/templates/mcp_consent.html`
+
+- template_style: `{{ url_for(` (`app/templates/mcp_consent.html:9`).
+
 ## `app/templates/parent_dashboard.html`
 
-- api: `/api/family/children/${encodeURIComponent(childId)}` (`app/templates/parent_dashboard.html:263`).
-- api: `/api/family/children/${encodeURIComponent(child.user_id)}/priority-lesson` (`app/templates/parent_dashboard.html:279`).
-- api: `/api/family/dashboard?days=${periodSelect.value}&tz_offset=${offset}` (`app/templates/parent_dashboard.html:300`).
+- api: `/api/family/children/${encodeURIComponent(selectedChildId)}/lesson-words?lesson=${encodeURIComponent(lesson)}` (`app/templates/parent_dashboard.html:298`).
+- api: `/api/family/children/${encodeURIComponent(childId)}` (`app/templates/parent_dashboard.html:323`).
+- api: `/api/family/children/${encodeURIComponent(child.user_id)}/priority-lesson` (`app/templates/parent_dashboard.html:339`).
+- api: `/api/family/dashboard?days=${periodSelect.value}&tz_offset=${offset}` (`app/templates/parent_dashboard.html:362`).
 
 ## `app/templates/settings.html`
 
-- api: `/api/user-languages` (`app/templates/settings.html:198`).
-- api: `/api/ui-language` (`app/templates/settings.html:199`).
-- api: `/api/daily-goal` (`app/templates/settings.html:221`).
-- api: `/api/family/pairing-code` (`app/templates/settings.html:248`).
-- api: `/api/family` (`app/templates/settings.html:259`).
-- api: `/api/user-languages` (`app/templates/settings.html:317`).
-- api: `http://localhost:11434/api/chat` (`app/templates/settings.html:385`).
-- api: `/api/user-languages/missing-words?languages=${encodeURIComponent(languages.join(` (`app/templates/settings.html:403`).
-- api: `/api/words/${item.id}` (`app/templates/settings.html:419`).
-- api: `/api/daily-goal` (`app/templates/settings.html:440`).
-- api: `/api/ui-language` (`app/templates/settings.html:456`).
+- api: `/api/user-languages` (`app/templates/settings.html:274`).
+- api: `/api/ui-language` (`app/templates/settings.html:275`).
+- api: `/api/daily-goal` (`app/templates/settings.html:297`).
+- api: `/api/family/pairing-code` (`app/templates/settings.html:349`).
+- api: `/api/family/invite-code` (`app/templates/settings.html:359`).
+- api: `/api/family` (`app/templates/settings.html:370`).
+- api: `/api/user-languages` (`app/templates/settings.html:462`).
+- api: `/api/user-languages/missing-words?languages=${encodeURIComponent(languages.join(` (`app/templates/settings.html:503`).
+- api: `/api/translate/word` (`app/templates/settings.html:514`).
+- api: `/api/words/${item.id}` (`app/templates/settings.html:527`).
+- api: `/api/daily-goal` (`app/templates/settings.html:548`).
+- api: `/api/ui-language` (`app/templates/settings.html:564`).
+- api: `/api/mcp/user` (`app/templates/settings.html:592`).
+- api: `/api/mcp/user` (`app/templates/settings.html:619`).
+- api: `/api/mcp/user/revoke-all` (`app/templates/settings.html:653`).
 
 ## `app/templates/share.html`
 
@@ -131,9 +151,9 @@ HTML-шаблоны рендерятся Flask, используют общие 
 
 ## `app/templates/upload.html`
 
-- api: `/api/me` (`app/templates/upload.html:363`).
-- global: `PUBLIC_BASE_URL` (`app/templates/upload.html:700`).
-- template_script: `{{ url_for(` (`app/templates/upload.html:703`).
+- api: `/api/me` (`app/templates/upload.html:481`).
+- global: `PUBLIC_BASE_URL` (`app/templates/upload.html:821`).
+- template_script: `{{ url_for(` (`app/templates/upload.html:824`).
 
 ## Offline flow
 

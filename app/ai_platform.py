@@ -1,14 +1,12 @@
-"""Клиент облачной генерации слов через AI Platform (runtime/chat).
+"""Compatibility facade over the shared server content service.
 
-Алгоритм такой же, как раньше делался напрямую в Ollama (см. upload.js /
-OllamaConfig.kt), только system prompt теперь статически хранится в AI
-Platform под соответствующим профилем (ключ AI_PLATFORM_API_KEY_<TASK>
-привязан к одному профилю), а сюда передаётся только динамическая часть.
+Legacy runtime transport is retained for explicitly configured adapters only.
+No external translation/example provider is enabled by default.
 """
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import requests
 
@@ -33,6 +31,7 @@ class TokenUsage:
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
+    provider_calls: int = 0
 
     @classmethod
     def from_payload(cls, payload: object) -> "TokenUsage":
@@ -63,8 +62,8 @@ class AiPlatformError(Exception):
 
 
 def is_configured() -> bool:
-    return bool(Config.AI_PLATFORM_BASE_URL)
-
+    from app.content_providers import available
+    return any(available(operation) for operation in ("translate_word","translate_sentence","generate_examples","suggest_words"))
 
 def _extract_json(raw: str):
     stripped = re.sub(r"```json\s*", "", raw)
@@ -133,97 +132,38 @@ def _call_runtime_chat(api_key: str, message: str, context: dict | None = None) 
     )
 
 
-def translate_word(
-    word: str,
-    from_lang: str,
-    level: str = "A2",
-    known_ru: str | None = None,
-) -> tuple[dict, TokenUsage]:
-    lang_label = LANG_LABELS.get(from_lang, from_lang)
-    lines = [
-        f'Word: "{word}"',
-        f"Source language: {lang_label}",
-        f"CEFR level: {level}",
-    ]
+def translate_word(word, from_lang, level="", known_ru=None, *, supplied=None, languages=None, sense="", context="", examples=True):
+    from app.content_service import resolve_word
+    values = dict(supplied or {})
     if known_ru:
-        lines.append(f'Known Russian translation (copy exactly, do not retranslate): "{known_ru}"')
-    message = "\n".join(lines)
-
-    runtime = _call_runtime_chat(Config.AI_PLATFORM_API_KEY_TRANSLATE_WORD, message)
+        values["ru"] = known_ru
     try:
-        parsed = _extract_json(runtime.content)
-    except AiPlatformError as exc:
-        raise AiPlatformError(str(exc), usage=runtime.usage) from exc
-    if isinstance(parsed, list):
-        parsed = parsed[0] if parsed else {}
-    if not isinstance(parsed, dict):
-        raise AiPlatformError(
-            "Облако вернуло неожиданный формат ответа для перевода слова",
-            usage=runtime.usage,
-        )
-    return parsed, runtime.usage
+        result = resolve_word(word, from_lang, languages or ("nl", "en", "ru"), level, values, sense, context, examples)
+    except (ValueError, RuntimeError) as exc:
+        raise AiPlatformError(str(exc)) from exc
+    return result, replace(TokenUsage.from_payload(result.get("usage")),provider_calls=result["provider_calls"])
 
 
-def suggest_topic_words(
-    topic: str,
-    lang: str,
-    level: str,
-    count: int,
-    existing_words: list[str],
-) -> tuple[list[str], TokenUsage]:
-    lang_label = LANG_LABELS.get(lang, lang)
-    lines = [
-        f'Topic: "{topic}"',
-        f"Target language: {lang_label}",
-        f"CEFR level: {level}",
-        f"Word count: {count}",
-    ]
-    if existing_words:
-        avoid = ", ".join(existing_words[:150])
-        lines.append(f"Words already known (do not repeat): {avoid}")
-    message = "\n".join(lines)
-
-    runtime = _call_runtime_chat(Config.AI_PLATFORM_API_KEY_SUGGEST_TOPIC_WORDS, message)
+def translate_language(source_word, source_sentence, source_lang_name, target_lang_name, *, supplied=None, sense="", context=""):
+    from app.content_service import translate_language as resolve
     try:
-        parsed = _extract_json(runtime.content)
-    except AiPlatformError as exc:
-        raise AiPlatformError(str(exc), usage=runtime.usage) from exc
-    if isinstance(parsed, dict):
-        values = list(parsed.values())
-        parsed = [item for sub in values if isinstance(sub, list) for item in sub]
-    if not isinstance(parsed, list):
-        raise AiPlatformError(
-            "Облако вернуло неожиданный формат ответа для подбора слов",
-            usage=runtime.usage,
-        )
-    words = [w for w in parsed if isinstance(w, str) and w.strip()]
-    return words, runtime.usage
+        result = resolve(source_word, source_sentence, source_lang_name, target_lang_name, supplied, sense, context)
+    except (ValueError, RuntimeError) as exc:
+        raise AiPlatformError(str(exc)) from exc
+    return result, replace(TokenUsage.from_payload(result.get("usage")),provider_calls=result["provider_calls"])
 
 
-def translate_language(
-    source_word: str,
-    source_sentence: str,
-    source_lang_name: str,
-    target_lang_name: str,
-) -> tuple[dict, TokenUsage]:
-    message = (
-        f"Source language: {source_lang_name}\n"
-        f"Target language: {target_lang_name}\n"
-        f'Source word: "{source_word}"\n'
-        f'Source sentence: "{source_sentence}"'
-    )
-
-    runtime = _call_runtime_chat(Config.AI_PLATFORM_API_KEY_TRANSLATE_LANGUAGE, message)
-    try:
-        parsed = _extract_json(runtime.content)
-    except AiPlatformError as exc:
-        raise AiPlatformError(str(exc), usage=runtime.usage) from exc
-    if not isinstance(parsed, dict) or (not parsed.get("word") and not parsed.get("sentence")):
-        raise AiPlatformError("Облако не вернуло слово и предложение", usage=runtime.usage)
-    return (
-        {
-            "word": str(parsed.get("word") or "").strip(),
-            "sentence": str(parsed.get("sentence") or "").strip(),
-        },
-        runtime.usage,
-    )
+def suggest_topic_words(topic, lang, level, count, existing_words):
+    from app.content_service import ensure_schema, _request
+    from app.content_db import transaction
+    from app.content_providers import language_code
+    request = {"topic": str(topic).strip(), "language": language_code(lang), "level": level, "count": max(1,min(50,count))}
+    with transaction(Config.DB_PATH) as conn:
+        ensure_schema(conn)
+        result, calls = _request(conn, "suggest_words", request)
+    if not result:
+        raise AiPlatformError("Подбор темы недоступен: внешний сервис ещё не подключён")
+    words = result.get("words", [])
+    if not isinstance(words,list):
+        raise AiPlatformError("provider words must be a list")
+    return [word for word in words if isinstance(word,str) and word.strip()], replace(TokenUsage.from_payload(result.get("_usage") if calls else {}),provider_calls=calls)

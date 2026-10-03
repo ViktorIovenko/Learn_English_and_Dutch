@@ -26,12 +26,15 @@ class ApiClient(private val preferencesManager: PreferencesManager) {
         .cookieJar(JavaNetCookieJar(cookieManager))
         .addInterceptor { chain ->
             val userId = runBlocking { preferencesManager.userId.first() }
-            val request = chain.request().newBuilder()
+            val authToken = runBlocking { preferencesManager.authToken.first() }
+            val builder = chain.request().newBuilder()
                 .addHeader("X-User-Id", userId)
                 .addHeader("X-Client", "android")
                 .addHeader("X-Device-Language", systemLanguageCode())
-                .build()
-            chain.proceed(request)
+            if (authToken.isNotBlank()) {
+                builder.addHeader("Authorization", "Bearer $authToken")
+            }
+            chain.proceed(builder.build())
         }
         .addInterceptor(HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG)

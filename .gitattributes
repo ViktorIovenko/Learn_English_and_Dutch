@@ -1,0 +1,4 @@
+# deploy-changed.ps1 embeds here-strings that are sent verbatim to remote
+# /bin/sh over ssh; if git's autocrlf reintroduces CRLF, those heredocs break
+# with "syntax error near unexpected token" on the VPS. Keep it LF-only.
+deploy-changed.ps1 text eol=lf

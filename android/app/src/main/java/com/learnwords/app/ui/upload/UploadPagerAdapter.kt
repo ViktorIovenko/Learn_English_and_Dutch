@@ -8,9 +8,9 @@ class UploadPagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
     override fun getItemCount() = 4
 
     override fun createFragment(position: Int): Fragment = when (position) {
-        0 -> AddWordsTabFragment()
+        0 -> WordDatabaseTabFragment()
         1 -> TopicTabFragment()
-        2 -> WordDatabaseTabFragment()
+        2 -> AddWordsTabFragment()
         3 -> ShareTabFragment()
         else -> AddWordsTabFragment()
     }

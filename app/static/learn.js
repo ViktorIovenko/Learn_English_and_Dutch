@@ -164,6 +164,8 @@
   ];
   let correct="";
   let answer=[]; let pool=[]; let usedFrom=[];
+  let pointerDrag = null;
+  let suppressClickUntil = 0;
   let fireworksFired = false;
 
   let _advanceLock = false;
@@ -292,10 +294,14 @@
     setLanguage(currentLang);
   }
 
-  function applyLessonItems(items){
+  function applyLessonItems(items, preserveCurrentWord=false){
+    const currentWordId = preserveCurrentWord ? current?.id : null;
     const available = items.filter(item => item?.learned !== true);
     if (!available.length){ wordBox.textContent=tr("learn.all_words_learned"); return false; }
-    ITEMS = available; index=0;
+    ITEMS = available;
+    index = currentWordId == null
+      ? 0
+      : Math.max(0, ITEMS.findIndex(item => String(item.id) === String(currentWordId)));
     ITEMS.forEach(x=>{ x._passed = false; });
     fireworksFired = false;
     try{ window.AudioWorker?.warmup?.(); }catch(e){}
@@ -306,13 +312,13 @@
     return true;
   }
 
-  async function loadLesson(){
+  async function loadLesson(preserveCurrentWord=false){
     if (!LESSON){ wordBox.textContent=tr("learn.lesson_not_selected"); return; }
     try{
       let items = await readLessonWordsFromIdb(LESSON);
       const cachedSig = itemsSig(items);
       if (items && items.length){
-        applyLessonItems(items);
+        applyLessonItems(items, preserveCurrentWord);
       } else {
         wordBox.textContent=tr("learn.loading");
       }
@@ -328,13 +334,20 @@
       await writeLessonWordsToIdb(LESSON, fresh);
       const cachedEmpty = !Array.isArray(items) || items.length === 0;
       if (cachedEmpty || itemsSig(fresh) !== cachedSig){
-        applyLessonItems(fresh);
+        applyLessonItems(fresh, preserveCurrentWord);
       }
     }catch(e){
       console.error(e);
       if (!ITEMS || !ITEMS.length) wordBox.textContent=tr("common.no_connection_lessons");
     }
   }
+
+  window.addEventListener("lesson-content-synced", (event) => {
+    const changedLessons = event?.detail?.lessons;
+    if (Array.isArray(changedLessons) && changedLessons.includes(LESSON)) {
+      loadLesson(true);
+    }
+  });
 
   function pickByLang(item){
     const getWord = (lang) => item[`${lang}_word`] || item[lang] || (lang==="en" ? item.word_en : "") || (lang==="ru" ? item.translation_ru : "") || (lang==="nl" ? item.translation_nl : "") || "";
@@ -415,10 +428,12 @@
       }).join("");
     $$("#answer-slots .slot.filled").forEach(div=>{
       div.addEventListener("click", ()=>{
+        if (ignoreSuppressedClick()) return;
         const pos = Number(div.dataset.pos||"-1");
         if (pos<0) return;
         returnLetterAt(pos);
       });
+      bindPointerDrag(div, "answer", Number(div.dataset.pos||"-1"));
     });
   }
 
@@ -428,6 +443,7 @@
     ).join("");
     $$(".letter").forEach(btn=>{
       btn.addEventListener("click", ()=>{
+        if (ignoreSuppressedClick()) return;
         const i = Number(btn.dataset.i);
         const ch = pool[i];
         if (typeof ch !== "string") return;
@@ -437,8 +453,137 @@
         renderSlots();
         renderPool();
       });
+      bindPointerDrag(btn, "pool", Number(btn.dataset.i||"-1"));
     });
   }
+
+  function ignoreSuppressedClick(){
+    if (Date.now() <= suppressClickUntil){
+      suppressClickUntil = 0;
+      return true;
+    }
+    return false;
+  }
+
+  function bindPointerDrag(element, kind, index){
+    if (!element || index < 0) return;
+    element.style.touchAction = "none";
+    element.addEventListener("pointerdown", event => {
+      if (event.button !== undefined && event.button !== 0) return;
+      const rect = element.getBoundingClientRect();
+      pointerDrag = {
+        element,
+        kind,
+        index,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        offsetX: rect.width / 2,
+        offsetY: rect.height / 2,
+        width: rect.width,
+        height: rect.height,
+        active: false,
+        target: null,
+        preview: null,
+      };
+    });
+  }
+
+  function createDragPreview(drag, event){
+    const preview = drag.element.cloneNode(true);
+    preview.classList.add("pointer-drag-preview");
+    preview.removeAttribute("data-i");
+    preview.removeAttribute("data-pos");
+    preview.style.width = `${drag.width}px`;
+    preview.style.height = `${drag.height}px`;
+    preview.textContent = drag.element.textContent;
+    document.body.appendChild(preview);
+    drag.preview = preview;
+    updateDragPreview(drag, event);
+  }
+
+  function updateDragPreview(drag, event){
+    if (!drag.preview) return;
+    drag.preview.style.left = `${event.clientX - drag.offsetX}px`;
+    drag.preview.style.top = `${event.clientY - drag.offsetY}px`;
+  }
+
+  function slotAtPoint(event){
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const slot = element?.closest?.("#answer-slots .slot");
+    if (!slot || !answerSlots?.contains(slot)) return null;
+    const position = Number(slot.dataset.pos || "-1");
+    if (position < 0) return null;
+    const rect = slot.getBoundingClientRect();
+    return position + (event.clientX >= rect.left + rect.width / 2 ? 1 : 0);
+  }
+
+  function clearPointerDrag(){
+    if (!pointerDrag) return;
+    pointerDrag.element?.classList.remove("dragging");
+    pointerDrag.target?.classList.remove("drag-over");
+    pointerDrag.preview?.remove();
+    pointerDrag = null;
+  }
+
+  function insertDraggedLetter(poolIndex, targetPosition){
+    const ch = pool[poolIndex];
+    if (typeof ch !== "string" || usedFrom.includes(poolIndex)) return;
+    const position = Math.max(0, Math.min(Number(targetPosition ?? answer.length), answer.length));
+    answer.splice(position, 0, ch);
+    usedFrom.splice(position, 0, poolIndex);
+    pool[poolIndex] = null;
+    renderSlots();
+    renderPool();
+  }
+
+  function moveDraggedLetter(fromPosition, targetPosition){
+    if (fromPosition < 0 || fromPosition >= answer.length) return;
+    const ch = answer[fromPosition];
+    const sourceIndex = usedFrom[fromPosition];
+    answer.splice(fromPosition, 1);
+    usedFrom.splice(fromPosition, 1);
+    const position = Math.max(0, Math.min(Number(targetPosition ?? answer.length), answer.length));
+    answer.splice(position, 0, ch);
+    usedFrom.splice(position, 0, sourceIndex);
+    renderSlots();
+    renderPool();
+  }
+
+  document.addEventListener("pointermove", event => {
+    if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) return;
+    const distance = Math.hypot(
+      event.clientX - pointerDrag.startX,
+      event.clientY - pointerDrag.startY
+    );
+    if (!pointerDrag.active && distance < 8) return;
+    if (!pointerDrag.active){
+      pointerDrag.active = true;
+      createDragPreview(pointerDrag, event);
+    }
+    event.preventDefault();
+    pointerDrag.element.classList.add("dragging");
+    updateDragPreview(pointerDrag, event);
+    pointerDrag.target?.classList.remove("drag-over");
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const target = element?.closest?.("#answer-slots .slot");
+    pointerDrag.target = target && answerSlots?.contains(target) ? target : null;
+    pointerDrag.target?.classList.add("drag-over");
+  }, { passive: false });
+
+  document.addEventListener("pointerup", event => {
+    if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) return;
+    const drag = pointerDrag;
+    const targetPosition = slotAtPoint(event);
+    clearPointerDrag();
+    if (!drag.active) return;
+    suppressClickUntil = Date.now() + 350;
+    if (targetPosition == null) return;
+    if (drag.kind === "pool") insertDraggedLetter(drag.index, targetPosition);
+    else moveDraggedLetter(drag.index, targetPosition);
+  });
+
+  document.addEventListener("pointercancel", clearPointerDrag);
 
   function returnLetterAt(pos){
     const ch = answer[pos];
@@ -541,12 +686,20 @@
     modal.style.display = "block";
     const isLastWord = (index === ITEMS.length - 1);
     if (ok) {
-      line1.style.backgroundColor = "#16a34a";
-      line1.style.border = "3px solid #15803d";
-      line1.style.color = "#fff";
       current._passed = true;
       current.practice_count = Number(current.practice_count || 0) + 1;
       current.learned = current.practice_count >= 10;
+      // Once a word crosses the mastery threshold it no longer counts toward
+      // the child's daily goal server-side, so it's highlighted blue instead
+      // of green to signal that.
+      if (current.learned) {
+        line1.style.backgroundColor = "#2563eb";
+        line1.style.border = "3px solid #1d4ed8";
+      } else {
+        line1.style.backgroundColor = "#16a34a";
+        line1.style.border = "3px solid #15803d";
+      }
+      line1.style.color = "#fff";
       maybeFireworks();
     } else {
       line1.style.backgroundColor = "#dc2626";

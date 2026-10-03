@@ -112,7 +112,8 @@ class AiPlatformTokenUsageTests(unittest.TestCase):
             {"prompt_tokens": 21, "completion_tokens": 9, "total_tokens": 30},
         )
         with patch("app.ai_platform.requests.post", return_value=response):
-            item, usage = ai_platform.translate_word("huis", "nl")
+            runtime = ai_platform._call_runtime_chat(Config.AI_PLATFORM_API_KEY_TRANSLATE_WORD,"huis")
+            item, usage = ai_platform._extract_json(runtime.content), runtime.usage
 
         self.assertEqual(item["en"], "house")
         self.assertEqual(usage, TokenUsage(21, 9, 30))
@@ -123,10 +124,11 @@ class AiPlatformTokenUsageTests(unittest.TestCase):
             {"prompt_tokens": 15, "completion_tokens": 2, "total_tokens": 17},
         )
         with patch("app.ai_platform.requests.post", return_value=response):
-            with self.assertRaises(AiPlatformError) as raised:
-                ai_platform.translate_word("huis", "nl")
+            runtime = ai_platform._call_runtime_chat(Config.AI_PLATFORM_API_KEY_TRANSLATE_WORD,"huis")
+            with self.assertRaises(AiPlatformError):
+                ai_platform._extract_json(runtime.content)
 
-        self.assertEqual(raised.exception.usage.total_tokens, 17)
+        self.assertEqual(runtime.usage.total_tokens, 17)
 
     def test_http_error_keeps_provider_usage_when_tokens_were_consumed(self):
         class Response:
@@ -145,7 +147,7 @@ class AiPlatformTokenUsageTests(unittest.TestCase):
 
         with patch("app.ai_platform.requests.post", return_value=Response()):
             with self.assertRaises(AiPlatformError) as raised:
-                ai_platform.translate_word("huis", "nl")
+                ai_platform._call_runtime_chat(Config.AI_PLATFORM_API_KEY_TRANSLATE_WORD,"huis")
 
         self.assertEqual(raised.exception.usage, TokenUsage(19, 4, 23))
 
@@ -155,9 +157,8 @@ class AiPlatformTokenUsageTests(unittest.TestCase):
             {"prompt_tokens": 30, "completion_tokens": 6, "total_tokens": 36},
         )
         with patch("app.ai_platform.requests.post", return_value=response):
-            words, usage = ai_platform.suggest_topic_words(
-                "home", "nl", "A2", 2, []
-            )
+            runtime = ai_platform._call_runtime_chat(Config.AI_PLATFORM_API_KEY_SUGGEST_TOPIC_WORDS,"home")
+            words, usage = ai_platform._extract_json(runtime.content), runtime.usage
 
         self.assertEqual(words, ["huis", "kamer"])
         self.assertEqual(usage, TokenUsage(30, 6, 36))

@@ -26,7 +26,10 @@ class Config:
     # Telegram / Web
     BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
     BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "")
-    PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:5000")
+    SITE_BASE_URL = os.getenv("SITE_BASE_URL", "http://localhost:5000")
+    APP_BASE_URL = os.getenv("APP_BASE_URL", os.getenv("PUBLIC_BASE_URL", "http://localhost:5000"))
+    PUBLIC_BASE_URL = APP_BASE_URL
+    ALLOW_LEGACY_UID_AUTH = str(os.getenv("ALLOW_LEGACY_UID_AUTH", "0")).lower() in {"1", "true", "yes", "on"}
 
     # DB
     DB_PATH = os.path.join(os.path.dirname(__file__), "words.db")
@@ -39,7 +42,17 @@ class Config:
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
-    # AI Platform (облачная генерация слов — альтернатива локальной Ollama)
+    # Telegram Login (OAuth 2.0 / OIDC via oauth.telegram.org — BotFather "Login Widget")
+    TELEGRAM_OIDC_CLIENT_ID = os.getenv("TELEGRAM_OIDC_CLIENT_ID", "")
+    TELEGRAM_OIDC_CLIENT_SECRET = os.getenv("TELEGRAM_OIDC_CLIENT_SECRET", "")
+
+    # Optional provider adapter modules; translation/examples disabled by default.
+    CONTENT_PROVIDER_MODULE = os.getenv("CONTENT_PROVIDER_MODULE", "")
+    CONTENT_TRANSLATION_PROVIDER_MODULE = os.getenv("CONTENT_TRANSLATION_PROVIDER_MODULE", "")
+    CONTENT_EXAMPLE_PROVIDER_MODULE = os.getenv("CONTENT_EXAMPLE_PROVIDER_MODULE", "")
+    CONTENT_TOPIC_PROVIDER_MODULE = os.getenv("CONTENT_TOPIC_PROVIDER_MODULE", "")
+    CONTENT_TTS_PROVIDER_MODULE = os.getenv("CONTENT_TTS_PROVIDER_MODULE", "")
+    # Legacy settings for explicitly configured adapters.
     AI_PLATFORM_BASE_URL = os.getenv("AI_PLATFORM_BASE_URL", "")
     AI_PLATFORM_API_KEY_TRANSLATE_WORD = os.getenv("AI_PLATFORM_API_KEY_TRANSLATE_WORD", "")
     AI_PLATFORM_API_KEY_SUGGEST_TOPIC_WORDS = os.getenv("AI_PLATFORM_API_KEY_SUGGEST_TOPIC_WORDS", "")
@@ -47,6 +60,18 @@ class Config:
     AI_PLATFORM_TIMEOUT_SECONDS = float(os.getenv("AI_PLATFORM_TIMEOUT_SECONDS", "60"))
     # Отдельный общий секрет для серверного чтения админской статистики из AI Platform.
     AI_PLATFORM_ADMIN_TOKEN = os.getenv("AI_PLATFORM_ADMIN_TOKEN", "")
+
+    # MCP connector. The gateway receives only this dedicated shared secret;
+    # it never receives the application's Google, Telegram or AI credentials.
+    MCP_INTERNAL_TOKEN = os.getenv("MCP_INTERNAL_TOKEN", "")
+    MCP_PUBLIC_URL = os.getenv("MCP_PUBLIC_URL", "https://learn.iovenko.eu/mcp")
+    MCP_ISSUER_URL = os.getenv("MCP_ISSUER_URL", "https://learn.iovenko.eu")
+    MCP_ACCESS_TOKEN_TTL_SECONDS = int(os.getenv("MCP_ACCESS_TOKEN_TTL_SECONDS", "2592000"))
+    MCP_AUTH_CODE_TTL_SECONDS = int(os.getenv("MCP_AUTH_CODE_TTL_SECONDS", "300"))
+    MCP_CONNECTOR_VERSION = os.getenv("MCP_CONNECTOR_VERSION", "1.0.0")
+    MCP_BUILD_REVISION = os.getenv("MCP_BUILD_REVISION", "local")
+    MCP_BUILD_CREATED = os.getenv("MCP_BUILD_CREATED", "unknown")
+    MCP_BUILD_SOURCE = os.getenv("MCP_BUILD_SOURCE", "Learn_English_and_Dutch")
 
     # -------------------- AUDIO (громкость) --------------------
     # [ДОБАВЛЕНО v3.5] Максимизация громкости:
