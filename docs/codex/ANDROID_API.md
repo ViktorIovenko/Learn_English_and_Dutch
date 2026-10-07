@@ -242,6 +242,22 @@
 - Backend: `app/routes.py` / `api_lessons_set_hidden`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
+## `GET /api/mcp/user` — confirmed
+
+- Android: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getMcpUser`.
+- Request DTO: `query/path/none`; response DTO: `McpUserResponse`.
+- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
+- Backend: `app/mcp_api.py` / `mcp_user_status`.
+- Примечание: Confirmed by matching local Flask method and normalized route.
+
+## `POST /api/mcp/user` — confirmed
+
+- Android: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `setMcpEnabled`.
+- Request DTO: `McpEnabledRequest`; response DTO: `McpEnabledResponse`.
+- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
+- Backend: `app/mcp_api.py` / `mcp_user_toggle`.
+- Примечание: Confirmed by matching local Flask method and normalized route.
+
 ## `GET /api/me` — confirmed
 
 - Android: `android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getMe`.

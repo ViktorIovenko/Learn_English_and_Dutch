@@ -1,7 +1,7 @@
 {
   "format_version": 1,
-  "generated_at": "2026-10-03T17:28:13+00:00",
-  "local_git_commit": "8cff9410f33c76c1261711f3d3a252aeea3fed16",
+  "generated_at": "2026-10-07T20:44:01+00:00",
+  "local_git_commit": "d919931e128977ca3c10b9eea1cc81ed63d4c182",
   "production_git_commit": "unavailable",
   "production_project_path": "/opt/learn-words",
   "entrypoints": [
@@ -61,6 +61,9 @@
     "deployment_routes",
     "docs",
     "environment_snapshots",
+    "family_invitation_aliases",
+    "family_invitation_attempts",
+    "family_invitation_uses",
     "family_invite_codes",
     "family_lesson_assignments",
     "family_pairing_codes",
@@ -105,707 +108,763 @@
       "url": "/auth/google",
       "handler": "login",
       "file_path": "app/google_auth.py",
-      "line_number": 239
+      "line_number": 339
     },
     {
       "method": "GET",
       "url": "/auth/google/callback",
       "handler": "callback",
       "file_path": "app/google_auth.py",
-      "line_number": 258
+      "line_number": 360
     },
     {
       "method": "GET",
       "url": "/api/auth/google/config",
       "handler": "android_google_config",
       "file_path": "app/google_auth.py",
-      "line_number": 297
+      "line_number": 412
     },
     {
       "method": "POST",
       "url": "/api/auth/google/verify",
       "handler": "verify_android_token",
       "file_path": "app/google_auth.py",
-      "line_number": 305
+      "line_number": 420
     },
     {
       "method": "GET",
       "url": "/api/mcp/user",
       "handler": "mcp_user_status",
       "file_path": "app/mcp_api.py",
-      "line_number": 124
+      "line_number": 126
     },
     {
       "method": "POST",
       "url": "/api/mcp/user",
       "handler": "mcp_user_toggle",
       "file_path": "app/mcp_api.py",
-      "line_number": 180
+      "line_number": 182
     },
     {
       "method": "POST",
       "url": "/api/mcp/user/revoke-all",
       "handler": "mcp_user_revoke_all",
       "file_path": "app/mcp_api.py",
-      "line_number": 200
+      "line_number": 202
     },
     {
       "method": "GET",
       "url": "/admin/mcp",
       "handler": "mcp_admin_page",
       "file_path": "app/mcp_api.py",
-      "line_number": 240
+      "line_number": 242
     },
     {
       "method": "POST",
       "url": "/admin/mcp/revoke",
       "handler": "mcp_admin_revoke",
       "file_path": "app/mcp_api.py",
-      "line_number": 286
+      "line_number": 288
     },
     {
       "method": "GET",
       "url": "/.well-known/oauth-authorization-server",
       "handler": "oauth_metadata",
       "file_path": "app/mcp_api.py",
-      "line_number": 308
+      "line_number": 310
     },
     {
       "method": "POST",
       "url": "/oauth/register",
       "handler": "oauth_register",
       "file_path": "app/mcp_api.py",
-      "line_number": 328
+      "line_number": 330
     },
     {
       "method": "GET,POST",
       "url": "/oauth/authorize",
       "handler": "oauth_authorize",
       "file_path": "app/mcp_api.py",
-      "line_number": 400
+      "line_number": 406
     },
     {
       "method": "POST",
       "url": "/oauth/token",
       "handler": "oauth_token",
       "file_path": "app/mcp_api.py",
-      "line_number": 474
+      "line_number": 499
     },
     {
       "method": "POST",
       "url": "/oauth/revoke",
       "handler": "oauth_revoke",
       "file_path": "app/mcp_api.py",
-      "line_number": 527
+      "line_number": 552
     },
     {
       "method": "POST",
       "url": "/api/internal/mcp/resolve",
       "handler": "internal_mcp_resolve",
       "file_path": "app/mcp_api.py",
-      "line_number": 539
+      "line_number": 564
     },
     {
       "method": "POST",
       "url": "/api/internal/mcp/execute",
       "handler": "internal_mcp_execute",
       "file_path": "app/mcp_api.py",
-      "line_number": 550
+      "line_number": 575
     },
     {
       "method": "GET",
       "url": "/api/internal/mcp/health",
       "handler": "internal_mcp_health",
       "file_path": "app/mcp_api.py",
-      "line_number": 606
+      "line_number": 631
     },
     {
       "method": "GET",
       "url": "/sw.js",
       "handler": "service_worker",
       "file_path": "app/routes.py",
-      "line_number": 1791
+      "line_number": 1792
     },
     {
       "method": "GET",
       "url": "/",
       "handler": "home",
       "file_path": "app/routes.py",
-      "line_number": 1799
+      "line_number": 1800
     },
     {
       "method": "GET",
       "url": "/lessons",
       "handler": "lessons_alias",
       "file_path": "app/routes.py",
-      "line_number": 1812
+      "line_number": 1813
     },
     {
       "method": "GET",
       "url": "/lesson/<int:lesson_id>",
       "handler": "lesson_page",
       "file_path": "app/routes.py",
-      "line_number": 1825
+      "line_number": 1826
     },
     {
       "method": "GET",
       "url": "/learn",
       "handler": "learn_page",
       "file_path": "app/routes.py",
-      "line_number": 1830
+      "line_number": 1831
     },
     {
       "method": "GET",
       "url": "/difficult",
       "handler": "difficult_page",
       "file_path": "app/routes.py",
-      "line_number": 1841
+      "line_number": 1842
     },
     {
       "method": "GET",
       "url": "/upload",
       "handler": "upload_page",
       "file_path": "app/routes.py",
-      "line_number": 1846
+      "line_number": 1847
+    },
+    {
+      "method": "GET",
+      "url": "/word-database",
+      "handler": "word_database_page",
+      "file_path": "app/routes.py",
+      "line_number": 1870
+    },
+    {
+      "method": "GET",
+      "url": "/settings/mcp",
+      "handler": "mcp_connector_page",
+      "file_path": "app/routes.py",
+      "line_number": 1880
     },
     {
       "method": "GET",
       "url": "/settings",
       "handler": "settings_page",
       "file_path": "app/routes.py",
-      "line_number": 1863
+      "line_number": 1890
     },
     {
       "method": "GET",
       "url": "/account-type",
       "handler": "account_type_page",
       "file_path": "app/routes.py",
-      "line_number": 1873
+      "line_number": 1900
+    },
+    {
+      "method": "GET",
+      "url": "/.well-known/assetlinks.json",
+      "handler": "android_app_links",
+      "file_path": "app/routes.py",
+      "line_number": 1909
+    },
+    {
+      "method": "GET",
+      "url": "/family/connect",
+      "handler": "family_link_page",
+      "file_path": "app/routes.py",
+      "line_number": 1914
     },
     {
       "method": "GET",
       "url": "/family/link",
       "handler": "family_link_page",
       "file_path": "app/routes.py",
-      "line_number": 1882
+      "line_number": 1915
     },
     {
       "method": "GET",
       "url": "/parent",
       "handler": "parent_dashboard_page",
       "file_path": "app/routes.py",
-      "line_number": 1908
+      "line_number": 1947
     },
     {
       "method": "GET",
       "url": "/subscription",
       "handler": "subscription_page",
       "file_path": "app/routes.py",
-      "line_number": 1917
+      "line_number": 1956
     },
     {
       "method": "GET",
       "url": "/admin/users",
       "handler": "admin_users_page",
       "file_path": "app/routes.py",
-      "line_number": 1922
+      "line_number": 1961
     },
     {
       "method": "GET",
       "url": "/share/<token>",
       "handler": "share_page",
       "file_path": "app/routes.py",
-      "line_number": 2114
+      "line_number": 2153
     },
     {
       "method": "POST",
       "url": "/api/share/create",
       "handler": "api_share_create",
       "file_path": "app/routes.py",
-      "line_number": 2178
+      "line_number": 2217
     },
     {
       "method": "GET",
       "url": "/api/share/source_lessons",
       "handler": "api_share_source_lessons",
       "file_path": "app/routes.py",
-      "line_number": 2257
+      "line_number": 2296
     },
     {
       "method": "POST",
       "url": "/api/share/assign_child",
       "handler": "api_share_assign_child",
       "file_path": "app/routes.py",
-      "line_number": 2334
+      "line_number": 2373
     },
     {
       "method": "POST",
       "url": "/api/share/<token>/import",
       "handler": "api_share_import",
       "file_path": "app/routes.py",
-      "line_number": 2457
+      "line_number": 2496
     },
     {
       "method": "POST",
       "url": "/api/import-words",
       "handler": "api_import_words",
       "file_path": "app/routes.py",
-      "line_number": 2561
+      "line_number": 2600
     },
     {
       "method": "GET",
       "url": "/api/words",
       "handler": "api_get_words",
       "file_path": "app/routes.py",
-      "line_number": 2578
+      "line_number": 2617
     },
     {
       "method": "PUT",
       "url": "/api/words/<int:word_id>",
       "handler": "api_update_word",
       "file_path": "app/routes.py",
-      "line_number": 2638
+      "line_number": 2677
     },
     {
       "method": "DELETE",
       "url": "/api/words/<int:word_id>",
       "handler": "api_delete_word",
       "file_path": "app/routes.py",
-      "line_number": 2772
+      "line_number": 2811
     },
     {
       "method": "GET",
       "url": "/api/words/nl-list",
       "handler": "api_words_nl_list",
       "file_path": "app/routes.py",
-      "line_number": 2786
+      "line_number": 2825
     },
     {
       "method": "GET",
       "url": "/api/words/duplicates",
       "handler": "api_words_duplicates",
       "file_path": "app/routes.py",
-      "line_number": 2800
+      "line_number": 2839
     },
     {
       "method": "POST",
       "url": "/api/parse-file",
       "handler": "api_parse_file",
       "file_path": "app/routes.py",
-      "line_number": 2838
+      "line_number": 2877
     },
     {
       "method": "POST",
       "url": "/api/auth/login_android",
       "handler": "login_android",
       "file_path": "app/routes.py",
-      "line_number": 2938
+      "line_number": 2977
     },
     {
       "method": "POST",
       "url": "/api/auth/login_android_token",
       "handler": "login_android_token",
       "file_path": "app/routes.py",
-      "line_number": 2949
+      "line_number": 2988
     },
     {
       "method": "POST",
       "url": "/api/auth/login_link",
       "handler": "login_link",
       "file_path": "app/routes.py",
-      "line_number": 2961
+      "line_number": 3000
     },
     {
       "method": "GET",
       "url": "/android-auth",
       "handler": "android_auth_redirect",
       "file_path": "app/routes.py",
-      "line_number": 2973
+      "line_number": 3012
     },
     {
       "method": "POST",
       "url": "/api/auth/login_webapp",
       "handler": "login_webapp",
       "file_path": "app/routes.py",
-      "line_number": 2986
+      "line_number": 3025
     },
     {
       "method": "GET",
       "url": "/api/me",
       "handler": "api_me",
       "file_path": "app/routes.py",
-      "line_number": 3018
+      "line_number": 3057
     },
     {
       "method": "POST",
       "url": "/api/account/type",
       "handler": "api_account_type_save",
       "file_path": "app/routes.py",
-      "line_number": 3062
+      "line_number": 3101
     },
     {
       "method": "GET",
       "url": "/api/family",
       "handler": "api_family_status",
       "file_path": "app/routes.py",
-      "line_number": 3090
+      "line_number": 3129
     },
     {
       "method": "GET",
       "url": "/api/learning/streak",
       "handler": "api_learning_streak",
       "file_path": "app/routes.py",
-      "line_number": 3098
+      "line_number": 3137
     },
     {
       "method": "GET",
       "url": "/api/family/dashboard",
       "handler": "api_family_dashboard",
       "file_path": "app/routes.py",
-      "line_number": 3116
+      "line_number": 3155
     },
     {
       "method": "GET",
       "url": "/api/family/children/<child_user_id>/lesson-words",
       "handler": "api_family_child_lesson_words",
       "file_path": "app/routes.py",
-      "line_number": 3142
+      "line_number": 3181
     },
     {
       "method": "PUT",
       "url": "/api/family/children/<child_user_id>/priority-lesson",
       "handler": "api_family_set_priority_lesson",
       "file_path": "app/routes.py",
-      "line_number": 3197
+      "line_number": 3236
     },
     {
       "method": "GET",
       "url": "/api/family/pairing-code",
       "handler": "api_family_pairing_code",
       "file_path": "app/routes.py",
-      "line_number": 3286
+      "line_number": 3323
+    },
+    {
+      "method": "POST",
+      "url": "/api/family/invitation/preview",
+      "handler": "api_family_invitation",
+      "file_path": "app/routes.py",
+      "line_number": 3334
+    },
+    {
+      "method": "POST",
+      "url": "/api/family/invitation/accept",
+      "handler": "api_family_invitation",
+      "file_path": "app/routes.py",
+      "line_number": 3335
     },
     {
       "method": "GET",
       "url": "/api/family/pairing-qr.png",
       "handler": "api_family_pairing_qr",
       "file_path": "app/routes.py",
-      "line_number": 3297
+      "line_number": 3359
     },
     {
       "method": "GET",
       "url": "/api/family/invite-code",
       "handler": "api_family_invite_code",
       "file_path": "app/routes.py",
-      "line_number": 3344
+      "line_number": 3401
     },
     {
       "method": "GET",
       "url": "/api/family/invite-qr.png",
       "handler": "api_family_invite_qr",
       "file_path": "app/routes.py",
-      "line_number": 3355
+      "line_number": 3412
     },
     {
       "method": "POST",
       "url": "/api/family/join",
       "handler": "api_family_join",
       "file_path": "app/routes.py",
-      "line_number": 3385
+      "line_number": 3439
     },
     {
       "method": "POST",
       "url": "/api/family/link",
       "handler": "api_family_link",
       "file_path": "app/routes.py",
-      "line_number": 3402
+      "line_number": 3456
     },
     {
       "method": "DELETE",
       "url": "/api/family/children/<child_user_id>",
       "handler": "api_family_unlink_child",
       "file_path": "app/routes.py",
-      "line_number": 3458
+      "line_number": 3517
     },
     {
       "method": "GET",
       "url": "/api/subscription",
       "handler": "api_subscription_get",
       "file_path": "app/routes.py",
-      "line_number": 3477
+      "line_number": 3536
     },
     {
       "method": "POST",
       "url": "/api/subscription/verify_purchase",
       "handler": "api_verify_purchase",
       "file_path": "app/routes.py",
-      "line_number": 3507
+      "line_number": 3566
     },
     {
       "method": "GET",
       "url": "/api/language-options",
       "handler": "api_language_options",
       "file_path": "app/routes.py",
-      "line_number": 3551
+      "line_number": 3610
     },
     {
       "method": "GET",
       "url": "/api/user-languages",
       "handler": "api_user_languages_get",
       "file_path": "app/routes.py",
-      "line_number": 3558
+      "line_number": 3617
     },
     {
       "method": "POST",
       "url": "/api/user-languages",
       "handler": "api_user_languages_save",
       "file_path": "app/routes.py",
-      "line_number": 3574
+      "line_number": 3633
     },
     {
       "method": "GET",
       "url": "/api/user-languages/missing-words",
       "handler": "api_user_languages_missing_words",
       "file_path": "app/routes.py",
-      "line_number": 3615
+      "line_number": 3674
     },
     {
       "method": "GET",
       "url": "/api/ui-language",
       "handler": "api_ui_language_get",
       "file_path": "app/routes.py",
-      "line_number": 3653
+      "line_number": 3712
     },
     {
       "method": "POST",
       "url": "/api/ui-language",
       "handler": "api_ui_language_save",
       "file_path": "app/routes.py",
-      "line_number": 3662
+      "line_number": 3721
     },
     {
       "method": "GET",
       "url": "/api/lessons",
       "handler": "api_lessons",
       "file_path": "app/routes.py",
-      "line_number": 3784
+      "line_number": 3843
     },
     {
       "method": "GET",
       "url": "/api/user_lessons",
       "handler": "api_user_lessons",
       "file_path": "app/routes.py",
-      "line_number": 3815
+      "line_number": 3874
     },
     {
       "method": "POST",
       "url": "/api/user_lessons/rename",
       "handler": "api_user_lessons_rename",
       "file_path": "app/routes.py",
-      "line_number": 3825
+      "line_number": 3884
     },
     {
       "method": "POST",
       "url": "/api/user_lessons/delete",
       "handler": "api_user_lessons_delete",
       "file_path": "app/routes.py",
-      "line_number": 3940
+      "line_number": 3999
     },
     {
       "method": "POST",
       "url": "/api/lessons/set_hidden",
       "handler": "api_lessons_set_hidden",
       "file_path": "app/routes.py",
-      "line_number": 4014
+      "line_number": 4073
     },
     {
       "method": "GET",
       "url": "/api/lesson_words",
       "handler": "api_lesson_words_by_title",
       "file_path": "app/routes.py",
-      "line_number": 4028
+      "line_number": 4087
     },
     {
       "method": "GET",
       "url": "/api/child-learning/status",
       "handler": "api_child_learning_status",
       "file_path": "app/routes.py",
-      "line_number": 4072
+      "line_number": 4131
     },
     {
       "method": "GET",
       "url": "/api/daily-goal",
       "handler": "api_daily_goal_get",
       "file_path": "app/routes.py",
-      "line_number": 4101
+      "line_number": 4160
     },
     {
       "method": "POST",
       "url": "/api/daily-goal",
       "handler": "api_daily_goal_save",
       "file_path": "app/routes.py",
-      "line_number": 4109
+      "line_number": 4168
     },
     {
       "method": "GET",
       "url": "/api/lessons/<int:lesson_id>/words",
       "handler": "api_lesson_words",
       "file_path": "app/routes.py",
-      "line_number": 4134
+      "line_number": 4193
     },
     {
       "method": "GET",
       "url": "/api/difficult_words_user",
       "handler": "api_difficult_words_user",
       "file_path": "app/routes.py",
-      "line_number": 4173
+      "line_number": 4232
     },
     {
       "method": "POST",
       "url": "/api/difficult/user_set",
       "handler": "api_difficult_user_set",
       "file_path": "app/routes.py",
-      "line_number": 4214
+      "line_number": 4273
     },
     {
       "method": "POST",
       "url": "/api/progress/sync",
       "handler": "api_progress_sync",
       "file_path": "app/routes.py",
-      "line_number": 4255
+      "line_number": 4314
     },
     {
       "method": "GET",
       "url": "/api/sync/updates",
       "handler": "api_sync_updates",
       "file_path": "app/routes.py",
-      "line_number": 4316
+      "line_number": 4375
     },
     {
       "method": "POST",
       "url": "/api/audio/ensure",
       "handler": "api_audio_ensure",
       "file_path": "app/routes.py",
-      "line_number": 4410
+      "line_number": 4469
     },
     {
       "method": "GET",
       "url": "/api/next_lesson",
       "handler": "api_next_lesson",
       "file_path": "app/routes.py",
-      "line_number": 4432
+      "line_number": 4491
     },
     {
       "method": "GET",
       "url": "/api/prev_lesson",
       "handler": "api_prev_lesson",
       "file_path": "app/routes.py",
-      "line_number": 4450
+      "line_number": 4509
     },
     {
       "method": "GET",
       "url": "/api/admin/users",
       "handler": "api_admin_users",
       "file_path": "app/routes.py",
-      "line_number": 4492
+      "line_number": 4551
     },
     {
       "method": "POST",
       "url": "/api/admin/tts_usage/limit",
       "handler": "api_admin_set_tts_usage_limit",
       "file_path": "app/routes.py",
-      "line_number": 4585
+      "line_number": 4644
     },
     {
       "method": "POST",
       "url": "/api/admin/tts_usage/reset",
       "handler": "api_admin_reset_tts_usage",
       "file_path": "app/routes.py",
-      "line_number": 4628
+      "line_number": 4687
     },
     {
       "method": "POST",
       "url": "/api/admin/translation_usage/reset",
       "handler": "api_admin_reset_translation_usage",
       "file_path": "app/routes.py",
-      "line_number": 4664
+      "line_number": 4723
     },
     {
       "method": "POST",
       "url": "/api/admin/grant_access",
       "handler": "api_admin_grant_access",
       "file_path": "app/routes.py",
-      "line_number": 4695
+      "line_number": 4754
     },
     {
       "method": "POST",
       "url": "/api/admin/revoke_access",
       "handler": "api_admin_revoke_access",
       "file_path": "app/routes.py",
-      "line_number": 4728
+      "line_number": 4787
     },
     {
       "method": "POST",
       "url": "/api/admin/unlink_family",
       "handler": "api_admin_unlink_family",
       "file_path": "app/routes.py",
-      "line_number": 4754
+      "line_number": 4813
     },
     {
       "method": "POST",
       "url": "/api/admin/delete_user",
       "handler": "api_admin_delete_user",
       "file_path": "app/routes.py",
-      "line_number": 4786
+      "line_number": 4845
     },
     {
       "method": "GET",
       "url": "/api/ai/status",
       "handler": "api_ai_status",
       "file_path": "app/routes.py",
-      "line_number": 4883
+      "line_number": 4942
     },
     {
       "method": "POST",
       "url": "/api/translate/word",
       "handler": "api_translate_word",
       "file_path": "app/routes.py",
-      "line_number": 4891
+      "line_number": 4950
     },
     {
       "method": "POST",
       "url": "/api/generate/topic",
       "handler": "api_generate_topic",
       "file_path": "app/routes.py",
-      "line_number": 4924
+      "line_number": 4983
     },
     {
       "method": "POST",
       "url": "/api/translate/language",
       "handler": "api_translate_language",
       "file_path": "app/routes.py",
-      "line_number": 4957
+      "line_number": 5016
     },
     {
       "method": "GET",
       "url": "/auth/status",
       "handler": "auth_status",
       "file_path": "app/routes.py",
-      "line_number": 5000
+      "line_number": 5059
     },
     {
       "method": "GET",
       "url": "/auth/logout",
       "handler": "auth_logout",
       "file_path": "app/routes.py",
-      "line_number": 5019
+      "line_number": 5078
     },
     {
       "method": "GET",
       "url": "/api/debug/whoami",
       "handler": "api_debug_whoami",
       "file_path": "app/routes.py",
-      "line_number": 5038
+      "line_number": 5097
+    },
+    {
+      "method": "GET",
+      "url": "/auth/telegram",
+      "handler": "login",
+      "file_path": "app/telegram_oauth.py",
+      "line_number": 119
+    },
+    {
+      "method": "GET",
+      "url": "/auth/telegram/callback",
+      "handler": "callback",
+      "file_path": "app/telegram_oauth.py",
+      "line_number": 135
     }
   ],
   "telegram_handlers": [
@@ -814,49 +873,56 @@
       "trigger": "/start",
       "handler": "start_cmd",
       "file_path": "bot/auth.py",
-      "line_number": 798
+      "line_number": 971
     },
     {
       "trigger_type": "command",
       "trigger": "/open",
       "handler": "open_cmd",
       "file_path": "bot/auth.py",
-      "line_number": 799
+      "line_number": 972
     },
     {
       "trigger_type": "command",
       "trigger": "/family",
       "handler": "family_cmd",
       "file_path": "bot/auth.py",
-      "line_number": 800
+      "line_number": 973
     },
     {
       "trigger_type": "callback",
       "trigger": "r\"^onboarding:(?:language|language_keep|language_change|account",
       "handler": "onboarding_callback",
       "file_path": "bot/auth.py",
-      "line_number": 801
+      "line_number": 974
     },
     {
       "trigger_type": "callback",
       "trigger": "r\"^family_link:(?:confirm|cancel",
       "handler": "family_link_callback",
       "file_path": "bot/auth.py",
-      "line_number": 805
+      "line_number": 978
+    },
+    {
+      "trigger_type": "callback",
+      "trigger": "r\"^family_join:(?:confirm|cancel",
+      "handler": "family_join_callback",
+      "file_path": "bot/auth.py",
+      "line_number": 982
     },
     {
       "trigger_type": "message",
       "trigger": "filters.Regex(learn_words_pattern)",
       "handler": "open_cmd",
       "file_path": "bot/auth.py",
-      "line_number": 812
+      "line_number": 989
     },
     {
       "trigger_type": "message",
       "trigger": "filters.TEXT & (~filters.COMMAND) & exclude_import_btns",
       "handler": "on_text",
       "file_path": "bot/auth.py",
-      "line_number": 816
+      "line_number": 993
     },
     {
       "trigger_type": "command",
@@ -1117,6 +1183,20 @@
       "http_method": "POST",
       "android_symbol": "setLessonHidden",
       "backend_handler": "api_lessons_set_hidden",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/mcp/user",
+      "http_method": "GET",
+      "android_symbol": "getMcpUser",
+      "backend_handler": "mcp_user_status",
+      "status": "confirmed"
+    },
+    {
+      "endpoint": "/api/mcp/user",
+      "http_method": "POST",
+      "android_symbol": "setMcpEnabled",
+      "backend_handler": "mcp_user_toggle",
       "status": "confirmed"
     },
     {
