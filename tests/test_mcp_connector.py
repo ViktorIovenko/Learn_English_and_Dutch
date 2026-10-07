@@ -330,17 +330,21 @@ class McpConnectorTest(unittest.TestCase):
         with sqlite3.connect(self.db_path) as conn:
             word_id = conn.execute("SELECT id FROM words WHERE user_id='alice' AND lesson='Travel'").fetchone()[0]
         import datetime
-        single_ts = int(datetime.datetime(2026, 9, 8, tzinfo=datetime.timezone.utc).timestamp() * 1000)
+        # Даты относительно сегодняшнего дня, чтобы окно "days=30" всегда их покрывало.
+        today = datetime.datetime.now(datetime.timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
+        history = [today - datetime.timedelta(days=offset) for offset in range(6, 0, -1)]
+        to_ms = lambda moment: int(moment.timestamp() * 1000)
+        single_ts = to_ms(history[0])
         single = execute("family_child_progress_record", "alice", ["family.write"], {
             "child_user_id": "bob", "word_id": word_id, "result": "learned", "occurred_at": single_ts,
-            "idempotency_key": "bob-september-8",
+            "idempotency_key": "bob-first-day",
         })
         self.assertEqual({"stored": True, "child_user_id": "bob", "word_id": word_id, "occurred_at": single_ts}, single)
         items = [
-            {"word_id": word_id, "result": "learned", "occurred_at": int(datetime.datetime(2026, 9, day, tzinfo=datetime.timezone.utc).timestamp() * 1000)}
-            for day in range(9, 14)
+            {"word_id": word_id, "result": "learned", "occurred_at": to_ms(moment)}
+            for moment in history[1:]
         ]
-        params = {"child_user_id": "bob", "items": items, "idempotency_key": "bob-fill-gap-2026-09"}
+        params = {"child_user_id": "bob", "items": items, "idempotency_key": "bob-fill-gap"}
         first = execute("family_child_progress_record_many", "alice", ["family.write"], params)
         second = execute("family_child_progress_record_many", "alice", ["family.write"], params)
         self.assertEqual({"stored": 5, "child_user_id": "bob"}, first)
@@ -350,11 +354,9 @@ class McpConnectorTest(unittest.TestCase):
         self.assertEqual(6, len(rows))
         self.assertTrue(all(row[0] == "bob" for row in rows))
         progress = execute("family_child_progress_get", "alice", ["family.read"], {"child_user_id": "bob", "days": 30})
-        daily = {item["day"]: item for item in progress["progress_by_day"]}
-        for day in range(9, 14):
-            key = f"2026-09-{day:02d}"
-            self.assertEqual(1, daily[key]["correct"])
-        self.assertEqual(1, daily["2026-09-08"]["correct"])
+        daily = {item["date"]: item for item in progress["daily"]}
+        for moment in history:
+            self.assertEqual(1, daily[moment.strftime("%Y-%m-%d")]["correct"])
 
     def test_parent_cannot_record_progress_for_unlinked_child_or_unassigned_word(self):
         with sqlite3.connect(self.db_path) as conn:
