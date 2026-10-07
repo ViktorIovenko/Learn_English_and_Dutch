@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='family_invite.css') }}?v=2">
+<div class="family-invite-page">{% include "_family_invite_form.html" %}</div>
+{% endblock %}
+{% block scripts %}
+<script>window.FAMILY_BOT_USERNAME = {{ family_bot_username | tojson }};</script>
+<script src="{{ url_for('static', filename='family_invite.js') }}?v=2"></script>
+{% endblock %}

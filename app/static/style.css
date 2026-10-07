@@ -43,6 +43,17 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,Segoe
 .subtabs a{flex:0 0 auto;color:var(--muted);text-decoration:none;padding:6px 0;border-bottom:2px solid transparent;white-space:nowrap}
 .subtabs a:hover{color:var(--fg);border-color:var(--line)}
 .subtabs a.active{color:var(--acc);border-color:var(--acc)}
+.dashboard-nav{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0;padding:12px;background:#f8fafc;border:1px solid var(--line);border-radius:18px}
+.dashboard-nav-item{display:flex;flex:1 1 140px;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:#334155;font-size:14px;font-weight:600;text-align:center;line-height:1.3;transition:background .15s,border-color .15s,box-shadow .15s}
+.dashboard-nav-icon{flex:0 0 auto;font-size:20px;line-height:1;color:var(--acc)}
+.dashboard-nav-item:hover{background:#eff6ff;border-color:#93b4f6}
+.dashboard-nav-item:focus-visible{outline:3px solid #93b4f6;outline-offset:3px}
+.dashboard-nav-primary{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.16)}
+.dashboard-nav-primary .dashboard-nav-icon{color:inherit}
+.dashboard-nav-primary:hover{background:var(--acc-hover);border-color:var(--acc-hover)}
+.dashboard-nav-admin{flex-grow:0;background:transparent;border-style:dashed;color:var(--muted)}
+@media(max-width:560px){.dashboard-nav{gap:8px;padding:10px}.dashboard-nav-item{flex-basis:calc(50% - 4px);min-width:0;font-size:13px;padding:12px 8px}.dashboard-nav-primary{flex-basis:100%}.dashboard-nav-admin{flex-grow:1}}
+@media(prefers-reduced-motion:reduce){.dashboard-nav-item{transition:none}}
 /* [ДОБАВЛЕНО v5.5] компактный левый заголовок в subbar */
 .sub-title{font-size:16px;font-weight:600;color:var(--fg);white-space:nowrap}
 h2{margin:0;font-size:20px}
@@ -57,8 +68,6 @@ h3{margin:10px 0 6px 0;color:var(--fg)}
 .sentences div{margin:4px 0}
 .toolbar{display:flex;gap:12px;align-items:center;margin:8px 0 12px}
 .row{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0}
-button{background:var(--acc);border:none;color:#fff;padding:9px 14px;border-radius:10px;cursor:pointer}
-button:hover{background:var(--acc-hover)}
 audio{width:100%}
 a{color:inherit;text-decoration:none}
 a.card .card-title{color:var(--acc)}
@@ -195,15 +204,6 @@ a.card:hover .card-title{color:var(--acc-hover);text-decoration:underline}
   cursor:grabbing;
   box-shadow:0 12px 30px rgba(2,6,23,.25);
 }
-.pill-btn{
-  display:inline-flex; align-items:center; gap:6px;
-  padding:10px 14px; border-radius:999px;
-  border:1px solid #d0d7e2; background:#9bd8f1; color:#1e293b;
-  text-decoration:none; font-size:14px; line-height:1; transition:.2s;
-}
-.pill-btn:hover{ background:#eef2ff; border-color:#bcd; }
-.pill-btn.ghost{ background:#fff; }
-.pill-btn.small{ padding:6px 10px; font-size:13px; }
 
 body.modal-open{ overflow:hidden; }
 
@@ -313,26 +313,6 @@ body.modal-open{ overflow:hidden; }
 .lesson-title{ font-size:14px; }
 .lesson-meta{ font-size:12px; color:var(--muted); white-space:nowrap; }
 
-.ghost-btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  padding:9px 14px;
-  border-radius:10px;
-  background:#fff;
-  color:var(--fg);
-  border:1px solid var(--line);
-  text-decoration:none;
-  cursor:pointer;
-  font:inherit;
-}
-.ghost-btn:hover{ background:#f8fafc; }
-.danger-btn{ background:#ef4444; }
-.danger-btn:hover{ background:#dc2626; }
-.danger-btn:disabled,
-.ghost-btn:disabled,
-.modal-backdrop .modal-close:disabled{ opacity:.6; cursor:not-allowed; }
-
 @keyframes modalFadeIn{ from{opacity:0} to{opacity:1} }
 @keyframes modalFadeOut{ from{opacity:1} to{opacity:0} }
 @keyframes modalPopIn{ from{opacity:0;transform:translateY(8px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }
@@ -357,5 +337,118 @@ body.modal-open{ overflow:hidden; }
   .daily-timer{ gap:6px; padding:6px 10px; flex-wrap:nowrap; }
   .daily-timer .dt-label{ display:none; }
   #dt_restart{ display:none !important; }
-  .pill-btn.small{ padding:5px 8px; font-size:12px; }
+}
+
+/* =====================================================================
+   Единый стандарт кнопок (web + Telegram Mini App)
+   Все кнопки одной формы, высоты и шрифта; ширина — по тексту.
+   Цвет задаёт только роль: primary (по умолчанию), secondary, danger.
+   Не кнопки-действия (табы, плитки букв, карточки выбора, аудио/строчные
+   иконки в таблицах, крестики закрытия) исключены из базового правила.
+   ===================================================================== */
+:root{
+  --btn-h:40px;
+  --btn-px:16px;
+  --btn-radius:10px;
+  --btn-fs:14px;
+  --btn-fw:600;
+  --btn-secondary-line:#cbd5e1;
+  --btn-secondary-hover:#f1f5f9;
+  --btn-danger:#dc2626;
+  --btn-danger-line:#fca5a5;
+  --btn-danger-hover:#fef2f2;
+  --btn-focus:#93c5fd;
+}
+:where(
+  button:not(.up-tab,.admin-tab,.letter,.letter-btn,.account-card,.parent-history-lesson,
+    .share-lesson-name,.share-lesson-preview-btn,.modal-close,.close,.family-invite-close,
+    .audio-btn,.del-row-btn,.refresh-row-btn,.auth-gate-btn),
+  input[type="submit"],input[type="button"],
+  .btn,.btn-secondary,.btn-danger,.pill-btn,.ghost-btn,.danger-btn,.small-btn,
+  .mcp-secondary-btn,.mcp-google-btn
+){
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:var(--btn-h);
+  padding:8px var(--btn-px);
+  border:1px solid var(--acc);
+  border-radius:var(--btn-radius);
+  background:var(--acc);
+  color:#fff;
+  font-family:inherit;
+  font-size:var(--btn-fs);
+  font-weight:var(--btn-fw);
+  line-height:1.25;
+  text-align:center;
+  text-decoration:none;
+  vertical-align:middle;
+  box-shadow:none;
+  cursor:pointer;
+  transition:background-color .15s,border-color .15s,color .15s,transform .08s;
+}
+:where(
+  button:not(.up-tab,.admin-tab,.letter,.letter-btn,.account-card,.parent-history-lesson,
+    .share-lesson-name,.share-lesson-preview-btn,.modal-close,.close,.family-invite-close,
+    .audio-btn,.del-row-btn,.refresh-row-btn,.auth-gate-btn),
+  input[type="submit"],input[type="button"],
+  .btn,.btn-secondary,.btn-danger,.pill-btn,.ghost-btn,.danger-btn,.small-btn,
+  .mcp-secondary-btn,.mcp-google-btn
+):hover{ background:var(--acc-hover); border-color:var(--acc-hover); color:#fff; }
+:where(
+  button:not(.up-tab,.admin-tab,.letter,.letter-btn,.account-card,.parent-history-lesson,
+    .share-lesson-name,.share-lesson-preview-btn,.modal-close,.close,.family-invite-close,
+    .audio-btn,.del-row-btn,.refresh-row-btn,.auth-gate-btn),
+  input[type="submit"],input[type="button"],
+  .btn,.btn-secondary,.btn-danger,.pill-btn,.ghost-btn,.danger-btn,.small-btn,
+  .mcp-secondary-btn,.mcp-google-btn
+):active:not(:disabled){ transform:scale(.97); }
+:where(
+  button:not(.up-tab,.admin-tab,.letter,.letter-btn,.account-card,.parent-history-lesson,
+    .share-lesson-name,.share-lesson-preview-btn,.modal-close,.close,.family-invite-close,
+    .audio-btn,.del-row-btn,.refresh-row-btn,.auth-gate-btn),
+  input[type="submit"],input[type="button"],
+  .btn,.btn-secondary,.btn-danger,.pill-btn,.ghost-btn,.danger-btn,.small-btn,
+  .mcp-secondary-btn,.mcp-google-btn
+):focus-visible{ outline:3px solid var(--btn-focus); outline-offset:2px; }
+button:disabled,input[type="submit"]:disabled,input[type="button"]:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+
+/* secondary: белая кнопка с рамкой */
+.btn-secondary,.ghost-btn,.pill-btn.ghost,.small-btn,.icon-btn,.lang-btn,.db-pager button,
+.mcp-secondary-btn,.mcp-google-btn,.mcp-copy-btn,.family-invite-secondary{
+  background:#fff; border-color:var(--btn-secondary-line); color:var(--fg);
+}
+.btn-secondary:hover,.ghost-btn:hover,.pill-btn.ghost:hover,.small-btn:hover,.icon-btn:hover,.lang-btn:hover,
+.db-pager button:hover,.mcp-secondary-btn:hover,.mcp-google-btn:hover,.mcp-copy-btn:hover,.family-invite-secondary:hover{
+  background:var(--btn-secondary-hover); border-color:#94a3b8; color:var(--fg);
+}
+span.pill-btn{ cursor:default; }
+span.pill-btn:active{ transform:none; }
+
+/* primary-состояния внутри secondary-групп */
+.small-btn.primary,.lang-btn.active,.db-pager button.active{ background:var(--acc); border-color:var(--acc); color:#fff; }
+.small-btn.primary:hover,.lang-btn.active:hover,.db-pager button.active:hover{ background:var(--acc-hover); border-color:var(--acc-hover); color:#fff; }
+
+/* danger: деструктивные действия */
+.btn-danger,.danger-btn,.small-btn.danger,.mcp-danger-btn,.parent-unlink,.confirm-danger,.del-word-btn{
+  background:#fff; border-color:var(--btn-danger-line); color:var(--btn-danger);
+}
+.btn-danger:hover,.danger-btn:hover,.small-btn.danger:hover,.mcp-danger-btn:hover,.parent-unlink:hover,.confirm-danger:hover,.del-word-btn:hover{
+  background:var(--btn-danger-hover); border-color:var(--btn-danger); color:var(--btn-danger);
+}
+
+/* кнопка только с иконкой — квадрат высотой как обычная кнопка */
+.btn-icon,.icon-btn,.family-copy-btn,.mcp-field-row button{
+  flex:0 0 var(--btn-h); width:var(--btn-h); min-width:var(--btn-h); padding:0;
+}
+.btn-icon svg,.icon-btn svg,.family-copy-btn svg,.mcp-field-row button svg{ width:18px; height:18px; }
+
+.modal-backdrop .modal-close:disabled{ opacity:.6; cursor:not-allowed; }
+
+@media (max-width:380px){
+  :root{ --btn-px:12px; }
+}
+@media (prefers-reduced-motion:reduce){
+  :where(button,.btn,.pill-btn,.ghost-btn,.danger-btn){ transition:none; }
 }

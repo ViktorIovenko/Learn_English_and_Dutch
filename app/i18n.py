@@ -6363,6 +6363,85 @@ _COMPLETE_TRANSLATIONS = {'ru': {},
 for _language, _texts in _COMPLETE_TRANSLATIONS.items():
     TRANSLATIONS[_language].update(_texts)
 
+# Text introduced by the standalone database and connector pages.
+_RECENT_UI_LANGUAGES = ("ru", "en", "nl", "de", "fr", "es", "it", "pt", "pl", "uk")
+_RECENT_UI_ROWS = """
+mcp.open|Открыть MCP-коннектор|Open MCP connector|MCP-connector openen|MCP-Konnektor öffnen|Ouvrir le connecteur MCP|Abrir el conector MCP|Apri il connettore MCP|Abrir o conector MCP|Otwórz konektor MCP|Відкрити MCP-конектор
+mcp.help|Добавьте этот URL как MCP-коннектор в настройках ИИ-ассистента и войдите в свой аккаунт ParallelLingvo.|Add this URL as an MCP connector in your AI assistant settings and sign in to your ParallelLingvo account.|Voeg deze URL toe als MCP-connector in de instellingen van je AI-assistent en meld je aan bij ParallelLingvo.|Fügen Sie diese URL als MCP-Konnektor in den Einstellungen Ihres KI-Assistenten hinzu und melden Sie sich bei ParallelLingvo an.|Ajoutez cette URL comme connecteur MCP dans les paramètres de votre assistant IA et connectez-vous à ParallelLingvo.|Añade esta URL como conector MCP en los ajustes de tu asistente de IA e inicia sesión en ParallelLingvo.|Aggiungi questo URL come connettore MCP nelle impostazioni del tuo assistente IA e accedi a ParallelLingvo.|Adicione este URL como conector MCP nas definições do seu assistente de IA e entre no ParallelLingvo.|Dodaj ten URL jako konektor MCP w ustawieniach asystenta AI i zaloguj się do ParallelLingvo.|Додайте цей URL як MCP-конектор у налаштуваннях ШІ-асистента й увійдіть у ParallelLingvo.
+database.note|Ваши слова, переводы и примеры из всех уроков.|Your words, translations and examples from all lessons.|Je woorden, vertalingen en voorbeelden uit alle lessen.|Ihre Wörter, Übersetzungen und Beispiele aus allen Lektionen.|Vos mots, traductions et exemples de toutes les leçons.|Tus palabras, traducciones y ejemplos de todas las lecciones.|Le tue parole, traduzioni ed esempi di tutte le lezioni.|As suas palavras, traduções e exemplos de todas as lições.|Twoje słowa, tłumaczenia i przykłady ze wszystkich lekcji.|Ваші слова, переклади й приклади з усіх уроків.
+database.delete_note|Это слово будет удалено из базы. Действие нельзя отменить.|This word will be deleted from the database. This cannot be undone.|Dit woord wordt uit de database verwijderd. Dit kan niet ongedaan worden gemaakt.|Dieses Wort wird aus der Datenbank gelöscht. Dies kann nicht rückgängig gemacht werden.|Ce mot sera supprimé de la base. Cette action est irréversible.|Esta palabra se eliminará de la base de datos. Esta acción no se puede deshacer.|Questa parola sarà eliminata dal database. L'azione non può essere annullata.|Esta palavra será eliminada da base de dados. Esta ação não pode ser desfeita.|To słowo zostanie usunięte z bazy. Tej operacji nie można cofnąć.|Це слово буде видалено з бази. Дію неможливо скасувати.
+mcp.never_used|ещё не использовалось|not used yet|nog niet gebruikt|noch nicht verwendet|pas encore utilisé|aún no se ha usado|non ancora utilizzato|ainda não utilizado|jeszcze nie używano|ще не використовувалося
+mcp.disabled_label|Коннектор выключен|Connector disabled|Connector uitgeschakeld|Konnektor deaktiviert|Connecteur désactivé|Conector desactivado|Connettore disattivato|Conector desativado|Konektor wyłączony|Конектор вимкнено
+mcp.loading|Загрузка данных коннектора…|Loading connector details…|Connectorgegevens laden…|Konnektordaten werden geladen…|Chargement du connecteur…|Cargando datos del conector…|Caricamento del connettore…|A carregar dados do conector…|Ładowanie danych konektora…|Завантаження даних конектора…
+mcp.google_linked_message|Google-аккаунт успешно привязан к вашему профилю.|Google account linked to your profile.|Google-account gekoppeld aan je profiel.|Google-Konto mit Ihrem Profil verknüpft.|Compte Google associé à votre profil.|Cuenta de Google vinculada a tu perfil.|Account Google collegato al tuo profilo.|Conta Google associada ao seu perfil.|Konto Google połączone z Twoim profilem.|Google-акаунт прив’язано до вашого профілю.
+mcp.google_other_profile|Этот Google-аккаунт уже привязан к другому профилю.|This Google account is linked to another profile.|Dit Google-account is gekoppeld aan een ander profiel.|Dieses Google-Konto ist mit einem anderen Profil verknüpft.|Ce compte Google est associé à un autre profil.|Esta cuenta de Google está vinculada a otro perfil.|Questo account Google è collegato a un altro profilo.|Esta conta Google está associada a outro perfil.|To konto Google jest połączone z innym profilem.|Цей Google-акаунт прив’язано до іншого профілю.
+mcp.session_expired|Сессия закончилась. Войдите через Telegram и повторите привязку.|Session expired. Sign in with Telegram and try linking again.|Sessie verlopen. Meld je aan via Telegram en probeer opnieuw te koppelen.|Sitzung abgelaufen. Melden Sie sich über Telegram an und versuchen Sie es erneut.|Session expirée. Connectez-vous via Telegram et réessayez.|Sesión caducada. Inicia sesión con Telegram y vuelve a vincular.|Sessione scaduta. Accedi con Telegram e riprova il collegamento.|Sessão expirada. Entre pelo Telegram e tente associar novamente.|Sesja wygasła. Zaloguj się przez Telegram i spróbuj ponownie.|Сесія завершилася. Увійдіть через Telegram і повторіть прив’язування.
+mcp.profile_missing|Профиль пользователя не найден.|User profile not found.|Gebruikersprofiel niet gevonden.|Benutzerprofil nicht gefunden.|Profil utilisateur introuvable.|Perfil de usuario no encontrado.|Profilo utente non trovato.|Perfil do utilizador não encontrado.|Nie znaleziono profilu użytkownika.|Профіль користувача не знайдено.
+mcp.google_link_error|Не удалось привязать Google-аккаунт.|Could not link Google account.|Google-account koppelen mislukt.|Google-Konto konnte nicht verknüpft werden.|Impossible d'associer le compte Google.|No se pudo vincular la cuenta de Google.|Impossibile collegare l'account Google.|Não foi possível associar a conta Google.|Nie udało się połączyć konta Google.|Не вдалося прив’язати Google-акаунт.
+mcp.google_account|Google-аккаунт|Google account|Google-account|Google-Konto|Compte Google|Cuenta de Google|Account Google|Conta Google|Konto Google|Google-акаунт
+mcp.google_profile|Привязан к профилю ParallelLingvo|Linked to your ParallelLingvo profile|Gekoppeld aan je ParallelLingvo-profiel|Mit Ihrem ParallelLingvo-Profil verknüpft|Associé à votre profil ParallelLingvo|Vinculada a tu perfil de ParallelLingvo|Collegato al tuo profilo ParallelLingvo|Associada ao seu perfil ParallelLingvo|Połączone z Twoim profilem ParallelLingvo|Прив’язано до профілю ParallelLingvo
+mcp.google_signin|Используйте Google для входа в этот же профиль|Use Google to sign in to this same profile|Gebruik Google om je aan te melden bij dit profiel|Mit Google bei diesem Profil anmelden|Utilisez Google pour accéder à ce même profil|Usa Google para acceder a este mismo perfil|Usa Google per accedere allo stesso profilo|Use o Google para entrar neste mesmo perfil|Użyj Google, aby zalogować się do tego samego profilu|Використовуйте Google для входу в цей самий профіль
+mcp.linked|Привязан|Linked|Gekoppeld|Verknüpft|Associé|Vinculada|Collegato|Associada|Połączone|Прив’язано
+mcp.link_google|Привязать Google|Link Google|Google koppelen|Google verknüpfen|Associer Google|Vincular Google|Collega Google|Associar Google|Połącz Google|Прив’язати Google
+mcp.version|Версия|Version|Versie|Version|Version|Versión|Versione|Versão|Wersja|Версія
+mcp.transport|Транспорт|Transport|Transport|Transport|Transport|Transporte|Trasporto|Transporte|Transport|Транспорт
+mcp.authorization|Авторизация|Authorization|Autorisatie|Autorisierung|Autorisation|Autorización|Autorizzazione|Autorização|Autoryzacja|Авторизація
+mcp.oauth_issuer|Издатель OAuth|OAuth issuer|OAuth-uitgever|OAuth-Aussteller|Émetteur OAuth|Emisor OAuth|Emittente OAuth|Emissor OAuth|Wystawca OAuth|Видавець OAuth
+mcp.oauth_metadata|Метаданные OAuth|OAuth metadata|OAuth-metadata|OAuth-Metadaten|Métadonnées OAuth|Metadatos OAuth|Metadati OAuth|Metadados OAuth|Metadane OAuth|Метадані OAuth
+mcp.resource_metadata|Метаданные ресурса|Resource metadata|Resourcemetadata|Ressourcenmetadaten|Métadonnées de la ressource|Metadatos del recurso|Metadati della risorsa|Metadados do recurso|Metadane zasobu|Метадані ресурсу
+mcp.icon_url|URL иконки|Icon URL|Pictogram-URL|Symbol-URL|URL de l'icône|URL del icono|URL dell'icona|URL do ícone|URL ikony|URL значка
+mcp.last_used|Последнее использование|Last used|Laatst gebruikt|Zuletzt verwendet|Dernière utilisation|Último uso|Ultimo utilizzo|Última utilização|Ostatnie użycie|Останнє використання
+mcp.active_connections|Активных подключений|Active connections|Actieve verbindingen|Aktive Verbindungen|Connexions actives|Conexiones activas|Connessioni attive|Ligações ativas|Aktywne połączenia|Активних підключень
+mcp.how_connect|Как подключить:|How to connect:|Zo maak je verbinding:|So verbinden Sie sich:|Comment se connecter :|Cómo conectar:|Come collegarsi:|Como ligar:|Jak połączyć:|Як підключити:
+mcp.copy_details|Скопировать данные подключения|Copy connection details|Verbindingsgegevens kopiëren|Verbindungsdaten kopieren|Copier les données de connexion|Copiar datos de conexión|Copia i dati di connessione|Copiar dados de ligação|Kopiuj dane połączenia|Скопіювати дані підключення
+mcp.clients|Подключённые клиенты|Connected clients|Verbonden clients|Verbundene Clients|Clients connectés|Clientes conectados|Client connessi|Clientes ligados|Połączeni klienci|Підключені клієнти
+database.finding_duplicates|Ищу дубли...|Finding duplicates…|Duplicaten zoeken…|Duplikate suchen…|Recherche de doublons…|Buscando duplicados…|Ricerca di duplicati…|A procurar duplicados…|Wyszukiwanie duplikatów…|Пошук дублів…
+database.no_duplicates|Дубли не найдены.|No duplicates found.|Geen duplicaten gevonden.|Keine Duplikate gefunden.|Aucun doublon trouvé.|No se encontraron duplicados.|Nessun duplicato trovato.|Não foram encontrados duplicados.|Nie znaleziono duplikatów.|Дублів не знайдено.
+database.unnamed|Без слова|No word|Geen woord|Kein Wort|Aucun mot|Sin palabra|Nessuna parola|Sem palavra|Brak słowa|Без слова
+database.deleting|Удаляю...|Deleting…|Verwijderen…|Wird gelöscht…|Suppression…|Eliminando…|Eliminazione…|A eliminar…|Usuwanie…|Видалення…
+database.delete_error|Ошибка удаления|Deletion failed|Verwijderen mislukt|Löschen fehlgeschlagen|Échec de la suppression|Error al eliminar|Eliminazione non riuscita|Falha ao eliminar|Nie udało się usunąć|Помилка видалення
+database.cloud_error|Ошибка облака|Cloud service error|Fout in cloudservice|Cloud-Dienstfehler|Erreur du service cloud|Error del servicio en la nube|Errore del servizio cloud|Erro do serviço na nuvem|Błąd usługi w chmurze|Помилка хмарного сервісу
+database.empty_response|Сервер вернул пустой ответ|The server returned an empty response|De server gaf een leeg antwoord|Der Server hat eine leere Antwort zurückgegeben|Le serveur a renvoyé une réponse vide|El servidor devolvió una respuesta vacía|Il server ha restituito una risposta vuota|O servidor devolveu uma resposta vazia|Serwer zwrócił pustą odpowiedź|Сервер повернув порожню відповідь
+database.count|{count} слов|{count} words|{count} woorden|{count} Wörter|{count} mots|{count} palabras|{count} parole|{count} palavras|{count} słów|{count} слів
+database.search|Поиск по {languages}, уроку…|Search {languages}, lesson…|Zoek op {languages}, les…|Suche nach {languages}, Lektion…|Rechercher en {languages}, leçon…|Buscar por {languages}, lección…|Cerca per {languages}, lezione…|Pesquisar por {languages}, lição…|Szukaj według {languages}, lekcji…|Пошук за {languages}, уроком…
+database.duplicate_counts|Найдено групп: {groups}, лишних повторов: {duplicates}.|Groups found: {groups}, extra duplicates: {duplicates}.|Gevonden groepen: {groups}, extra duplicaten: {duplicates}.|Gruppen gefunden: {groups}, zusätzliche Duplikate: {duplicates}.|Groupes trouvés : {groups}, doublons supplémentaires : {duplicates}.|Grupos encontrados: {groups}, duplicados adicionales: {duplicates}.|Gruppi trovati: {groups}, duplicati aggiuntivi: {duplicates}.|Grupos encontrados: {groups}, duplicados adicionais: {duplicates}.|Znalezione grupy: {groups}, dodatkowe duplikaty: {duplicates}.|Знайдено груп: {groups}, зайвих повторів: {duplicates}.
+database.no_nl_duplicates|Повторяющихся NL слов нет.|No duplicate NL words.|Geen dubbele NL-woorden.|Keine doppelten NL-Wörter.|Aucun mot NL en double.|No hay palabras NL duplicadas.|Nessuna parola NL duplicata.|Não há palavras NL duplicadas.|Brak powtarzających się słów NL.|Повторюваних NL-слів немає.
+database.items|{count} шт.|{count} items|{count} items|{count} Einträge|{count} éléments|{count} elementos|{count} elementi|{count} itens|{count} pozycji|{count} шт.
+database.generation_error|Ошибка генерации: {message}|Generation error: {message}|Generatiefout: {message}|Generierungsfehler: {message}|Erreur de génération : {message}|Error de generación: {message}|Errore di generazione: {message}|Erro de geração: {message}|Błąd generowania: {message}|Помилка генерації: {message}
+"""
+for _row in _RECENT_UI_ROWS.strip().splitlines():
+    _key, *_values = _row.split("|")
+    for _language, _value in zip(_RECENT_UI_LANGUAGES, _values, strict=True):
+        TRANSLATIONS[_language][_key] = _value
+        LEGACY_RU_TRANSLATIONS[_language][_values[0]] = _value
+
+_RECENT_UI_ALIASES = {
+    "Скопировано": "mcp.copied", "Коннектор включён": "mcp.enabled_label",
+    "Подключён и активен": "mcp.state_connected", "Подключён, но приостановлен": "mcp.state_paused",
+    "Включён — ожидает подключения": "mcp.state_ready", "Выключен": "mcp.state_disabled",
+    "URL коннектора": "mcp.connector_url", "Название": "mcp.connector_name",
+    "Краткое описание": "mcp.connector_description", "Копировать": "mcp.copy",
+    "Скачать значок коннектора": "mcp.download_icon", "Отозвать все подключения": "mcp.revoke_all",
+    "Не удалось загрузить данные MCP.": "mcp.load_error",
+    "Не удалось отозвать подключения.": "mcp.update_error",
+    "Отозвать все подключения MCP? Для повторного подключения потребуется новая авторизация.": "mcp.revoke_confirm",
+    "скопируйте URL коннектора, добавьте его как пользовательский MCP-коннектор в настройках вашего ИИ-ассистента и войдите в свой аккаунт ParallelLingvo на странице авторизации.": "mcp.help",
+    "Уроки, слова и прогресс ParallelLingvo в вашем ИИ-ассистенте.": "mcp.note",
+}
+for _language in SUPPORTED_UI_LANGUAGES:
+    for _source, _key in _RECENT_UI_ALIASES.items():
+        LEGACY_RU_TRANSLATIONS[_language][_source] = TRANSLATIONS[_language][_key]
+
+
+# Universal family invitations.
+from app.family_i18n import catalogs as _family_catalogs
+for _language, _catalog in _family_catalogs().items():
+    TRANSLATIONS[_language].update(_catalog)
+    for _key in ("family.child_note", "family.standard_note", "family.invite_note"):
+        TRANSLATIONS[_language][_key] = _catalog["family.universal_note"]
+    for _key in ("family.telegram_link", "family.invite_link"):
+        TRANSLATIONS[_language][_key] = TRANSLATIONS[_language]["family.title"]
+
 def normalize_language(code: str | None, fallback: str = "en") -> str:
     lang = str(code or "").strip().lower().split("-", 1)[0].split("_", 1)[0]
     return lang if lang in SUPPORTED_UI_LANGUAGES else fallback

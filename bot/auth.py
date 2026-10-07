@@ -24,6 +24,7 @@ from config import Config
 from app.auth_links import create_auth_token
 from app.account_types import migrate_account_types
 from app.i18n import SUPPORTED_UI_LANGUAGES
+from app.family_invites import invitation_payload, resolve_invitation, allow_invitation_attempt
 from app.family_pairing import (
     create_invite_code,
     create_pairing_code,
@@ -444,15 +445,12 @@ async def _send_child_pairing_invite(
         return False
     try:
         code = create_pairing_code(Config.DB_PATH, user_id)
-        bot_user = await context.bot.get_me()
-        bot_username = str(bot_user.username or "").lstrip("@")
-        if not bot_username:
-            raise ValueError("bot_username_required")
-        pairing_url = f"https://t.me/{bot_username}?start=family_{code}"
+        transport = invitation_payload(code, "family")
+        pairing_url = transport["url"] + "\n\n" + transport["short_code"][:5] + "-" + transport["short_code"][5:]
 
         import qrcode
 
-        image = qrcode.make(pairing_url)
+        image = qrcode.make(transport["url"])
         output = BytesIO()
         output.name = "parent-link.png"
         image.save(output, format="PNG")
@@ -497,15 +495,12 @@ async def _send_parent_invite(
         return False
     try:
         code = create_invite_code(Config.DB_PATH, user_id)
-        bot_user = await context.bot.get_me()
-        bot_username = str(bot_user.username or "").lstrip("@")
-        if not bot_username:
-            raise ValueError("bot_username_required")
-        invite_url = f"https://t.me/{bot_username}?start=invite_{code}"
+        transport = invitation_payload(code, "invite")
+        invite_url = transport["url"] + "\n\n" + transport["short_code"][:5] + "-" + transport["short_code"][5:]
 
         import qrcode
 
-        image = qrcode.make(invite_url)
+        image = qrcode.make(transport["url"])
         output = BytesIO()
         output.name = "child-invite.png"
         image.save(output, format="PNG")
@@ -877,6 +872,16 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
 
+    text = str(getattr(update.effective_message, "text", "") or "").strip()
+    if re.fullmatch(r"[23456789A-HJ-NP-Z]{5}[- ]?[23456789A-HJ-NP-Z]{5}", text, re.I) or "/family/connect?" in text:
+        original_args = context.args
+        context.args = [text]
+        try:
+            await family_cmd(update, context)
+        finally:
+            context.args = original_args
+        return
+
     if context.user_data.get("await_pwd"):
         context.user_data.pop("await_pwd", None)
         for mid in context.user_data.get("pwd_bot_msg_ids", []):
@@ -919,7 +924,22 @@ async def family_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await _ensure_open_registration(update, context)
     if not user or not _is_user_registered(Config.DB_PATH, user.id):
         return
+    if context.args:
+        language = _user_interface_language(user.id, user.language_code)
+        if not allow_invitation_attempt(user.id):
+            from app.i18n import translate
+            await update.effective_chat.send_message(translate(language, "family.too_many_attempts"))
+            return
+        code, kind = resolve_invitation(" ".join(context.args))
+        if not code:
+            await update.effective_chat.send_message(onboarding_text(language, "pairing_invalid"))
+            return
+        context.user_data["pending_family_code"] = code
+        context.user_data["pending_family_kind"] = kind
     if await _show_onboarding_step(update, context):
+        return
+    if context.args:
+        await _show_pending_family_confirmation(update, context)
         return
     if account_type(Config.DB_PATH, user.id) == "standard":
         await _send_parent_invite(update, context, user.id)

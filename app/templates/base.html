@@ -106,12 +106,12 @@
     .auth-gate-actions{display:flex;flex-direction:column;gap:11px;}
     .auth-gate-btn{
       display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
-      padding:12px 16px;border-radius:12px;font-size:14.5px;font-weight:600;
+      min-height:var(--btn-h,40px);padding:8px 16px;border-radius:var(--btn-radius,10px);font-size:14px;font-weight:600;line-height:1.25;
       font-family:inherit;
       border:1px solid #E7DDD4;background:#fff;color:#17092B;text-decoration:none;
       cursor:pointer;transition:background .15s,transform .1s,box-shadow .15s;box-sizing:border-box;
     }
-    .auth-gate-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(23,9,43,.08);}
+    .auth-gate-btn:hover{box-shadow:0 6px 16px rgba(23,9,43,.08);}
     .auth-gate-icon{width:19px;height:19px;flex:0 0 auto;}
     .auth-gate-btn.google:hover{border-color:#C9BEDD;}
     .auth-gate-btn.telegram{background:#26A5E4;border-color:#26A5E4;color:#fff;}
@@ -128,7 +128,7 @@
     .auth-gate-btn.email-submit:hover{background:#4A0EA3;}
     .auth-gate-note{margin:4px 0 0;font-size:12px;color:#8A7A9E;}
   </style>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20260914-modal-motion-fix') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261007-buttons') }}">
   <link rel="icon" href="{{ url_for('static', filename='brand-icon.svg') }}" type="image/svg+xml">
 </head>
 <body>
@@ -148,7 +148,7 @@
       <h1 class="auth-gate-brand">ParallelLingvo</h1>
       <p class="auth-gate-subtitle">{{ t("auth_gate.subtitle") }}</p>
       <div class="auth-gate-actions">
-        <a class="auth-gate-btn google" href="/auth/google?next={{ request.path }}">
+        <a class="auth-gate-btn google" href="/auth/google?next={{ request.full_path.rstrip("?") | urlencode }}">
           <svg class="auth-gate-icon" viewBox="0 0 18 18" aria-hidden="true">
             <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
             <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
@@ -157,7 +157,7 @@
           </svg>
           <span>{{ t("auth_gate.google") }}</span>
         </a>
-        <a class="auth-gate-btn telegram" href="/auth/telegram?next={{ request.path }}">
+        <a class="auth-gate-btn telegram" href="/auth/telegram?next={{ request.full_path.rstrip("?") | urlencode }}">
           <svg class="auth-gate-icon" viewBox="0 0 496 512" fill="currentColor" aria-hidden="true">
             <path d="M446.7 98.6l-67.6 318.8c-5.1 22.5-18.4 28.1-37.3 17.5l-103-75.9-49.7 47.8c-5.5 5.5-10.1 10.1-20.6 10.1l7.4-104.9 190.9-172.5c8.3-7.4-1.8-11.5-12.9-4.1L117.8 284 16 251.4c-22.1-6.9-22.5-22.1 4.6-32.7L418.2 66.4c18.4-6.9 34.5 4.1 28.5 32.2z"/>
           </svg>
@@ -192,9 +192,9 @@
       <div id="daily-timer" class="daily-timer" role="group" aria-label="Study timer" hidden>
         <span class="dt-label">{{ t("timer.daily_goal") }}</span>
         <span class="dt-time" id="dt_time" aria-live="polite">10:00</span>
-        <button id="dt_pause" class="pill-btn small" type="button">{{ t("timer.pause") }}</button>
-        <button id="dt_restart" class="pill-btn small" type="button">{{ t("timer.restart") }}</button>
-        <button id="dt_reset" class="pill-btn small ghost" type="button" style="display:none">{{ t("timer.reset") }}</button>
+        <button id="dt_pause" class="pill-btn ghost" type="button">{{ t("timer.pause") }}</button>
+        <button id="dt_restart" class="pill-btn ghost" type="button">{{ t("timer.restart") }}</button>
+        <button id="dt_reset" class="pill-btn ghost" type="button" style="display:none">{{ t("timer.reset") }}</button>
       </div>
     </div>{% endif %}
     <!-- /[ДОБАВЛЕНО v5.11] -->
@@ -492,6 +492,7 @@
             const skipSubscription =
               path === "/account-type" ||
               path === "/family/link" ||
+              path === "/family/connect" ||
               path === "/subscription" ||
               path === "/settings" ||
               path.startsWith("/admin/") ||

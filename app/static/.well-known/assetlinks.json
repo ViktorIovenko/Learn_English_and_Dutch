@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.learnwords.app",
+      "sha256_cert_fingerprints": ["A7:57:D6:DD:EB:90:0E:DC:0E:AD:7B:3F:99:E9:5A:2E:83:59:99:E0:1B:BC:16:9E:16:E8:16:EA:7F:CE:84:ED"]
+    }
+  }
+]

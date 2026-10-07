@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='word_database.css', v='20261007-buttons') }}">
+<div class="word-database-page" data-legacy-i18n>
+  <header class="word-database-header">
+    <div><h1>База слов</h1><p>Ваши слова, переводы и примеры из всех уроков.</p></div>
+    <a href="{{ url_for('web.home') }}" class="ghost-btn">← {{ t("learn.back_to_lessons") }}</a>
+  </header>
+  <!-- ── Panel 3: Word database ─────────────────────────────────── -->
+  <div class="word-database-panel" id="panel-db">
+
+    <div class="db-toolbar">
+      <input type="search" class="db-search" id="db-search" placeholder="Поиск по словам и уроку…" oninput="dbSearchDebounced()">
+      <span class="db-count" id="db-count"></span>
+      <button type="button" class="ghost-btn" onclick="findDuplicateWords()">Поиск дублей</button>
+      <label style="font-size:13px;color:#64748b;white-space:nowrap;display:flex;align-items:center;gap:5px">
+        Уровень 🔄:
+        <select id="db-regen-level" style="border:1px solid #d0d7e2;border-radius:7px;padding:4px 8px;font-size:13px;color:#0f172a;background:#fff">
+          <option value="A1">A1</option>
+          <option value="A2" selected>A2</option>
+          <option value="B1">B1</option>
+          <option value="B2">B2</option>
+          <option value="C1">C1</option>
+          <option value="C2">C2</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="dupes-panel" class="dupes-panel">
+      <div class="dupes-head">
+        <div>
+          <div class="dupes-title">Дубли слов</div>
+          <div id="dupes-status" class="dupes-status"></div>
+        </div>
+        <button type="button" class="ghost-btn" onclick="closeDuplicateWords()">Скрыть</button>
+      </div>
+      <div id="dupes-list"></div>
+    </div>
+
+    <div class="table-wrap">
+      <div id="db-loading" style="display:none">{{ t("common.loading") }}</div>
+      <table class="db-tbl" id="db-table" style="display:none">
+        <thead>
+          <tr id="db-head-row"></tr>
+        </thead>
+        <tbody id="db-body"></tbody>
+      </table>
+    </div>
+
+    <div class="db-pager" id="db-pager"></div>
+
+  </div><!-- /panel-db -->
+
+<div id="dupe-delete-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="dupe-delete-title" aria-describedby="word-delete-description">
+    <div class="confirm-modal-head">
+      <h3 id="dupe-delete-title" class="confirm-modal-title">Удалить слово?</h3>
+    </div>
+    <div class="confirm-modal-body">
+      <p id="word-delete-description">Это слово будет удалено из базы. Действие нельзя отменить.</p>
+      <div class="confirm-word-card">
+        <div id="dupe-delete-word" class="confirm-word-main"></div>
+        <div id="dupe-delete-lesson" class="confirm-word-line"></div>
+        <div id="dupe-delete-translations" class="confirm-word-line"></div>
+      </div>
+      <div id="word-delete-error" class="word-delete-error" role="alert"></div>
+    </div>
+    <div class="confirm-modal-actions">
+      <button type="button" id="word-delete-cancel" class="ghost-btn" onclick="closeDuplicateDeleteModal()">Отмена</button>
+      <button type="button" id="dupe-delete-confirm" class="danger-btn" onclick="confirmDuplicateDelete()">Удалить</button>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='word_database.js', v='20261005-inline-audio') }}"></script>
+{% endblock %}

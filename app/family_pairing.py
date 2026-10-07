@@ -47,6 +47,8 @@ def ensure_pairing_code_schema(db_path: str) -> None:
             CREATE INDEX IF NOT EXISTS idx_family_pairing_codes_child
             ON family_pairing_codes(child_user_id)
         """)
+        from app.family_invites import ensure_invitation_schema
+        ensure_invitation_schema(conn)
         conn.commit()
 
 
@@ -66,8 +68,8 @@ def create_pairing_code(
         if not child or not _is_effectively_child(conn, child_id, child["account_type"]):
             raise ValueError("child_account_required")
         conn.execute(
-            "DELETE FROM family_pairing_codes WHERE expires_at < ? OR child_user_id=?",
-            (now, child_id),
+            "DELETE FROM family_pairing_codes WHERE expires_at < ?",
+            (now,),
         )
         while True:
             code = secrets.token_urlsafe(18)
@@ -102,6 +104,8 @@ def ensure_invite_code_schema(db_path: str) -> None:
             CREATE INDEX IF NOT EXISTS idx_family_invite_codes_parent
             ON family_invite_codes(parent_user_id)
         """)
+        from app.family_invites import ensure_invitation_schema
+        ensure_invitation_schema(conn)
         conn.commit()
 
 
@@ -122,8 +126,8 @@ def create_invite_code(
         if not parent or parent["account_type"] != "standard":
             raise ValueError("parent_account_required")
         conn.execute(
-            "DELETE FROM family_invite_codes WHERE expires_at < ? OR parent_user_id=?",
-            (now, parent_id),
+            "DELETE FROM family_invite_codes WHERE expires_at < ?",
+            (now,),
         )
         while True:
             code = secrets.token_urlsafe(18)
@@ -196,6 +200,10 @@ def link_child_with_invite_code(
         if not _is_effectively_child(conn, child_id, child["account_type"]):
             return {"ok": False, "error": "parent_cannot_be_child"}
 
+        used = conn.execute("SELECT user_id FROM family_invitation_uses WHERE code=? AND kind=?", (str(code), "invite")).fetchone()
+        if used and used[0] != child_id:
+            return {"ok": False, "error": "invalid_or_expired_pairing_code"}
+
         invite = conn.execute(
             """
             SELECT parent_user_id
@@ -229,6 +237,8 @@ def link_child_with_invite_code(
             """,
             (parent_id, child_id),
         ).fetchone()
+        if used and not existing:
+            return {"ok": False, "error": "invalid_or_expired_pairing_code"}
         parents_count = int(conn.execute(
             "SELECT COUNT(*) FROM parent_child_links WHERE child_user_id=?",
             (child_id,),
@@ -241,6 +251,7 @@ def link_child_with_invite_code(
             VALUES (?, ?)
             ON CONFLICT(parent_user_id, child_user_id) DO NOTHING
         """, (parent_id, child_id))
+        conn.execute("INSERT OR IGNORE INTO family_invitation_uses VALUES (?, ?, ?)", (str(code), "invite", child_id))
         conn.commit()
         display_name = " ".join(
             part for part in (parent["first_name"], parent["last_name"]) if part
@@ -340,6 +351,10 @@ def link_parent_with_pairing_code(
         if parent["account_type"] != "standard":
             return {"ok": False, "error": "child_cannot_be_parent"}
 
+        used = conn.execute("SELECT user_id FROM family_invitation_uses WHERE code=? AND kind=?", (str(code), "family")).fetchone()
+        if used and used[0] != parent_id:
+            return {"ok": False, "error": "invalid_or_expired_pairing_code"}
+
         pairing = conn.execute(
             """
             SELECT child_user_id
@@ -373,6 +388,8 @@ def link_parent_with_pairing_code(
             """,
             (parent_id, child_id),
         ).fetchone()
+        if used and not existing:
+            return {"ok": False, "error": "invalid_or_expired_pairing_code"}
         parents_count = int(conn.execute(
             "SELECT COUNT(*) FROM parent_child_links WHERE child_user_id=?",
             (child_id,),
@@ -385,6 +402,7 @@ def link_parent_with_pairing_code(
             VALUES (?, ?)
             ON CONFLICT(parent_user_id, child_user_id) DO NOTHING
         """, (parent_id, child_id))
+        conn.execute("INSERT OR IGNORE INTO family_invitation_uses VALUES (?, ?, ?)", (str(code), "family", parent_id))
         conn.commit()
         display_name = " ".join(
             part for part in (child["first_name"], child["last_name"]) if part

@@ -1,0 +1,22 @@
+LANGUAGES = ("ru", "en", "nl", "de", "fr", "es", "it", "pt", "pl", "uk")
+ROWS = """family.universal_note|Откройте ссылку, отсканируйте QR или введите код. Telegram не требуется.|Open the link, scan the QR or enter the code. Telegram is optional.|Open de link, scan de QR of voer de code in. Telegram is optioneel.|Link öffnen, QR scannen oder Code eingeben. Telegram ist optional.|Ouvrez le lien, scannez le QR ou saisissez le code. Telegram est facultatif.|Abre el enlace, escanea el QR o introduce el código. Telegram es opcional.|Apri il link, scansiona il QR o inserisci il codice. Telegram è facoltativo.|Abra o link, leia o QR ou introduza o código. Telegram é opcional.|Otwórz link, zeskanuj QR lub wpisz kod. Telegram jest opcjonalny.|Відкрийте посилання, скануйте QR або введіть код. Telegram не потрібен.
+family.enter_code|Введите код или ссылку|Enter code or link|Voer code of link in|Code oder Link eingeben|Saisir le code ou le lien|Introduce el código o enlace|Inserisci codice o link|Introduza código ou link|Wpisz kod lub link|Введіть код або посилання
+family.continue|Продолжить|Continue|Doorgaan|Weiter|Continuer|Continuar|Continua|Continuar|Dalej|Продовжити
+family.cancel|Отмена|Cancel|Annuleren|Abbrechen|Annuler|Cancelar|Annulla|Cancelar|Anuluj|Скасувати
+family.confirm_accounts|Ваш аккаунт: {account}. Подключить к {name}?|Your account: {account}. Connect to {name}?|Jouw account: {account}. Koppelen aan {name}?|Dein Konto: {account}. Mit {name} verbinden?|Votre compte : {account}. Associer à {name} ?|Tu cuenta: {account}. ¿Conectar con {name}?|Il tuo account: {account}. Collegare a {name}?|A sua conta: {account}. Ligar a {name}?|Twoje konto: {account}. Połączyć z {name}?|Ваш акаунт: {account}. Підключити до {name}?
+family.permissions|Родитель сможет видеть прогресс ребёнка и управлять его учебными заданиями.|The parent can view the child's progress and manage learning assignments.|De ouder kan de voortgang bekijken en leertaken beheren.|Der Elternteil kann den Lernfortschritt sehen und Lernaufgaben verwalten.|Le parent pourra voir les progrès et gérer les devoirs.|El padre podrá ver el progreso y gestionar las tareas.|Il genitore potrà vedere i progressi e gestire i compiti.|O responsável poderá ver o progresso e gerir tarefas.|Rodzic zobaczy postępy i będzie zarządzać zadaniami.|Батьки зможуть бачити прогрес і керувати навчальними завданнями.
+family.wrong_account|Неверный тип аккаунта: приглашение родителя принимает ребёнок, приглашение ребёнка — взрослый.|Wrong account type: a parent's invite is accepted by a child, a child's invite by an adult.|Verkeerd accounttype: een ouderuitnodiging is voor een kind, een kinderuitnodiging voor een volwassene.|Falscher Kontotyp: Elterneinladungen sind für Kinder, Kindereinladungen für Erwachsene.|Type de compte incorrect : une invitation parent est pour un enfant, et inversement.|Tipo de cuenta incorrecto: la invitación de un padre es para un niño y viceversa.|Tipo di account errato: l'invito di un genitore è per un bambino e viceversa.|Tipo de conta incorreto: o convite de um responsável é para uma criança e vice-versa.|Nieprawidłowy typ konta: zaproszenie rodzica jest dla dziecka i odwrotnie.|Неправильний тип акаунта: запрошення батьків приймає дитина, запрошення дитини — дорослий.
+family.too_many_attempts|Слишком много попыток. Повторите через 10 минут.|Too many attempts. Try again in 10 minutes.|Te veel pogingen. Probeer over 10 minuten opnieuw.|Zu viele Versuche. In 10 Minuten erneut versuchen.|Trop de tentatives. Réessayez dans 10 minutes.|Demasiados intentos. Prueba en 10 minutos.|Troppi tentativi. Riprova tra 10 minuti.|Demasiadas tentativas. Tente em 10 minutos.|Zbyt wiele prób. Spróbuj za 10 minut.|Забагато спроб. Повторіть через 10 хвилин.
+family.code|Код|Code|Code|Code|Code|Código|Codice|Código|Kod|Код
+family.invite_child|Пригласить ребёнка|Invite a child|Kind uitnodigen|Kind einladen|Inviter un enfant|Invitar a un niño|Invita un bambino|Convidar uma criança|Zaproś dziecko|Запросити дитину
+family.connected_children|Подключённые дети|Connected children|Gekoppelde kinderen|Verbundene Kinder|Enfants associés|Niños conectados|Bambini collegati|Crianças ligadas|Połączone dzieci|Підключені діти
+"""
+
+
+def catalogs():
+    result = {lang: {} for lang in LANGUAGES}
+    for row in ROWS.strip().splitlines():
+        key, *values = row.split("|")
+        for lang, value in zip(LANGUAGES, values, strict=True):
+            result[lang][key] = value
+    return result

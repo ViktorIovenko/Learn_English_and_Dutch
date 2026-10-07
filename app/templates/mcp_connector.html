@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='mcp_connector.css', v='20261007-buttons') }}">
+<div data-legacy-i18n>
+  <header class="mcp-page-header">
+    <div><h1>{{ t("mcp.title") }}</h1><p>{{ t("mcp.note") }}</p></div>
+    <a class="pill-btn" href="{{ url_for('web.settings_page') }}">← {{ t("nav.settings") }}</a>
+  </header>
+  <!-- ── Panel 6: Personal MCP connector ─────────────────────── -->
+  <div class="mcp-connector-panel" id="panel-mcp">
+    <div class="mcp-user-card">
+      <div class="mcp-user-hero">
+        <div class="mcp-user-brand">
+          <img id="mcp-user-icon" class="mcp-user-icon" src="{{ url_for('static', filename='mcp-icon-small.png') }}" alt="ParallelLingvo MCP">
+          <div>
+            <h2 id="mcp-user-name" class="mcp-user-title">ParallelLingvo</h2>
+            <p id="mcp-user-description" class="mcp-user-description">{{ t("mcp.note") }}</p>
+          </div>
+        </div>
+        <img id="mcp-user-art" class="mcp-user-art" src="{{ url_for('static', filename='mcp-icon-large.png') }}" alt="ParallelLingvo MCP">
+        <div class="mcp-switch-wrap">
+          <span id="mcp-toggle-label">{{ t("mcp.enabled_label") }}</span>
+          <label class="mcp-switch">
+            <input id="mcp-enabled-toggle" type="checkbox" onchange="mcpToggle(this.checked)" disabled>
+            <span></span>
+          </label>
+        </div>
+      </div>
+      <div id="mcp-user-content" class="mcp-user-body">
+        <div class="mcp-loading">{{ t("mcp.loading") }}</div>
+      </div>
+    </div>
+  </div><!-- /panel-mcp -->
+
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='mcp_connector.js', v='20261004-i18n') }}"></script>
+{% endblock %}

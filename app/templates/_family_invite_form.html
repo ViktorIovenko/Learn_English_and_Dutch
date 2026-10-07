@@ -1,0 +1,21 @@
+<div class="family-invite-card">
+  <div class="family-invite-header">
+    <h2 id="family-dialog-title">{{ t("family.enter_code") }}</h2>
+    <button type="button" id="family-close" class="family-invite-close" aria-label="{{ t('family.cancel') }}">×</button>
+  </div>
+  <p class="family-invite-note">{{ t("family.universal_note") }}</p>
+  <form id="family-code-form">
+    <input id="family-code" class="family-invite-input" autocomplete="off" autocapitalize="characters" maxlength="512" placeholder="{{ t('family.enter_code') }}" aria-label="{{ t('family.enter_code') }}" required>
+    <button type="submit" id="family-preview-submit" class="family-invite-primary">{{ t("family.continue") }}</button>
+  </form>
+  <div id="family-confirmation" class="family-invite-confirmation" hidden>
+    <p id="family-preview"></p>
+    <p id="family-permissions" class="family-invite-note" hidden>{{ t("family.permissions") }}</p>
+  </div>
+  <p id="family-status" class="family-invite-status" role="status" aria-live="polite"></p>
+  <div class="family-invite-footer">
+    <button type="button" id="family-cancel" class="family-invite-secondary">{{ t("family.cancel") }}</button>
+    <button type="button" id="family-accept" class="family-invite-primary" hidden>{{ t("family.link_confirm") }}</button>
+  </div>
+  <a id="family-bot" class="family-invite-bot" hidden>{{ t("auth_gate.telegram") }}</a>
+</div>

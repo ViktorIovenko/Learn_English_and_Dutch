@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ t("learn.title") }}{% endblock %}
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='learn.css', v='20261003-drag-anchor') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='learn.css', v='20261007-buttons') }}">
 <div id="learn-root" data-lesson="{{ lesson_title }}" class="learn-page">
   <div class="topbar">
     <a href="{{ url_for('web.home') }}" class="pill-btn">
@@ -57,8 +57,8 @@
       <p id="del-word-name" style="color:#2563eb;font-weight:600;font-size:15px;margin:0 0 8px;word-break:break-word"></p>
       <p style="color:#64748b;font-size:13px;margin:0 0 20px">{{ t("learn.delete_word_note") }}</p>
       <div style="display:flex;gap:10px;justify-content:center">
-        <button id="del-cancel-btn" class="ctrl-btn" style="background:#f1f5f9;color:#0f172a;box-shadow:none">{{ t("common.cancel") }}</button>
-        <button id="del-confirm-btn" class="ctrl-btn" style="background:#ef4444">{{ t("common.delete") }}</button>
+        <button id="del-cancel-btn" class="ctrl-btn btn-secondary">{{ t("common.cancel") }}</button>
+        <button id="del-confirm-btn" class="ctrl-btn btn-danger">{{ t("common.delete") }}</button>
       </div>
       <p id="del-error-msg" style="color:#dc2626;font-size:13px;margin:10px 0 0;min-height:18px"></p>
     </div>

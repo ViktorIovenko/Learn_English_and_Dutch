@@ -29,6 +29,7 @@ from app.family_pairing import (
     link_child_with_invite_code,
     pairing_code_details,
 )
+from app.family_invites import invitation_payload, preview_invitation, accept_invitation, allow_invitation_attempt
 from app.i18n import get_catalog, get_legacy_catalog, normalize_language, translate
 from app import models
 # [ДОБАВЛЕНО v7.0] генерация аудио
@@ -1845,6 +1846,12 @@ def difficult_page():
 
 @web.route("/upload")
 def upload_page():
+    if request.args.get("tab") == "db":
+        return redirect(url_for("web.word_database_page"))
+    if request.args.get("tab") == "mcp":
+        return redirect(url_for("web.mcp_connector_page", **{
+            key: request.args[key] for key in ("google_link",) if key in request.args
+        }))
     user_id = _session_user_id()
     access_pending = not user_id
     access_denied = bool(user_id and not _user_exists(user_id))
@@ -1857,6 +1864,26 @@ def upload_page():
         admin_user_id=user_id,
         upload_access_pending=access_pending,
         upload_access_denied=access_denied,
+    )
+
+
+@web.route("/word-database")
+def word_database_page():
+    return render_template(
+        "word_database.html",
+        title="База слов",
+        hide_timer=True,
+        show_auth_gate=True,
+    )
+
+
+@web.route("/settings/mcp")
+def mcp_connector_page():
+    return render_template(
+        "mcp_connector.html",
+        title="MCP-коннектор",
+        hide_timer=True,
+        show_auth_gate=True,
     )
 
 
@@ -1879,8 +1906,20 @@ def account_type_page():
     )
 
 
+@web.get("/.well-known/assetlinks.json")
+def android_app_links():
+    return send_from_directory(Path(current_app.static_folder) / ".well-known", "assetlinks.json", mimetype="application/json")
+
+
+@web.route("/family/connect")
 @web.route("/family/link")
 def family_link_page():
+    code = str(request.args.get("code") or "").strip()
+    if code or not request.args.get("token"):
+        response = current_app.make_response(render_template("family_invite.html", title="Family", hide_timer=True, family_bot_username=Config.BOT_USERNAME or ""))
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        return response
     token = str(request.args.get("token") or "").strip()
     child_user_id = verify_pairing_token(token)
     child_name = ""
@@ -3265,19 +3304,17 @@ def _pairing_payload(user_id: str) -> tuple[Dict[str, Any] | None, tuple | None]
     account = _account_context(user_id)
     if account["account_type"] != "child":
         return None, (jsonify({"ok": False, "error": "child_account_required"}), 403)
-    bot_username = _telegram_bot_username()
-    if not bot_username:
-        return None, (jsonify({"ok": False, "error": "telegram_bot_username_unavailable"}), 503)
     token = create_pairing_token(user_id)
     try:
         code = create_pairing_code(Config.DB_PATH, user_id)
     except ValueError:
         return None, (jsonify({"ok": False, "error": "child_account_required"}), 403)
-    pairing_url = f"https://t.me/{bot_username}?start=family_{code}"
+    transport = invitation_payload(code, "family")
+    pairing_url = transport["url"]
     return {
         "ok": True,
         "token": token,
-        "code": code,
+        **transport,
         "pairing_url": pairing_url,
         "expires_in": PAIRING_TOKEN_MAX_AGE_SECONDS,
     }, None
@@ -3294,6 +3331,31 @@ def api_family_pairing_code():
     return jsonify(payload)
 
 
+@web.post("/api/family/invitation/preview")
+@web.post("/api/family/invitation/accept")
+def api_family_invitation():
+    user_id = _current_user_id()
+    if not user_id or not _user_exists(user_id):
+        return jsonify({"ok": False, "error": "auth_required"}), 401
+    if not allow_invitation_attempt(user_id):
+        return jsonify({"ok": False, "error": "too_many_attempts"}), 429
+    _ensure_family_schema()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"ok": False, "error": "invalid_or_expired_pairing_code"}), 400
+    if data.get("token") and request.path.endswith("/preview"):
+        child_id = verify_pairing_token(str(data["token"]))
+        if not child_id:
+            return jsonify({"ok": False, "error": "invalid_or_expired_pairing_code"}), 400
+        try:
+            data = {"code": create_pairing_code(Config.DB_PATH, child_id), "kind": "family"}
+        except ValueError:
+            return jsonify({"ok": False, "error": "child_account_not_found"}), 400
+    handler = accept_invitation if request.path.endswith("/accept") else preview_invitation
+    result = handler(user_id, data.get("code"), data.get("kind", ""))
+    return jsonify(result), 200 if result.get("ok") else 400
+
+
 @web.get("/api/family/pairing-qr.png")
 def api_family_pairing_qr():
     user_id = _current_user_id()
@@ -3304,10 +3366,7 @@ def api_family_pairing_qr():
         details = pairing_code_details(Config.DB_PATH, code)
         if not details or details["child_user_id"] != str(user_id):
             return jsonify({"ok": False, "error": "invalid_or_expired_pairing_code"}), 400
-        bot_username = _telegram_bot_username()
-        if not bot_username:
-            return jsonify({"ok": False, "error": "telegram_bot_username_unavailable"}), 503
-        pairing_url = f"https://t.me/{bot_username}?start=family_{code}"
+        pairing_url = invitation_payload(code, "family")["url"]
     else:
         payload, error = _pairing_payload(str(user_id))
         if error:
@@ -3328,14 +3387,12 @@ def _invite_payload(user_id: str) -> tuple[Dict[str, Any] | None, tuple | None]:
     account = _account_context(user_id)
     if account["account_type"] != "standard":
         return None, (jsonify({"ok": False, "error": "parent_account_required"}), 403)
-    bot_username = _telegram_bot_username()
-    if not bot_username:
-        return None, (jsonify({"ok": False, "error": "telegram_bot_username_unavailable"}), 503)
     code = create_invite_code(Config.DB_PATH, user_id)
-    invite_url = f"https://t.me/{bot_username}?start=invite_{code}"
+    transport = invitation_payload(code, "invite")
+    invite_url = transport["url"]
     return {
         "ok": True,
-        "code": code,
+        **transport,
         "invite_url": invite_url,
         "expires_in": PAIRING_TOKEN_MAX_AGE_SECONDS,
     }, None
@@ -3362,10 +3419,7 @@ def api_family_invite_qr():
         details = invite_code_details(Config.DB_PATH, code)
         if not details or details["parent_user_id"] != str(user_id):
             return jsonify({"ok": False, "error": "invalid_or_expired_pairing_code"}), 400
-        bot_username = _telegram_bot_username()
-        if not bot_username:
-            return jsonify({"ok": False, "error": "telegram_bot_username_unavailable"}), 503
-        invite_url = f"https://t.me/{bot_username}?start=invite_{code}"
+        invite_url = invitation_payload(code, "invite")["url"]
     else:
         payload, error = _invite_payload(str(user_id))
         if error:
@@ -3410,6 +3464,11 @@ def api_family_link():
     if parent_account["account_type"] != "standard":
         return jsonify({"ok": False, "error": "child_cannot_be_parent"}), 403
     data = request.get_json(silent=True) or {}
+    if data.get("code"):
+        if not allow_invitation_attempt(parent_user_id):
+            return jsonify({"ok": False, "error": "too_many_attempts"}), 429
+        result = accept_invitation(parent_user_id, data["code"], "family")
+        return jsonify(result), 200 if result.get("ok") else 400
     token = str(data.get("token") or "").strip()
     child_user_id = verify_pairing_token(token)
     if not child_user_id:

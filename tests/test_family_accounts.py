@@ -234,7 +234,7 @@ class FamilyAccountsTest(unittest.TestCase):
         pairing_data = pairing.get_json()
         token = pairing_data["token"]
         self.assertTrue(pairing_data["pairing_url"].startswith(
-            "https://t.me/TestFamilyBot?start=family_"
+            Config.APP_BASE_URL.rstrip("/") + "/family/connect?code="
         ))
         qr = self.request(
             "GET",

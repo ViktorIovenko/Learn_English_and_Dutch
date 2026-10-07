@@ -11,26 +11,6 @@
   border:1px solid #94a3b8;color:#334155;background:#fff;
 }
 .account-line .acc-badge.ok{border-color:#22c55e;color:#065f46;background:#ecfdf5;}
-.action-buttons{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:clamp(6px,2vw,10px);margin:10px 0 4px;align-items:stretch;
-}
-.action-btn{
-  display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-width:0;min-height:42px;
-  padding:8px clamp(4px,2vw,18px);border-radius:12px;
-  font-family:inherit;font-size:clamp(10px,3.2vw,14px);line-height:1.15;font-weight:600;white-space:nowrap;cursor:pointer;
-  border:1px solid transparent;text-decoration:none;
-  transition:background .2s,transform .15s;
-}
-.action-btn.add-words{
-  background:#2563eb;color:#fff;border-color:#2563eb;
-  box-shadow:0 3px 10px rgba(37,99,235,.28);
-}
-.action-btn.add-words:hover{background:#1d4ed8;transform:translateY(-1px);}
-.action-btn.util-btn{background:#f8fafc;color:#334155;border-color:#d0d7e2;}
-.action-btn.util-btn:hover{background:#f1f5f9;}
-.action-btn.danger-act-btn{background:#fff;color:#dc2626;border-color:#fca5a5;}
-.action-btn.danger-act-btn:hover{background:#fef2f2;}
 .learning-streak{
   display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding:2px 8px;
   border:1px solid #fed7aa;border-radius:999px;background:#fff7ed;color:#9a3412;
@@ -65,7 +45,7 @@
 
 <div id="accountPanel" class="account-line" aria-live="polite">
   <span id="acc_username" class="acc-name">—</span>
-  <span id="acc_auth" class="acc-badge">auth: false</span>
+  <span id="acc_auth" hidden></span>
   <span id="learningStreak" class="learning-streak">
     <span class="learning-streak-fire" aria-hidden="true">🔥</span>
     <span id="learningStreakText">0</span>
@@ -118,29 +98,21 @@
   </div>
 </div>
 
-<div class="subbar">
-  <div class="subtabs">
-    <a href="{{ url_for('web.home') }}" class="active">{{ t("nav.lessons") }}</a>
-    <a class="btn" href="{{ url_for('web.difficult_page') }}">{{ t("nav.difficult") }}</a>
-    <a class="btn" href="{{ url_for('web.settings_page') }}">{{ t("nav.settings") }}</a>
-    <a class="btn" href="{{ url_for('web.subscription_page') }}" data-subscription-nav>{{ t("nav.subscription") }}</a>
-    <a class="btn" href="{{ url_for('web.parent_dashboard_page') }}" data-parent-only hidden>{{ t("nav.parent") }}</a>
+<nav class="dashboard-nav" aria-label="{{ t('app.title') }}" data-legacy-i18n>
+    <a class="dashboard-nav-item dashboard-nav-primary" href="{{ url_for('web.difficult_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">★</span>{{ t("nav.difficult") }}</a>
+    <a class="dashboard-nav-item" href="{{ url_for('web.word_database_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">▤</span>База слов</a>
+    <a class="dashboard-nav-item" href="/upload"><span class="dashboard-nav-icon" aria-hidden="true">＋</span>{{ t("index.add_words") }}</a>
+    <a class="dashboard-nav-item" href="{{ url_for('web.parent_dashboard_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">♧</span>{{ t("nav.parent") }}</a>
+    <a class="dashboard-nav-item" href="{{ url_for('web.settings_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">⚙</span>{{ t("nav.settings") }}</a>
     {% if is_admin %}
-      <a class="btn" href="{{ url_for('web.admin_users_page') }}">{{ t("nav.admin") }}</a>
+      <a class="dashboard-nav-item dashboard-nav-admin" href="{{ url_for('web.admin_users_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">◇</span>{{ t("nav.admin") }}</a>
     {% endif %}
-  </div>
-</div>
+</nav>
 
 <div id="helloLine" class="hello-line" style="margin:6px 0 10px 0;color:#64748b;">
   {% if display_name %}
     {{ t("index.hello", name=display_name) }}
   {% endif %}
-</div>
-
-<div class="action-buttons">
-  <a href="/upload" class="action-btn add-words">＋ {{ t("index.add_words") }}</a>
-  <button id="clear-cache-btn" type="button" class="action-btn util-btn">{{ t("index.clear_cache") }}</button>
-  <button id="delete-user-lessons-btn" type="button" class="action-btn danger-act-btn">{{ t("index.delete_lessons") }}</button>
 </div>
 
 <div id="lessons" class="grid"></div>

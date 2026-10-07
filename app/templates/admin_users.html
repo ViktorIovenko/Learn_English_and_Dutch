@@ -42,18 +42,9 @@ main.container {
 .family-relation { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 2px 0; }
 .family-relation-label { line-height: 1.25; }
 .family-empty { color: #94a3b8; }
-.relation-unlink { padding: 3px 6px; flex: 0 0 auto; }
+.relation-unlink { flex: 0 0 auto; }
 .admin-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 220px; }
-.small-btn {
-  border: 1px solid #d0d7e2; border-radius: 8px; background: #fff; color: #0f172a;
-  padding: 5px 7px; font-size: 11px; font-weight: 700; cursor: pointer;
-}
-.small-btn:hover { border-color: #93c5fd; color: #2563eb; background: #f8fbff; }
-.small-btn.primary { border-color: #2563eb; background: #2563eb; color: #fff; }
-.small-btn.primary:hover { border-color: #1d4ed8; background: #1d4ed8; color: #fff; }
-.small-btn.danger { border-color: #fca5a5; color: #dc2626; }
-.small-btn.danger:hover { background: #fef2f2; border-color: #ef4444; }
-.small-btn:disabled { opacity: .6; cursor: default; }
+/* .small-btn — единый стандарт кнопок в style.css */
 .admin-flash { margin-bottom: 10px; min-height: 20px; font-size: 13px; color: #64748b; }
 .admin-flash.ok { color: #16a34a; }
 .admin-flash.err { color: #dc2626; }
@@ -112,21 +103,11 @@ main.container {
   display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px;
   border-top: 1px solid #e2e8f0;
 }
-.confirm-danger {
-  border: 1px solid #dc2626; background: #dc2626; color: #fff;
-  border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer;
-}
-.confirm-primary {
-  border: 1px solid #2563eb; background: #2563eb; color: #fff;
-  border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer;
-}
-.confirm-danger:disabled, .confirm-primary:disabled { opacity: .65; cursor: default; }
 @media (max-width: 900px) {
   .tts-summary { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
   .translation-summary { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
   .admin-table { font-size: 11px; }
   .admin-table th, .admin-table td { padding: 7px 5px; }
-  .small-btn { padding: 5px 6px; font-size: 11px; }
 }
 </style>
 

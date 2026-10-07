@@ -123,18 +123,23 @@ class TelegramFamilyPairingTest(unittest.TestCase):
             )
             conn.commit()
         code = create_pairing_code(self.db_path, "child")
+        first_code = code
         for index in range(1, 6):
+            code = create_pairing_code(self.db_path, "child")
+            if index == 1:
+                first_code = code
             result = link_parent_with_pairing_code(
                 self.db_path, f"parent-{index}", code
             )
             self.assertTrue(result["ok"])
 
+        code = create_pairing_code(self.db_path, "child")
         rejected = link_parent_with_pairing_code(self.db_path, "parent-6", code)
         self.assertFalse(rejected["ok"])
         self.assertEqual("parent_limit_reached", rejected["error"])
 
         # Reopening the same link for an already connected adult is idempotent.
-        repeated = link_parent_with_pairing_code(self.db_path, "parent-1", code)
+        repeated = link_parent_with_pairing_code(self.db_path, "parent-1", first_code)
         self.assertTrue(repeated["ok"])
 
 

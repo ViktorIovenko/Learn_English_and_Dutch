@@ -42,7 +42,7 @@
     <div class="share-panel">
       <h2 class="share-title">{{ t("share.unavailable") }}</h2>
       <p class="share-empty">{{ error }}</p>
-      <a class="ghost-btn" href="/upload" style="display:inline-flex;text-decoration:none">{{ t("share.go_to_words") }}</a>
+      <a class="ghost-btn" href="/upload">{{ t("share.go_to_words") }}</a>
     </div>
   {% elif share %}
     <div class="share-head">
@@ -52,7 +52,7 @@
           {{ share.lessons_count or 1 }} {{ t("nav.lessons")|lower }} · {{ t("share.words_count", count=share.words_count) }}{% if share.owner_name %} · {{ t("share.shared_by", name=share.owner_name) }}{% endif %}
         </div>
       </div>
-      <a class="ghost-btn" href="/" style="display:inline-flex;text-decoration:none">{{ t("share.my_lessons") }}</a>
+      <a class="ghost-btn" href="/">{{ t("share.my_lessons") }}</a>
     </div>
 
     <div class="share-panel">

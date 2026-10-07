@@ -74,60 +74,6 @@ table.preview-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min
 #upload-status a { color: #2563eb; text-decoration: underline; }
 
 /* ── Word database tab ────────────────────────────────────────── */
-.db-toolbar {
-  display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;
-}
-.db-search {
-  flex: 1; min-width: 160px; border: 1px solid #d0d7e2; border-radius: 8px;
-  padding: 7px 12px; font-size: 14px; color: #0f172a; background: #fff;
-}
-.db-search:focus { outline: none; border-color: #2563eb; }
-.db-count { font-size: 13px; color: #64748b; white-space: nowrap; }
-.dupes-panel {
-  display: none; border: 1px solid #e2e8f0; border-radius: 12px;
-  background: #f8fafc; padding: 12px; margin-bottom: 12px;
-}
-.dupes-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.dupes-title { font-weight: 700; font-size: 14px; color: #0f172a; }
-.dupes-status { font-size: 13px; color: #64748b; }
-.dupe-group { border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; margin-top: 8px; overflow: hidden; }
-.dupe-group-head { padding: 8px 10px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
-.dupe-item {
-  display: grid; grid-template-columns: minmax(120px,1fr) minmax(90px,1fr) minmax(90px,1fr) auto;
-  gap: 8px; align-items: start; padding: 7px 10px; border-top: 1px solid #f1f5f9; font-size: 13px;
-}
-.dupe-item:first-child { border-top: none; }
-.dupe-lesson { color: #64748b; font-size: 12px; margin-top: 2px; }
-.dupe-actions { display: flex; gap: 5px; white-space: nowrap; }
-.modal-backdrop {
-  position: fixed; inset: 0; z-index: 1000; display: none;
-  align-items: center; justify-content: center; padding: 18px;
-  background: rgba(15, 23, 42, .45);
-}
-.modal-backdrop.is-open { display: flex; }
-.confirm-modal {
-  width: min(440px, 100%); border-radius: 14px; background: #fff;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, .25); overflow: hidden;
-}
-.confirm-modal-head { padding: 16px 18px 10px; border-bottom: 1px solid #e2e8f0; }
-.confirm-modal-title { margin: 0; font-size: 17px; color: #0f172a; }
-.confirm-modal-body { padding: 14px 18px; color: #475569; font-size: 14px; line-height: 1.45; }
-.confirm-word-card {
-  margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 10px;
-  background: #f8fafc; padding: 10px; color: #0f172a;
-}
-.confirm-word-main { font-weight: 700; margin-bottom: 4px; overflow-wrap: anywhere; }
-.confirm-word-line { color: #475569; font-size: 13px; overflow-wrap: anywhere; }
-.confirm-modal-actions {
-  display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px;
-  border-top: 1px solid #e2e8f0;
-}
-.danger-btn {
-  border: 1px solid #dc2626; background: #dc2626; color: #fff;
-  border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer;
-}
-.danger-btn:hover { background: #b91c1c; border-color: #b91c1c; }
-.danger-btn:disabled { opacity: .65; cursor: default; }
 .share-lessons-panel {
   border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;
   padding: 12px; margin-bottom: 12px;
@@ -168,7 +114,7 @@ table.preview-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min
 }
 .share-lesson-item.is-open .share-lesson-preview-btn { transform: rotate(180deg); }
 .share-lesson-language-actions { display:flex; align-items:center; justify-content:flex-end; gap:6px; flex-wrap:wrap; }
-.share-add-language-btn { padding:5px 9px; border-radius:8px; font-size:12px; white-space:nowrap; }
+.share-add-language-btn { white-space:nowrap; }
 .share-lesson-words {
   display: none; margin: 8px 0 2px 26px; padding-top: 8px;
   border-top: 1px dashed #e2e8f0; color: #334155; font-size: 13px;
@@ -263,13 +209,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   display: flex; gap: 6px; align-items: center; justify-content: center;
   margin-top: 12px; flex-wrap: wrap;
 }
-.db-pager button {
-  border: 1px solid #d0d7e2; background: #fff; border-radius: 7px;
-  padding: 5px 12px; font-size: 13px; cursor: pointer; color: #0f172a;
-}
-.db-pager button:hover:not(:disabled) { background: #eff6ff; border-color: #93c5fd; }
-.db-pager button:disabled { opacity: .4; cursor: default; }
-.db-pager button.active { background: #2563eb; color: #fff; border-color: #2563eb; }
 .db-pager .pager-info { font-size: 13px; color: #64748b; padding: 0 4px; }
 
 #db-loading { text-align: center; padding: 30px; color: #64748b; font-size: 14px; }
@@ -315,63 +254,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 .file-drop-text { font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
 .file-drop-sub  { font-size: 13px; color: #64748b; }
 
-/* ── MCP connector tab ───────────────────────────────────────── */
-.mcp-user-card { border:1px solid #dfe4f3; border-radius:20px; overflow:hidden; background:#fff; box-shadow:0 10px 30px rgba(30,41,59,.07); }
-.mcp-user-hero { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:24px; color:#fff; background:linear-gradient(135deg,#27388f,#3f51b5 60%,#6372d3); }
-.mcp-user-brand { display:flex; align-items:center; gap:15px; min-width:0; }
-.mcp-user-icon { width:66px; height:66px; flex:0 0 66px; padding:7px; border-radius:18px; background:#fff; box-shadow:0 8px 22px rgba(15,23,42,.22); }
-.mcp-user-title { margin:0 0 4px; font-size:23px; line-height:1.2; }
-.mcp-user-description { margin:0; color:rgba(255,255,255,.8); font-size:13px; line-height:1.5; }
-.mcp-user-art { width:118px; height:118px; flex:0 0 118px; object-fit:contain; filter:drop-shadow(0 10px 18px rgba(15,23,42,.24)); }
-.mcp-switch-wrap { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; white-space:nowrap; }
-.mcp-switch { position:relative; width:52px; height:29px; display:inline-block; }
-.mcp-switch input { position:absolute; opacity:0; pointer-events:none; }
-.mcp-switch span { position:absolute; inset:0; border-radius:999px; background:rgba(255,255,255,.28); cursor:pointer; transition:.2s; }
-.mcp-switch span::after { content:""; position:absolute; width:23px; height:23px; left:3px; top:3px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(15,23,42,.3); transition:.2s; }
-.mcp-switch input:checked + span { background:#22c55e; }
-.mcp-switch input:checked + span::after { transform:translateX(23px); }
-.mcp-user-body { padding:22px 24px 26px; }
-.mcp-status-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
-.mcp-status { display:inline-flex; align-items:center; gap:8px; font-size:14px; font-weight:750; }
-.mcp-status::before { content:""; width:10px; height:10px; border-radius:50%; background:#94a3b8; box-shadow:0 0 0 4px #f1f5f9; }
-.mcp-status.connected::before { background:#16a34a; box-shadow:0 0 0 4px #dcfce7; }
-.mcp-status.ready::before { background:#2563eb; box-shadow:0 0 0 4px #dbeafe; }
-.mcp-status.paused::before { background:#f59e0b; box-shadow:0 0 0 4px #fef3c7; }
-.mcp-status.disabled::before { background:#94a3b8; }
-.mcp-connection-count { color:#64748b; font-size:13px; }
-.mcp-details-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.mcp-detail { min-width:0; padding:12px 13px; border:1px solid #e2e8f0; border-radius:13px; background:#f8fafc; }
-.mcp-detail.wide { grid-column:1/-1; }
-.mcp-detail-label { display:block; margin-bottom:5px; color:#64748b; font-size:11px; font-weight:750; letter-spacing:.05em; text-transform:uppercase; }
-.mcp-copy-row { display:flex; align-items:center; gap:8px; }
-.mcp-copy-value { min-width:0; flex:1; overflow:hidden; color:#172033; font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace; text-overflow:ellipsis; white-space:nowrap; }
-.mcp-copy-btn { flex:0 0 auto; border:0; border-radius:8px; padding:6px 9px; color:#334155; background:#e8edf7; font-size:12px; font-weight:700; cursor:pointer; }
-.mcp-copy-btn:hover { background:#dce4f2; }
-.mcp-help { margin-top:16px; padding:14px 16px; border:1px solid #dbe5ff; border-radius:13px; color:#475569; background:#f5f8ff; font-size:13px; line-height:1.55; }
-.mcp-google-card { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; padding:15px 16px; border:1px solid #e2e8f0; border-radius:14px; background:#fff; }
-.mcp-google-info { display:flex; align-items:center; gap:12px; min-width:0; }
-.mcp-google-icon { display:grid; width:38px; height:38px; flex:0 0 38px; place-items:center; border:1px solid #e2e8f0; border-radius:11px; background:#fff; }
-.mcp-google-title { color:#172033; font-size:14px; font-weight:750; }
-.mcp-google-meta { overflow:hidden; margin-top:2px; color:#64748b; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
-.mcp-google-btn { display:inline-flex; align-items:center; gap:8px; flex:0 0 auto; padding:9px 14px; border:1px solid #d5dbe5; border-radius:10px; color:#172033; background:#fff; box-shadow:0 2px 8px rgba(15,23,42,.07); font-size:13px; font-weight:750; text-decoration:none; }
-.mcp-google-btn:hover { border-color:#b7c2d2; box-shadow:0 4px 12px rgba(15,23,42,.11); }
-.mcp-google-badge { flex:0 0 auto; padding:6px 10px; border-radius:999px; color:#15803d; background:#dcfce7; font-size:12px; font-weight:750; }
-.mcp-google-message { margin-bottom:14px; padding:10px 13px; border-radius:11px; color:#166534; background:#ecfdf3; font-size:13px; }
-.mcp-google-message.error { color:#b4232e; background:#fff1f2; }
-.mcp-actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:16px; }
-.mcp-primary-btn,.mcp-danger-btn,.mcp-secondary-btn { border:0; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:750; cursor:pointer; }
-.mcp-primary-btn { color:#fff; background:#3f51b5; }
-.mcp-danger-btn { color:#b4232e; background:#fff1f2; }
-.mcp-secondary-btn { display:inline-flex; align-items:center; gap:7px; border:1px solid #d5dbe5; color:#172033; background:#fff; text-decoration:none; }
-.mcp-secondary-btn:hover { border-color:#b7c2d2; }
-.mcp-danger-btn[hidden] { display:none; }
-.mcp-connections { margin-top:18px; }
-.mcp-connections-title { margin:0 0 9px; font-size:14px; }
-.mcp-connection-item { display:flex; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid #edf0f5; font-size:12px; }
-.mcp-connection-name { font-weight:750; color:#27344a; }
-.mcp-connection-meta { color:#7b879a; text-align:right; }
-.mcp-loading { padding:32px; color:#64748b; text-align:center; }
-
 @media (max-width: 380px) {
   .content-controls input { width: 130px; }
   .lesson-row input, .lesson-row select { min-width: 80px; }
@@ -382,10 +264,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   .share-lesson-main { flex:1 1 100%; }
   .share-lesson-side { width:100%; justify-content:space-between; }
   .share-lesson-language-actions { justify-content:flex-start; }
-  .mcp-user-hero { align-items:flex-start; flex-direction:column; }
-  .mcp-details-grid { grid-template-columns:1fr; }
-  .mcp-detail.wide { grid-column:auto; }
-  .mcp-google-card { align-items:flex-start; flex-direction:column; }
 }
 /* Upload page presentation and motion */
 .upload-page { --up-accent:#2563eb; --up-ink:#172554; --up-line:#dce5f2; }
@@ -423,10 +301,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 .upload-page :is(button,a):focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
 .upload-page .lesson-hint { color:#64748b; line-height:1.5; }
 .upload-page .actions-row { gap:12px; margin:18px 0; }
-.upload-page .actions-row button { border-radius:12px; padding:11px 17px; font-weight:600; transition:transform .18s,box-shadow .18s,background .18s,opacity .18s; }
-.upload-page :is(#generate-btn,#upload-btn,#file-upload-btn) { border:1px solid #1d4ed8; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; box-shadow:0 4px 12px rgba(37,99,235,.2); }
-.upload-page button:active:not(:disabled) { transform:scale(.97); }
-.upload-page button:disabled { cursor:wait; opacity:.65; }
 .upload-page .table-wrap { border:1px solid var(--up-line); border-radius:14px; background:#fff; }
 .upload-page .preview-tbl th { padding:12px; background:#f3f6fc; color:#334155; }
 .upload-page .preview-tbl td { padding:10px; }
@@ -436,7 +310,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 .upload-page .confirm-modal { animation:upload-enter .2s ease-out both; }
 @media (hover:hover) {
   .upload-page .up-tab:hover:not(.active) { background:#e7edf8; }
-  .upload-page .actions-row button:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 7px 18px rgba(30,64,175,.16); }
   .upload-page .lesson-block:hover { border-color:#b7cbed; }
   .upload-page .preview-tbl tbody tr:hover { background:#f8faff; }
 }
@@ -536,9 +409,7 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
     <button class="up-tab active" onclick="switchTab('add')"   id="tab-add">Добавить слова</button>
     <button class="up-tab"        onclick="switchTab('topic')" id="tab-topic">По теме</button>
     <button class="up-tab"        onclick="switchTab('file')"  id="tab-file">CSV / Excel</button>
-    <button class="up-tab"        onclick="switchTab('db')"    id="tab-db">База слов</button>
     <button class="up-tab"        onclick="switchTab('share')" id="tab-share">Управление уроками</button>
-    <button class="up-tab"        onclick="switchTab('mcp')"   id="tab-mcp">MCP</button>
   </div>
 
   <!-- ── Panel 1: Add words ────────────────────────────────────── -->
@@ -648,51 +519,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 
   </div><!-- /panel-file -->
 
-  <!-- ── Panel 3: Word database ─────────────────────────────────── -->
-  <div class="up-panel" id="panel-db">
-
-    <div class="db-toolbar">
-      <input type="search" class="db-search" id="db-search" placeholder="Поиск по словам и уроку…" oninput="dbSearchDebounced()">
-      <span class="db-count" id="db-count"></span>
-      <button type="button" class="ghost-btn" style="padding:6px 10px;font-size:12px" onclick="findDuplicateWords()">Поиск дублей</button>
-      <label style="font-size:13px;color:#64748b;white-space:nowrap;display:flex;align-items:center;gap:5px">
-        Уровень 🔄:
-        <select id="db-regen-level" style="border:1px solid #d0d7e2;border-radius:7px;padding:4px 8px;font-size:13px;color:#0f172a;background:#fff">
-          <option value="A1">A1</option>
-          <option value="A2" selected>A2</option>
-          <option value="B1">B1</option>
-          <option value="B2">B2</option>
-          <option value="C1">C1</option>
-          <option value="C2">C2</option>
-        </select>
-      </label>
-    </div>
-
-    <div id="dupes-panel" class="dupes-panel">
-      <div class="dupes-head">
-        <div>
-          <div class="dupes-title">Дубли слов</div>
-          <div id="dupes-status" class="dupes-status"></div>
-        </div>
-        <button type="button" class="ghost-btn" style="padding:5px 10px;font-size:12px" onclick="closeDuplicateWords()">Скрыть</button>
-      </div>
-      <div id="dupes-list"></div>
-    </div>
-
-    <div class="table-wrap">
-      <div id="db-loading" style="display:none">⏳ Загрузка…</div>
-      <table class="db-tbl" id="db-table" style="display:none">
-        <thead>
-          <tr id="db-head-row"></tr>
-        </thead>
-        <tbody id="db-body"></tbody>
-      </table>
-    </div>
-
-    <div class="db-pager" id="db-pager"></div>
-
-  </div><!-- /panel-db -->
-
   <!-- ── Panel 5: Share lessons ─────────────────────────────────── -->
   <div class="up-panel" id="panel-share">
     <div class="share-lessons-panel">
@@ -701,7 +527,7 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
           <div class="share-lessons-title">Управление уроками</div>
           <div class="share-lessons-status">Добавляйте выбранные в настройках языки, просматривайте слова и управляйте передачей уроков.</div>
         </div>
-        <button type="button" class="ghost-btn" style="padding:5px 10px;font-size:12px" onclick="shareLessonsLoad(true)">Обновить</button>
+        <button type="button" class="ghost-btn" onclick="shareLessonsLoad(true)">Обновить</button>
       </div>
       <div id="share-lessons-status" class="share-lessons-status">Список уроков загрузится автоматически.</div>
       <div id="share-lessons-list" class="share-lessons-list"></div>
@@ -744,32 +570,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
     </div>
   </div><!-- /panel-share -->
 
-  <!-- ── Panel 6: Personal MCP connector ─────────────────────── -->
-  <div class="up-panel" id="panel-mcp">
-    <div class="mcp-user-card">
-      <div class="mcp-user-hero">
-        <div class="mcp-user-brand">
-          <img id="mcp-user-icon" class="mcp-user-icon" src="{{ url_for('static', filename='mcp-icon-small.png') }}" alt="ParallelLingvo MCP">
-          <div>
-            <h2 id="mcp-user-name" class="mcp-user-title">ParallelLingvo</h2>
-            <p id="mcp-user-description" class="mcp-user-description">{% if current_ui_language == 'ru' %}Уроки, слова и прогресс ParallelLingvo в вашем ИИ-ассистенте.{% else %}ParallelLingvo lessons, words and progress in your AI assistant.{% endif %}</p>
-          </div>
-        </div>
-        <img id="mcp-user-art" class="mcp-user-art" src="{{ url_for('static', filename='mcp-icon-large.png') }}" alt="ParallelLingvo MCP">
-        <div class="mcp-switch-wrap">
-          <span id="mcp-toggle-label">{% if current_ui_language == 'ru' %}Коннектор включён{% else %}Connector enabled{% endif %}</span>
-          <label class="mcp-switch">
-            <input id="mcp-enabled-toggle" type="checkbox" onchange="mcpToggle(this.checked)" disabled>
-            <span></span>
-          </label>
-        </div>
-      </div>
-      <div id="mcp-user-content" class="mcp-user-body">
-        <div class="mcp-loading">{% if current_ui_language == 'ru' %}Загрузка данных коннектора…{% else %}Loading connector details…{% endif %}</div>
-      </div>
-    </div>
-  </div><!-- /panel-mcp -->
-
   <!-- ── Shared preview table (used by "Add words" and "By topic" panels) ── -->
   <div id="preview-section" style="display:none;margin-top:20px">
     <h3>Предпросмотр — проверьте и при необходимости отредактируйте</h3>
@@ -794,25 +594,7 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 {% endif %}
 </div><!-- /upload-page -->
 
-<div id="dupe-delete-modal" class="modal-backdrop" aria-hidden="true">
-  <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="dupe-delete-title">
-    <div class="confirm-modal-head">
-      <h3 id="dupe-delete-title" class="confirm-modal-title">Удалить слово?</h3>
-    </div>
-    <div class="confirm-modal-body">
-      Это слово будет удалено из базы. Действие нельзя отменить.
-      <div class="confirm-word-card">
-        <div id="dupe-delete-word" class="confirm-word-main"></div>
-        <div id="dupe-delete-lesson" class="confirm-word-line"></div>
-        <div id="dupe-delete-translations" class="confirm-word-line"></div>
-      </div>
-    </div>
-    <div class="confirm-modal-actions">
-      <button type="button" class="ghost-btn" onclick="closeDuplicateDeleteModal()">Отмена</button>
-      <button type="button" id="dupe-delete-confirm" class="danger-btn" onclick="confirmDuplicateDelete()">Удалить</button>
-    </div>
-  </div>
-</div>
+
 </div>
 
 {% endblock %}
@@ -821,6 +603,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
   window.PUBLIC_BASE_URL = {{ public_url | tojson }};
 </script>
 {% if not upload_access_pending and not upload_access_denied %}
-  <script defer src="{{ url_for('static', filename='upload.js', v='20261003-lesson-picker') }}"></script>
+  <script defer src="{{ url_for('static', filename='upload.js', v='20261004-connector-page') }}"></script>
 {% endif %}
 {% endblock %}
