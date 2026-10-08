@@ -8,7 +8,7 @@ from contextlib import closing
 from io import BytesIO
 from urllib.parse import urlencode
 from urllib import request as urlrequest
-from flask import Blueprint, request, jsonify, render_template, session, send_file, send_from_directory, current_app, redirect
+from flask import Blueprint, request, jsonify, render_template, session, send_file, send_from_directory, current_app, redirect, url_for
 import sqlite3
 from typing import Any, List, Dict
 from pathlib import Path
@@ -1955,7 +1955,8 @@ def parent_dashboard_page():
 
 @web.route("/subscription")
 def subscription_page():
-    return render_template("subscription.html", title="Подписка", hide_timer=True)
+    # Блок подписки живёт в настройках; старый адрес оставлен для ссылок и закладок.
+    return redirect(url_for("web.settings_page") + "#subscription-panel")
 
 
 @web.route("/admin/users")

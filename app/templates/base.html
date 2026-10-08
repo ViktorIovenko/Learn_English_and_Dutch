@@ -493,7 +493,6 @@
               path === "/account-type" ||
               path === "/family/link" ||
               path === "/family/connect" ||
-              path === "/subscription" ||
               path === "/settings" ||
               path.startsWith("/admin/") ||
               path.startsWith("/share/") ||
@@ -501,8 +500,7 @@
               path.startsWith("/static/") ||
               path === "/sw.js";
             if (me.subscription && me.subscription.access === false && !skipSubscription) {
-              const next = window.location.pathname + window.location.search;
-              window.location.href = "/subscription?next=" + encodeURIComponent(next || "/");
+              window.location.href = "/settings#subscription-panel";
               return;
             }
           } catch(e) {}

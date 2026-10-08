@@ -8,6 +8,31 @@
 .settings-note{color:#64748b;font-size:14px;margin:4px 0 0;}
 .settings-nav-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;}
 .settings-panel{border:1px solid #e2e8f0;border-radius:12px;background:#fff;padding:14px;margin-bottom:14px;}
+/* Подписка (перенесена со страницы /subscription) */
+.subscription-note{color:#64748b;font-size:14px;margin:6px 0 0;line-height:1.5;}
+.subscription-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.subscription-plan{font-size:24px;font-weight:800;color:#0f172a;line-height:1.2;}
+.subscription-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;background:#e2e8f0;color:#334155;white-space:nowrap;}
+.subscription-badge.ok{background:#dcfce7;color:#15803d;}
+.subscription-badge.warn{background:#fef3c7;color:#b45309;}
+.subscription-badge.err{background:#fee2e2;color:#b91c1c;}
+.subscription-badge.unlimited{background:linear-gradient(90deg,#7c3aed,#2563eb);color:#fff;}
+.subscription-panel.is-unlimited{border-color:#c4b5fd;background:linear-gradient(180deg,#f5f3ff 0,#fff 100px);}
+.subscription-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:14px;}
+.subscription-metric{border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;padding:12px;}
+.subscription-label{font-size:12px;color:#64748b;margin-bottom:4px;}
+.subscription-value{font-size:18px;font-weight:800;color:#0f172a;}
+.subscription-status{font-size:14px;color:#dc2626;min-height:0;}
+.subscription-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
+.subscription-list li{display:flex;justify-content:space-between;gap:12px;font-size:14px;border-bottom:1px solid #f1f5f9;padding-bottom:8px;}
+.subscription-list li:last-child{border-bottom:none;padding-bottom:0;}
+.subscription-list span:first-child{color:#64748b;}
+.subscription-list span:last-child{font-weight:600;color:#0f172a;text-align:right;}
+.subscription-features{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;color:#334155;}
+.subscription-features li::before{content:"✓";color:#16a34a;font-weight:800;margin-right:8px;}
+.subscription-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+.subscription-section{margin-top:14px;}
+.subscription-section h4{margin:0 0 8px;font-size:14px;}
 .mcp-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .mcp-switch{position:relative;display:inline-block;width:48px;height:28px;flex:0 0 auto;margin-top:2px}
 .mcp-switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0}
@@ -23,7 +48,12 @@
 .mcp-panel-actions{justify-content:flex-end;margin-top:12px}
 .language-list{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
 .language-row{display:grid;grid-template-columns:34px minmax(160px,1fr) auto;gap:8px;align-items:center;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;padding:8px;}
-.language-priority{font-weight:800;color:#2563eb;text-align:center;}
+.language-priority{display:flex;align-items:center;justify-content:center;gap:2px;font-weight:800;color:#2563eb;text-align:center;cursor:grab;touch-action:none;user-select:none;}
+.language-grip{color:#94a3b8;font-size:14px;line-height:1;}
+.language-row{transition:box-shadow .15s,border-color .15s;}
+.language-row.is-dragging{position:relative;z-index:2;border-color:#93c5fd;background:#eff6ff;box-shadow:0 8px 22px rgba(15,23,42,.14);cursor:grabbing;}
+.language-list.is-sorting{user-select:none;}
+.language-list.is-sorting .language-row:not(.is-dragging){opacity:.85;}
 .language-row select{width:100%;border:1px solid #d0d7e2;border-radius:8px;background:#fff;color:#0f172a;padding:8px 10px;font-size:14px;}
 .settings-select{width:100%;max-width:360px;border:1px solid #d0d7e2;border-radius:8px;background:#fff;color:#0f172a;padding:8px 10px;font-size:14px;margin-top:8px;}
 .language-actions{display:flex;gap:5px;align-items:center;}
@@ -73,8 +103,48 @@
     </div>
     <div class="settings-nav-actions">
       <a href="{{ url_for('web.parent_dashboard_page') }}" class="pill-btn ghost" data-parent-only hidden>{{ t("nav.parent") }}</a>
-      <a href="/subscription" class="pill-btn ghost" data-subscription-nav>{{ t("nav.subscription") }}</a>
       <a href="/" class="pill-btn ghost">{{ t("nav.to_lessons") }}</a>
+    </div>
+  </div>
+
+  <div class="settings-panel" id="subscription-panel" data-legacy-i18n>
+    <div class="subscription-hero">
+      <div>
+        <h3 style="margin:0 0 4px;font-size:16px">{{ t("subscription.title") }}</h3>
+        <div id="sub-plan" class="subscription-plan">{{ t("common.loading") }}</div>
+      </div>
+      <span id="sub-badge" class="subscription-badge" hidden></span>
+    </div>
+    <p id="sub-explain" class="subscription-note"></p>
+    <div id="subscription-status" class="subscription-status"></div>
+    <div class="subscription-grid">
+      <div class="subscription-metric">
+        <div class="subscription-label">{{ t("subscription.status") }}</div>
+        <div id="sub-status-value" class="subscription-value">—</div>
+      </div>
+      <div class="subscription-metric">
+        <div class="subscription-label">{{ t("subscription.days_left") }}</div>
+        <div id="sub-days-value" class="subscription-value">—</div>
+      </div>
+      <div class="subscription-metric">
+        <div class="subscription-label" id="sub-end-label">—</div>
+        <div id="sub-end-value" class="subscription-value">—</div>
+      </div>
+    </div>
+    <div class="subscription-section">
+      <h4 id="sub-included-title"></h4>
+      <ul class="subscription-features" id="sub-features"></ul>
+    </div>
+    <div class="subscription-section">
+      <h4 id="sub-details-title"></h4>
+      <ul class="subscription-list" id="sub-details"></ul>
+    </div>
+    <div class="subscription-section" id="sub-payments">
+      <div class="subscription-actions" style="margin-top:0">
+        <button type="button" disabled>{{ t("subscription.subscribe") }}</button>
+        <span class="subscription-note" style="margin:0">{{ t("subscription.subscribe_note") }}</span>
+      </div>
+      <p class="subscription-note">{{ t("subscription.plan_note") }}</p>
     </div>
   </div>
 
@@ -186,8 +256,9 @@
     selected.forEach((code, index) => {
       const row = document.createElement("div");
       row.className = "language-row";
+      row.dataset.index = String(index);
       row.innerHTML = `
-        <div class="language-priority">${index + 1}</div>
+        <div class="language-priority" data-drag-handle title="${tr("settings.drag_hint")}"><span class="language-grip" aria-hidden="true">⠿</span>${index + 1}</div>
         <select aria-label="${tr("settings.language_aria", {num: index + 1})}">
           ${OPTIONS.map(opt => `<option value="${opt.code}" ${opt.code === code ? "selected" : ""}>${optionLabel(opt)}</option>`).join("")}
         </select>
@@ -210,6 +281,50 @@
     addBtn.disabled = selected.length >= 5;
     validate();
   }
+
+  // Перетаскивание порядка: правая кнопка мыши — за любую часть строки,
+  // левая кнопка / палец — за ручку с номером. Стрелки ↑↓ остаются.
+  let drag = null;
+  listEl.addEventListener("contextmenu", event => {
+    if (event.target.closest(".language-row")) event.preventDefault();
+  });
+  listEl.addEventListener("pointerdown", event => {
+    const row = event.target.closest(".language-row");
+    if (!row || drag) return;
+    const byRightButton = event.pointerType === "mouse" && event.button === 2;
+    const byHandle = event.button === 0 && event.target.closest("[data-drag-handle]");
+    if (!byRightButton && !byHandle) return;
+    event.preventDefault();
+    drag = {row, pointerId: event.pointerId, moved: false};
+    row.setPointerCapture(event.pointerId);
+    row.classList.add("is-dragging");
+    listEl.classList.add("is-sorting");
+  });
+  listEl.addEventListener("pointermove", event => {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const rows = [...listEl.querySelectorAll(".language-row")].filter(item => item !== drag.row);
+    const before = rows.find(item => {
+      const rect = item.getBoundingClientRect();
+      return event.clientY < rect.top + rect.height / 2;
+    });
+    if (before ? drag.row.nextElementSibling !== before : listEl.lastElementChild !== drag.row) {
+      listEl.insertBefore(drag.row, before || null);
+      drag.moved = true;
+    }
+  });
+  function finishDrag(event){
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const {row, moved} = drag;
+    drag = null;
+    row.classList.remove("is-dragging");
+    listEl.classList.remove("is-sorting");
+    if (!moved) return;
+    const order = [...listEl.querySelectorAll(".language-row")].map(item => Number(item.dataset.index));
+    selected = order.map(index => selected[index]);
+    render();
+  }
+  listEl.addEventListener("pointerup", finishDrag);
+  listEl.addEventListener("pointercancel", finishDrag);
 
   function renderUiLanguage(){
     const detected = detectedUiLanguage ? detectedUiLanguage.toUpperCase() : "AUTO";
@@ -647,6 +762,128 @@
   load();
   loadDailyGoal();
   loadFamily();
+})();
+</script>
+<script>
+(function(){
+  const COPY = {
+    en: {unlimited:"Unlimited", forever:"No end date", until:"Access until", unlimited_title:"Unlimited access", unlimited_note:"You have full access to every feature with no time limit.",
+      trial_title:"Free trial", trial_note:"The trial unlocks every feature. Payments will be connected soon; you will be able to continue with a subscription.",
+      paid_title:"Subscription", paid_note:"Your subscription is active.", expired_title:"Access ended", expired_note:"Your access has ended. A subscription will be available once payments are connected.",
+      included:"What's included", f_lessons:"All lessons, exercises and audio", f_import:"Importing words and AI translations with examples", f_sync:"Sync between web, Telegram and Android", f_family:"Family accounts and parent dashboard",
+      details:"Details", started:"Trial started", trial_end:"Trial until", source:"Access type", src_admin:"Administrator", src_manual:"Granted manually", src_trial:"Trial", src_google_play:"Google Play",
+      st_trial:"Trial", st_active:"Active", st_trial_expired:"Trial ended", st_expired:"Expired", st_canceled:"Canceled"},
+    ru: {unlimited:"Безлимит", forever:"Бессрочно", until:"Доступ до", unlimited_title:"Безлимитный доступ", unlimited_note:"У вас полный доступ ко всем функциям без ограничений по сроку.",
+      trial_title:"Пробный период", trial_note:"Пробный период открывает все функции. Скоро подключим оплату — продолжить можно будет по подписке.",
+      paid_title:"Подписка", paid_note:"Подписка активна.", expired_title:"Доступ закончился", expired_note:"Доступ закончился. Подписка станет доступна после подключения оплаты.",
+      included:"Что входит", f_lessons:"Все уроки, упражнения и озвучка", f_import:"Импорт слов и AI-переводы с примерами", f_sync:"Синхронизация между сайтом, Telegram и Android", f_family:"Семейные аккаунты и родительский дашборд",
+      details:"Подробности", started:"Пробный период начат", trial_end:"Пробный период до", source:"Тип доступа", src_admin:"Администратор", src_manual:"Выдан вручную", src_trial:"Пробный период", src_google_play:"Google Play",
+      st_trial:"Пробный", st_active:"Активна", st_trial_expired:"Пробный закончился", st_expired:"Истекла", st_canceled:"Отменена"},
+    uk: {unlimited:"Безліміт", forever:"Безстроково", until:"Доступ до", unlimited_title:"Безлімітний доступ", unlimited_note:"У вас повний доступ до всіх функцій без обмежень за терміном.",
+      trial_title:"Пробний період", trial_note:"Пробний період відкриває всі функції. Незабаром підключимо оплату — продовжити можна буде за підпискою.",
+      paid_title:"Підписка", paid_note:"Підписка активна.", expired_title:"Доступ закінчився", expired_note:"Доступ закінчився. Підписка стане доступна після підключення оплати.",
+      included:"Що входить", f_lessons:"Усі уроки, вправи та озвучення", f_import:"Імпорт слів і AI-переклади з прикладами", f_sync:"Синхронізація між сайтом, Telegram і Android", f_family:"Сімейні акаунти та батьківський дашборд",
+      details:"Подробиці", started:"Пробний період розпочато", trial_end:"Пробний період до", source:"Тип доступу", src_admin:"Адміністратор", src_manual:"Видано вручну", src_trial:"Пробний період", src_google_play:"Google Play",
+      st_trial:"Пробний", st_active:"Активна", st_trial_expired:"Пробний закінчився", st_expired:"Закінчилась", st_canceled:"Скасована"},
+    nl: {unlimited:"Onbeperkt", forever:"Geen einddatum", until:"Toegang tot", unlimited_title:"Onbeperkte toegang", unlimited_note:"Je hebt volledige toegang tot alle functies, zonder tijdslimiet.",
+      trial_title:"Proefperiode", trial_note:"De proefperiode geeft toegang tot alle functies. Betalingen komen binnenkort; daarna kun je doorgaan met een abonnement.",
+      paid_title:"Abonnement", paid_note:"Je abonnement is actief.", expired_title:"Toegang verlopen", expired_note:"Je toegang is verlopen. Een abonnement komt beschikbaar zodra betalingen zijn aangesloten.",
+      included:"Wat is inbegrepen", f_lessons:"Alle lessen, oefeningen en audio", f_import:"Woorden importeren en AI-vertalingen met voorbeelden", f_sync:"Synchronisatie tussen web, Telegram en Android", f_family:"Gezinsaccounts en ouderdashboard",
+      details:"Details", started:"Proefperiode gestart", trial_end:"Proefperiode tot", source:"Type toegang", src_admin:"Beheerder", src_manual:"Handmatig toegekend", src_trial:"Proefperiode", src_google_play:"Google Play",
+      st_trial:"Proef", st_active:"Actief", st_trial_expired:"Proef verlopen", st_expired:"Verlopen", st_canceled:"Opgezegd"},
+    de: {unlimited:"Unbegrenzt", forever:"Unbefristet", until:"Zugriff bis", unlimited_title:"Unbegrenzter Zugriff", unlimited_note:"Du hast vollen Zugriff auf alle Funktionen ohne Zeitlimit.",
+      trial_title:"Testphase", trial_note:"Die Testphase schaltet alle Funktionen frei. Zahlungen folgen bald; danach kannst du mit einem Abo weitermachen.",
+      paid_title:"Abo", paid_note:"Dein Abo ist aktiv.", expired_title:"Zugriff beendet", expired_note:"Dein Zugriff ist abgelaufen. Ein Abo ist verfügbar, sobald Zahlungen verbunden sind.",
+      included:"Enthalten", f_lessons:"Alle Lektionen, Übungen und Audio", f_import:"Wörter importieren und KI-Übersetzungen mit Beispielen", f_sync:"Synchronisierung zwischen Web, Telegram und Android", f_family:"Familienkonten und Eltern-Dashboard",
+      details:"Details", started:"Testphase gestartet", trial_end:"Testphase bis", source:"Zugriffsart", src_admin:"Administrator", src_manual:"Manuell vergeben", src_trial:"Testphase", src_google_play:"Google Play",
+      st_trial:"Test", st_active:"Aktiv", st_trial_expired:"Test abgelaufen", st_expired:"Abgelaufen", st_canceled:"Gekündigt"},
+    fr: {unlimited:"Illimité", forever:"Sans date de fin", until:"Accès jusqu’au", unlimited_title:"Accès illimité", unlimited_note:"Vous avez un accès complet à toutes les fonctions, sans limite de durée.",
+      trial_title:"Essai gratuit", trial_note:"L’essai donne accès à toutes les fonctions. Le paiement arrive bientôt ; vous pourrez ensuite continuer avec un abonnement.",
+      paid_title:"Abonnement", paid_note:"Votre abonnement est actif.", expired_title:"Accès terminé", expired_note:"Votre accès a pris fin. L’abonnement sera disponible après la connexion du paiement.",
+      included:"Inclus", f_lessons:"Toutes les leçons, exercices et audio", f_import:"Import de mots et traductions IA avec exemples", f_sync:"Synchronisation entre web, Telegram et Android", f_family:"Comptes famille et tableau de bord parent",
+      details:"Détails", started:"Essai commencé", trial_end:"Essai jusqu’au", source:"Type d’accès", src_admin:"Administrateur", src_manual:"Accordé manuellement", src_trial:"Essai", src_google_play:"Google Play",
+      st_trial:"Essai", st_active:"Actif", st_trial_expired:"Essai terminé", st_expired:"Expiré", st_canceled:"Annulé"},
+    es: {unlimited:"Ilimitado", forever:"Sin fecha de fin", until:"Acceso hasta", unlimited_title:"Acceso ilimitado", unlimited_note:"Tienes acceso completo a todas las funciones, sin límite de tiempo.",
+      trial_title:"Prueba gratuita", trial_note:"La prueba da acceso a todas las funciones. Pronto conectaremos los pagos; después podrás seguir con una suscripción.",
+      paid_title:"Suscripción", paid_note:"Tu suscripción está activa.", expired_title:"Acceso terminado", expired_note:"Tu acceso ha terminado. La suscripción estará disponible cuando conectemos los pagos.",
+      included:"Qué incluye", f_lessons:"Todas las lecciones, ejercicios y audio", f_import:"Importación de palabras y traducciones IA con ejemplos", f_sync:"Sincronización entre web, Telegram y Android", f_family:"Cuentas familiares y panel para padres",
+      details:"Detalles", started:"Prueba iniciada", trial_end:"Prueba hasta", source:"Tipo de acceso", src_admin:"Administrador", src_manual:"Concedido manualmente", src_trial:"Prueba", src_google_play:"Google Play",
+      st_trial:"Prueba", st_active:"Activa", st_trial_expired:"Prueba finalizada", st_expired:"Caducada", st_canceled:"Cancelada"},
+    it: {unlimited:"Illimitato", forever:"Senza scadenza", until:"Accesso fino al", unlimited_title:"Accesso illimitato", unlimited_note:"Hai accesso completo a tutte le funzioni, senza limiti di tempo.",
+      trial_title:"Prova gratuita", trial_note:"La prova sblocca tutte le funzioni. I pagamenti arriveranno presto; poi potrai continuare con un abbonamento.",
+      paid_title:"Abbonamento", paid_note:"Il tuo abbonamento è attivo.", expired_title:"Accesso terminato", expired_note:"Il tuo accesso è terminato. L’abbonamento sarà disponibile dopo il collegamento dei pagamenti.",
+      included:"Cosa include", f_lessons:"Tutte le lezioni, esercizi e audio", f_import:"Importazione di parole e traduzioni IA con esempi", f_sync:"Sincronizzazione tra web, Telegram e Android", f_family:"Account famiglia e pannello genitori",
+      details:"Dettagli", started:"Prova iniziata", trial_end:"Prova fino al", source:"Tipo di accesso", src_admin:"Amministratore", src_manual:"Concesso manualmente", src_trial:"Prova", src_google_play:"Google Play",
+      st_trial:"Prova", st_active:"Attivo", st_trial_expired:"Prova terminata", st_expired:"Scaduto", st_canceled:"Annullato"},
+    pt: {unlimited:"Ilimitado", forever:"Sem data de fim", until:"Acesso até", unlimited_title:"Acesso ilimitado", unlimited_note:"Tem acesso completo a todas as funcionalidades, sem limite de tempo.",
+      trial_title:"Período experimental", trial_note:"O período experimental dá acesso a tudo. Os pagamentos chegam em breve; depois poderá continuar com uma assinatura.",
+      paid_title:"Assinatura", paid_note:"A sua assinatura está ativa.", expired_title:"Acesso terminado", expired_note:"O seu acesso terminou. A assinatura ficará disponível quando os pagamentos forem ligados.",
+      included:"O que inclui", f_lessons:"Todas as lições, exercícios e áudio", f_import:"Importação de palavras e traduções IA com exemplos", f_sync:"Sincronização entre web, Telegram e Android", f_family:"Contas familiares e painel dos pais",
+      details:"Detalhes", started:"Experimental iniciado", trial_end:"Experimental até", source:"Tipo de acesso", src_admin:"Administrador", src_manual:"Concedido manualmente", src_trial:"Experimental", src_google_play:"Google Play",
+      st_trial:"Experimental", st_active:"Ativa", st_trial_expired:"Experimental terminado", st_expired:"Expirada", st_canceled:"Cancelada"},
+    pl: {unlimited:"Bez limitu", forever:"Bezterminowo", until:"Dostęp do", unlimited_title:"Dostęp bez limitu", unlimited_note:"Masz pełny dostęp do wszystkich funkcji bez ograniczeń czasowych.",
+      trial_title:"Okres próbny", trial_note:"Okres próbny odblokowuje wszystkie funkcje. Płatności wkrótce; potem będzie można kontynuować z subskrypcją.",
+      paid_title:"Subskrypcja", paid_note:"Subskrypcja jest aktywna.", expired_title:"Dostęp zakończony", expired_note:"Twój dostęp wygasł. Subskrypcja będzie dostępna po podłączeniu płatności.",
+      included:"Co zawiera", f_lessons:"Wszystkie lekcje, ćwiczenia i nagrania", f_import:"Import słów i tłumaczenia AI z przykładami", f_sync:"Synchronizacja między stroną, Telegramem i Androidem", f_family:"Konta rodzinne i panel rodzica",
+      details:"Szczegóły", started:"Okres próbny rozpoczęty", trial_end:"Okres próbny do", source:"Rodzaj dostępu", src_admin:"Administrator", src_manual:"Przyznany ręcznie", src_trial:"Okres próbny", src_google_play:"Google Play",
+      st_trial:"Próbny", st_active:"Aktywna", st_trial_expired:"Próbny zakończony", st_expired:"Wygasła", st_canceled:"Anulowana"},
+  };
+  const lang = (window.I18N && window.I18N.language || "en").slice(0, 2);
+  const L = Object.assign({}, COPY.en, COPY[lang] || {});
+  const $ = id => document.getElementById(id);
+  const fmtDate = ms => { if (!ms) return "—"; try { return new Date(ms).toLocaleDateString(lang); } catch(e) { return "—"; } };
+
+  function row(label, value){
+    const li = document.createElement("li");
+    const a = document.createElement("span"), b = document.createElement("span");
+    a.textContent = label; b.textContent = value;
+    li.append(a, b);
+    return li;
+  }
+
+  function render(sub){
+    // Admins and grants ending more than ten years out count as unlimited.
+    const unlimited = Boolean(sub.is_unlimited || sub.is_admin);
+    const trial = sub.status === "trial";
+    const active = sub.access && !trial;
+    const badge = $("sub-badge");
+    badge.hidden = false;
+    badge.className = "subscription-badge " + (unlimited ? "unlimited" : trial ? "warn" : sub.access ? "ok" : "err");
+    badge.textContent = unlimited ? "∞ " + L.unlimited : (L["st_" + sub.status] || sub.status || "—");
+    $("subscription-main").classList.toggle("is-unlimited", unlimited);
+    $("sub-plan").textContent = unlimited ? L.unlimited_title : trial ? L.trial_title : active ? L.paid_title : L.expired_title;
+    $("sub-explain").textContent = unlimited ? L.unlimited_note : trial ? L.trial_note : active ? L.paid_note : L.expired_note;
+    $("sub-status-value").textContent = unlimited ? L.unlimited : (L["st_" + sub.status] || sub.status || "—");
+    $("sub-days-value").textContent = unlimited ? "∞" : sub.access ? String(sub.days_left ?? 0) : "—";
+    $("sub-end-label").textContent = trial ? L.trial_end : L.until;
+    $("sub-end-value").textContent = unlimited ? L.forever : fmtDate(trial ? sub.trial_ends_at : sub.current_period_ends_at || (sub.access ? 0 : sub.trial_ends_at));
+
+    const features = $("sub-features");
+    features.replaceChildren();
+    [L.f_lessons, L.f_import, L.f_sync, L.f_family].forEach(text => {
+      const li = document.createElement("li"); li.textContent = text; features.append(li);
+    });
+
+    const details = $("sub-details");
+    details.replaceChildren();
+    const source = sub.is_admin ? L.src_admin : unlimited || (active && !sub.provider) ? L.src_manual : L["src_" + (sub.provider || (trial ? "trial" : ""))] || sub.provider || "—";
+    details.append(row(L.source, source));
+    if (sub.trial_started_at) details.append(row(L.started, fmtDate(sub.trial_started_at)));
+    if (sub.trial_ends_at) details.append(row(L.trial_end, fmtDate(sub.trial_ends_at)));
+    if (!unlimited && sub.current_period_ends_at) details.append(row(L.until, fmtDate(sub.current_period_ends_at)));
+    $("sub-payments").hidden = unlimited;
+  }
+
+  $("sub-included-title").textContent = L.included;
+  $("sub-details-title").textContent = L.details;
+
+  apiFetch("/api/subscription").then(r => r.json()).then(data => {
+    if (!data.ok) throw new Error(data.error || "error");
+    render(data.subscription || {});
+  }).catch(e => {
+    $("sub-plan").textContent = "—";
+    $("subscription-status").textContent = window.I18N.t("common.error") + ": " + e.message;
+  });
 })();
 </script>
 {% endblock %}
