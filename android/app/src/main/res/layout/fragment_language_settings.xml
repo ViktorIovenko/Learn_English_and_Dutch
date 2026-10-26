@@ -11,6 +11,8 @@
                     <com.google.android.material.button.MaterialButton android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/btn_settings_subscription" android:text="@string/settings_subscribe" android:layout_marginTop="8dp" style="@style/SettingsPrimaryButton" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+            <include layout="@layout/admin_plan_preview" />
+
             <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" style="@style/SettingsCard">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
                     <LinearLayout android:id="@+id/ui_language_section" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">

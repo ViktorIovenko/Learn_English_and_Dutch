@@ -38,6 +38,12 @@ class UploadFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        app.parallellingvo.ui.ads.AdBannerController(
+            container = binding.adContainer,
+            owner = viewLifecycleOwner,
+            session = androidx.lifecycle.ViewModelProvider(this)[app.parallellingvo.ui.ads.AdsSessionViewModel::class.java],
+            page = "secondary", placements = listOf("secondary_bottom"),
+        )
         binding.tvPlanNotice.setOnClickListener {
             findNavController().navigateToTab(R.id.subscriptionFragment)
         }

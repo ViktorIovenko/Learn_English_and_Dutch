@@ -928,12 +928,14 @@ class FamilyAccountsTest(unittest.TestCase):
             session_data["is_auth"] = True
             session_data["tg_user_id"] = "999"
 
-        page = self.client.get("/admin/users")
-        self.assertEqual(200, page.status_code)
-        page_text = page.get_data(as_text=True)
-        self.assertIn("Тип аккаунта", page_text)
-        self.assertIn("Семейные связи", page_text)
-        self.assertIn("Открепить", page_text)
+        overview = self.client.get("/api/admin/overview")
+        self.assertEqual(200, overview.status_code)
+        child_row = next(u for u in overview.get_json()["users"] if u["user_id"] == "child")
+        self.assertEqual("Детский", child_row["account_type_label"])
+        self.assertEqual(
+            {("parent-a", "child"), ("parent-b", "child")},
+            {(r["parent_user_id"], r["child_user_id"]) for r in child_row["family_relations"]},
+        )
 
         response = self.client.post(
             "/api/admin/unlink_family",

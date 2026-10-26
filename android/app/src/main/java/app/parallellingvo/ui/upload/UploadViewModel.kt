@@ -42,6 +42,18 @@ class UploadViewModel : ViewModel() {
 
     val serverUrl = prefs.serverUrl
 
+    private suspend fun requirePaidAi(): Boolean {
+        val me = repo.getMe()
+        if (me is NetworkResult.Success && me.data.paidAiAvailable) return true
+        val message = when {
+            me is NetworkResult.Error -> me.message
+            (me as? NetworkResult.Success)?.data?.planState?.paidAiGloballyEnabled != true -> app.getString(R.string.plan_ai_paused)
+            else -> app.getString(R.string.plan_ai_upgrade)
+        }
+        _uiState.value = _uiState.value.copy(error = message)
+        return false
+    }
+
     private val topicLanguageCodes = setOf("nl", "en", "ru", "de", "fr", "es", "it", "pt", "pl", "uk")
 
     // ─── Manual word entry (облачная генерация через AI Platform) ───────────
@@ -49,6 +61,7 @@ class UploadViewModel : ViewModel() {
     fun translateWords(words: List<String>, fromLang: String) {
         if (_uiState.value.isLoading || words.isEmpty()) return
         viewModelScope.launch {
+            if (!requirePaidAi()) return@launch
             _uiState.value = _uiState.value.copy(isLoading = true, error = null, generatedWords = emptyList())
             val translated = mutableListOf<WordDto>()
             for (word in words) {
@@ -74,6 +87,7 @@ class UploadViewModel : ViewModel() {
             return
         }
         viewModelScope.launch {
+            if (!requirePaidAi()) return@launch
             _uiState.value = _uiState.value.copy(isLoading = true, error = null, generatedWords = emptyList())
             when (val result = repo.generateByTopic(topic, level, count.coerceIn(1, 50))) {
                 is NetworkResult.Success -> {

@@ -87,6 +87,13 @@ data class UserInfo(
     @SerializedName("ui_language_override") val uiLanguageOverride: String? = null,
     @SerializedName("plan_state") val planState: PlanStateDto? = null
 ) {
+    val canUseApp: Boolean get() = planState?.features?.learning ?: subscription?.access ?: true
+    val effectivePlan: String get() = planState?.plan ?: subscription?.plan ?: "free"
+    val isPaid: Boolean get() = subscription?.isActive == true
+    val paidAiAvailable: Boolean get() = planState?.paidAiAvailable == true
+    val showAds: Boolean get() = accountType == "standard" && planState?.features?.ads == true
+    val isAdminUi: Boolean get() = isAdmin == true && planState?.preview.isNullOrBlank()
+
     val canManageFamily: Boolean
         get() = accountType != "child" && !needsAccountType &&
             (planState?.features?.family
@@ -523,6 +530,8 @@ data class SubscriptionDto(
     @SerializedName("provider") val provider: String?,
     @SerializedName("cancel_at_period_end") val cancelAtPeriodEnd: Boolean?,
     @SerializedName("plan") val plan: String? = null,
+    @SerializedName("access") val access: Boolean? = null,
+    @SerializedName("preview") val preview: Boolean = false,
     @SerializedName("is_unlimited") val isUnlimited: Boolean = false,
     @SerializedName("is_admin") val isAdmin: Boolean = false
 )
@@ -538,6 +547,8 @@ data class PlanFeaturesDto(
 )
 
 data class PlanStateDto(
+    @SerializedName("real_plan") val realPlan: String? = null,
+    val preview: String? = null,
     val plan: String = "free",
     val features: PlanFeaturesDto = PlanFeaturesDto(),
     @SerializedName("ads_visible") val adsVisible: Boolean = false,
@@ -847,6 +858,11 @@ data class AdsConsentPromptDto(
     @SerializedName("text") val text: String?,
     @SerializedName("accept") val accept: String?,
     @SerializedName("decline") val decline: String?
+)
+
+data class AdsConsentResponse(
+    val ok: Boolean = false,
+    val consent: String? = null
 )
 
 data class AdsConsentRequest(

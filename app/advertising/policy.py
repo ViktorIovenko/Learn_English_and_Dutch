@@ -37,6 +37,7 @@ class Viewer:
     account_type: str = "standard"  # standard / child / pending
     ui_language: str = "en"
     channel: str = "session"        # "session" (web / Mini App) or "app" (Android Bearer)
+    preview_ads: bool = True
 
 
 @dataclass(frozen=True)
@@ -61,11 +62,16 @@ def decide(
         return Decision(SERVE_NONE, "anonymous")
     mode = settings.get("mode", MODE_OFF)
 
+    if viewer.account_type == "child":
+        return Decision(SERVE_NONE, "child_account")
+
     if viewer.is_admin:
         # The admin keeps full access; ads only appear while simulating Free
         # (or with admin_demo_always), in every mode (also OFF), and always as local mock-ups with no real
         # impression, link or external request. Nobody else is affected.
         if viewer.preview_plan == "free":
+            if not viewer.preview_ads:
+                return Decision(SERVE_NONE, "preview_ads_disabled")
             return Decision(SERVE_DEMO, "admin_free_simulation")
         if viewer.preview_plan:
             return Decision(SERVE_NONE, "paid_plan")

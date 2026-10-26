@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/admin_preview_card" style="@style/SettingsCard"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp" android:visibility="gone">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="16dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/admin_preview_title" android:textStyle="bold" android:textSize="18sp" />
+        <TextView android:id="@+id/admin_preview_status" android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/preview_free"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Free" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/preview_premium"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Premium" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/preview_family"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Family" />
+        <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/preview_ads"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/admin_preview_ads" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/preview_exit"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/admin_preview_exit" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

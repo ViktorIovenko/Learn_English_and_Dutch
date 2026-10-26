@@ -41,10 +41,10 @@ class AiGatewayTests(unittest.TestCase):
     def login(self):
         with self.client.session_transaction() as state:
             state.update(is_auth=True, tg_user_id="admin")
-        response = self.client.get("/admin/ai")
+        response = self.client.get("/api/admin/ai/settings")
         self.assertEqual(response.status_code, 200)
         with self.client.session_transaction() as state:
-            return state["ai_settings_csrf"]
+            return state["admin_csrf"]
 
     def response(self, result, **kwargs):
         return Mock(status_code=200, json=lambda: {
@@ -62,9 +62,14 @@ class AiGatewayTests(unittest.TestCase):
         self.assertEqual(saved.status_code, 200)
         self.assertTrue(saved.json["settings"]["key_configured"])
         self.assertNotIn("secret-api-key", saved.text)
-        page = self.client.get("/admin/ai")
+        page = self.client.get("/api/admin/ai/settings")
         self.assertEqual(page.status_code, 200)
+        self.assertTrue(page.json["settings"]["key_configured"])
         self.assertNotIn("secret-api-key", page.text)
+        self.assertNotIn("api_key", page.json["settings"])
+        legacy = self.client.get("/admin/ai")
+        self.assertEqual(legacy.status_code, 302, "the old UI moved to the main-site admin")
+        self.assertTrue(legacy.headers["Location"].endswith("tab=ai"))
         with closing(sqlite3.connect(self.db)) as conn:
             row = conn.execute("SELECT config_json,encrypted_key FROM ai_gateway_settings").fetchone()
         self.assertNotIn("secret-api-key", " ".join(row))

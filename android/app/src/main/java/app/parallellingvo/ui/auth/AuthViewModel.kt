@@ -63,7 +63,7 @@ class AuthViewModel : ViewModel() {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false, isLoggedIn = true, accountType = accountType,
                         needsAccountType = me?.needsAccountType == true,
-                        hasSubscriptionAccess = me?.let { it.isAdmin == true || it.subscription?.isActive == true } == true
+                        hasSubscriptionAccess = me?.let { it.canUseApp } == true
                     )
                 }
                 is NetworkResult.Error -> _uiState.value = _uiState.value.copy(isLoading = false,
@@ -103,7 +103,7 @@ class AuthViewModel : ViewModel() {
                     val needsAccountType = when (me) {
                         is NetworkResult.Success -> {
                             accountType = me.data.accountType
-                            hasSubscriptionAccess = me.data.isAdmin == true || me.data.subscription?.isActive == true
+                            hasSubscriptionAccess = me.data.canUseApp
                             ChildLearningReminder.setEnabled(app, accountType == "child")
                             me.data.needsAccountType
                         }
@@ -195,7 +195,7 @@ class AuthViewModel : ViewModel() {
                     // instead of silently treating the account as an adult account.
                     val accountType = serverAccountType ?: prefs.accountTypeCache.first().ifBlank { null }
                     val hasSubscriptionAccess = (me as? NetworkResult.Success)?.data?.let {
-                        it.isAdmin == true || it.subscription?.isActive == true
+                        it.canUseApp
                     } == true
                     ChildLearningReminder.setEnabled(app, accountType == "child")
                     _uiState.value = _uiState.value.copy(

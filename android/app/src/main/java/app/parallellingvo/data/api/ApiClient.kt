@@ -22,7 +22,7 @@ class ApiClient(private val preferencesManager: PreferencesManager) {
     // API authentication uses bearer tokens only; no browser session cookies persist.
     fun clearCookies() { httpClient.dispatcher.cancelAll() }
 
-    private data class ApiSession(val generation: Long, val userId: String, val token: String, val origin: HttpUrl)
+    private data class ApiSession(val generation: Long, val userId: String, val token: String, val origin: HttpUrl, val preview: String, val previewAds: Boolean)
 
     internal val httpClient: OkHttpClient = OkHttpClient.Builder()
         .addNetworkInterceptor { chain ->
@@ -38,12 +38,17 @@ class ApiClient(private val preferencesManager: PreferencesManager) {
             val builder = chain.request().newBuilder()
                 .removeHeader("Authorization").removeHeader("Cookie").removeHeader("X-User-Id")
                 .removeHeader("X-Client").removeHeader("X-Device-Language")
+                .removeHeader("X-Admin-Plan-Preview").removeHeader("X-Admin-Preview-Ads")
             if (session != null && url.scheme == "https" && url.host == session.origin.host &&
                 url.port == session.origin.port) {
                 builder.header("X-User-Id", session.userId)
                     .header("X-Client", "android")
                     .header("X-Device-Language", systemLanguageCode())
-                if (session.token.isNotBlank()) builder.header("Authorization", "Bearer ${session.token}")
+                if (session.token.isNotBlank()) {
+                    builder.header("Authorization", "Bearer ${session.token}")
+                    if (session.preview.isNotBlank()) builder.header("X-Admin-Plan-Preview", session.preview)
+                        .header("X-Admin-Preview-Ads", session.previewAds.toString())
+                }
             }
             chain.proceed(builder.build())
         }
@@ -89,7 +94,10 @@ class ApiClient(private val preferencesManager: PreferencesManager) {
         require(origin.scheme == "https" && origin.username.isEmpty() && origin.password.isEmpty()) {
             "HTTPS server required"
         }
-        val session = ApiSession(generation, userId, token, origin)
+        val preview = runBlocking { preferencesManager.adminPreviewPlan.first() }
+        val previewAds = runBlocking { preferencesManager.adminPreviewAds.first() }
+        if (generation != SessionBoundary.generation) throw IOException("Session changed")
+        val session = ApiSession(generation, userId, token, origin, preview, previewAds)
         return Retrofit.Builder()
             .baseUrl(baseUrl)
             .callFactory { request ->

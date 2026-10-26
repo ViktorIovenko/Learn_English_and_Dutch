@@ -7,15 +7,7 @@
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `deleteAccount`.
 - Request DTO: `AccountDeletionRequest`; response DTO: `GenericResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `output/google-play-preparation-20261021/sources/app/account_privacy.py` / `delete_account`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/account/delete` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `deleteAccount`.
-- Request DTO: `AccountDeletionRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `output/google-play-preparation-20261021/sources/app/account_privacy.py` / `delete_account`.
+- Backend: `app/account_privacy.py` / `delete_account`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
 ## `GET /api/account/deletion-challenge` — confirmed
@@ -23,15 +15,7 @@
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getDeletionChallenge`.
 - Request DTO: `query/path/none`; response DTO: `AccountDeletionChallenge`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `output/google-play-preparation-20261021/sources/app/account_privacy.py` / `deletion_challenge`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/account/deletion-challenge` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getDeletionChallenge`.
-- Request DTO: `query/path/none`; response DTO: `AccountDeletionChallenge`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `output/google-play-preparation-20261021/sources/app/account_privacy.py` / `deletion_challenge`.
+- Backend: `app/account_privacy.py` / `deletion_challenge`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
 ## `POST /api/account/email/link` — unresolved
@@ -58,25 +42,9 @@
 - Backend: `app/routes.py` / `api_account_type_save`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/account/type` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `setAccountType`.
-- Request DTO: `AccountTypeRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_account_type_save`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/admin/grant_access` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `grantAccess`.
-- Request DTO: `GrantAccessRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_admin_grant_access`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/admin/grant_access` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `grantAccess`.
 - Request DTO: `GrantAccessRequest`; response DTO: `GenericResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_admin_grant_access`.
@@ -90,25 +58,9 @@
 - Backend: `app/routes.py` / `api_admin_revoke_access`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/admin/revoke_access` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `revokeAccess`.
-- Request DTO: `GrantAccessRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_admin_revoke_access`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/admin/translation_usage/reset` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `resetTranslationUsage`.
-- Request DTO: `ResetTtsUsageRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_admin_reset_translation_usage`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/admin/translation_usage/reset` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `resetTranslationUsage`.
 - Request DTO: `ResetTtsUsageRequest`; response DTO: `GenericResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_admin_reset_translation_usage`.
@@ -122,25 +74,9 @@
 - Backend: `app/routes.py` / `api_admin_reset_tts_usage`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/admin/tts_usage/reset` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `resetTtsUsage`.
-- Request DTO: `ResetTtsUsageRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_admin_reset_tts_usage`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/admin/unlink_family` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `adminUnlinkFamily`.
-- Request DTO: `AdminUnlinkFamilyRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_admin_unlink_family`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/admin/unlink_family` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `adminUnlinkFamily`.
 - Request DTO: `AdminUnlinkFamilyRequest`; response DTO: `GenericResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_admin_unlink_family`.
@@ -154,26 +90,18 @@
 - Backend: `app/routes.py` / `api_admin_users`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/admin/users` — confirmed
+## `GET /api/ads/consent` — confirmed
 
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getAdminUsers`.
-- Request DTO: `query/path/none`; response DTO: `AdminUsersResponse`.
+- Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getAdsConsent`.
+- Request DTO: `query/path/none`; response DTO: `AdsConsentResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_admin_users`.
+- Backend: `app/advertising/views.py` / `api_ads_consent_get`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
 ## `POST /api/ads/consent` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `setAdsConsent`.
-- Request DTO: `AdsConsentRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/advertising/views.py` / `api_ads_consent_set`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/ads/consent` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `setAdsConsent`.
-- Request DTO: `AdsConsentRequest`; response DTO: `GenericResponse`.
+- Request DTO: `AdsConsentRequest`; response DTO: `AdsConsentResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/advertising/views.py` / `api_ads_consent_set`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
@@ -181,14 +109,6 @@
 ## `POST /api/ads/event` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `sendAdsEvent`.
-- Request DTO: `AdsEventRequest`; response DTO: `Unit`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/advertising/views.py` / `api_ads_event`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/ads/event` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `sendAdsEvent`.
 - Request DTO: `AdsEventRequest`; response DTO: `Unit`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/advertising/views.py` / `api_ads_event`.
@@ -202,25 +122,9 @@
 - Backend: `app/advertising/views.py` / `api_ads_page`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/ads/page` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getAdsPage`.
-- Request DTO: `query/path/none`; response DTO: `AdsPageResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/advertising/views.py` / `api_ads_page`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/audio/ensure` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `ensureAudio`.
-- Request DTO: `EnsureAudioRequest`; response DTO: `EnsureAudioResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_audio_ensure`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/audio/ensure` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `ensureAudio`.
 - Request DTO: `EnsureAudioRequest`; response DTO: `EnsureAudioResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_audio_ensure`.
@@ -242,25 +146,9 @@
 - Backend: `app/android_auth.py` / `exchange`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/auth/android/exchange` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `exchangeAndroidAuth`.
-- Request DTO: `AndroidAuthExchangeRequest`; response DTO: `AndroidAuthExchangeResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/android_auth.py` / `exchange`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/auth/android/start` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `startAndroidAuth`.
-- Request DTO: `AndroidAuthStartRequest`; response DTO: `AndroidAuthStartResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/android_auth.py` / `start`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/auth/android/start` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `startAndroidAuth`.
 - Request DTO: `AndroidAuthStartRequest`; response DTO: `AndroidAuthStartResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/android_auth.py` / `start`.
@@ -274,25 +162,9 @@
 - Backend: `not matched` / `not matched`.
 - Примечание: No matching local Flask route found; compatibility review required.
 
-## `POST /api/auth/email/login` — unresolved
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `loginEmail`.
-- Request DTO: `EmailLoginRequest`; response DTO: `LoginResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `not matched` / `not matched`.
-- Примечание: No matching local Flask route found; compatibility review required.
-
 ## `GET /api/auth/google/config` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getGoogleAuthConfig`.
-- Request DTO: `query/path/none`; response DTO: `GoogleAuthConfigResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/google_auth.py` / `android_google_config`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/auth/google/config` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getGoogleAuthConfig`.
 - Request DTO: `query/path/none`; response DTO: `GoogleAuthConfigResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/google_auth.py` / `android_google_config`.
@@ -314,14 +186,6 @@
 - Backend: `app/google_auth.py` / `verify_android_token`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/auth/google/verify` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `verifyGoogleToken`.
-- Request DTO: `GoogleVerifyRequest`; response DTO: `GoogleVerifyResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/google_auth.py` / `verify_android_token`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/auth/login_android` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `loginAndroid`.
@@ -330,25 +194,9 @@
 - Backend: `app/routes.py` / `login_android`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/auth/login_android` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `loginAndroid`.
-- Request DTO: `LoginRequest`; response DTO: `LoginResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `login_android`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/auth/login_android_token` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `loginAndroidToken`.
-- Request DTO: `LoginTokenRequest`; response DTO: `LoginResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `login_android_token`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/auth/login_android_token` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `loginAndroidToken`.
 - Request DTO: `LoginTokenRequest`; response DTO: `LoginResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `login_android_token`.
@@ -370,25 +218,9 @@
 - Backend: `app/routes.py` / `api_child_learning_status`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/child-learning/status` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getChildLearningStatus`.
-- Request DTO: `query/path/none`; response DTO: `ChildLearningStatusResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_child_learning_status`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/daily-goal` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getDailyGoal`.
-- Request DTO: `query/path/none`; response DTO: `DailyGoalResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_daily_goal_get`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/daily-goal` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getDailyGoal`.
 - Request DTO: `query/path/none`; response DTO: `DailyGoalResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_daily_goal_get`.
@@ -402,25 +234,9 @@
 - Backend: `app/routes.py` / `api_daily_goal_save`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/daily-goal` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `saveDailyGoal`.
-- Request DTO: `SaveDailyGoalRequest`; response DTO: `DailyGoalResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_daily_goal_save`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/difficult/user_set` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `setDifficult`.
-- Request DTO: `SetDifficultRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_difficult_user_set`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/difficult/user_set` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `setDifficult`.
 - Request DTO: `SetDifficultRequest`; response DTO: `GenericResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_difficult_user_set`.
@@ -434,25 +250,9 @@
 - Backend: `app/routes.py` / `api_difficult_words_user`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/difficult_words_user` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getDifficultWords`.
-- Request DTO: `query/path/none`; response DTO: `DifficultWordsResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_difficult_words_user`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/family` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getFamily`.
-- Request DTO: `query/path/none`; response DTO: `FamilyStatusResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_family_status`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/family` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getFamily`.
 - Request DTO: `query/path/none`; response DTO: `FamilyStatusResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_family_status`.
@@ -466,25 +266,9 @@
 - Backend: `app/routes.py` / `api_family_unlink_child`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `DELETE /api/family/children/{childId}` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `unlinkChild`.
-- Request DTO: `query/path/none`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_family_unlink_child`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `PUT /api/family/children/{childId}/priority-lesson` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `setPriorityLesson`.
-- Request DTO: `SetPriorityLessonRequest`; response DTO: `PriorityLessonResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_family_set_priority_lesson`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `PUT /api/family/children/{childId}/priority-lesson` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `setPriorityLesson`.
 - Request DTO: `SetPriorityLessonRequest`; response DTO: `PriorityLessonResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_family_set_priority_lesson`.
@@ -498,14 +282,6 @@
 - Backend: `app/routes.py` / `api_family_dashboard`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/family/dashboard` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getFamilyDashboard`.
-- Request DTO: `query/path/none`; response DTO: `FamilyDashboardResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_family_dashboard`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/family/invitation/accept` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `acceptFamilyInvitation`.
@@ -514,25 +290,9 @@
 - Backend: `app/routes.py` / `api_family_invitation`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/family/invitation/accept` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `acceptFamilyInvitation`.
-- Request DTO: `FamilyInvitationRequest`; response DTO: `FamilyInvitationResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_family_invitation`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/family/invitation/preview` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `previewFamilyInvitation`.
-- Request DTO: `FamilyInvitationRequest`; response DTO: `FamilyInvitationResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_family_invitation`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/family/invitation/preview` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `previewFamilyInvitation`.
 - Request DTO: `FamilyInvitationRequest`; response DTO: `FamilyInvitationResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_family_invitation`.
@@ -554,25 +314,9 @@
 - Backend: `app/routes.py` / `api_family_link`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/family/link` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `linkChild`.
-- Request DTO: `LinkChildRequest`; response DTO: `LinkChildResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_family_link`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/family/pairing-code` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getPairingCode`.
-- Request DTO: `query/path/none`; response DTO: `PairingCodeResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_family_pairing_code`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/family/pairing-code` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getPairingCode`.
 - Request DTO: `query/path/none`; response DTO: `PairingCodeResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_family_pairing_code`.
@@ -586,25 +330,9 @@
 - Backend: `app/routes.py` / `api_generate_topic`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/generate/topic` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `aiSuggestTopicWords`.
-- Request DTO: `AiSuggestTopicWordsRequest`; response DTO: `AiSuggestTopicWordsResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_generate_topic`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/import-words` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `importWords`.
-- Request DTO: `ImportWordsRequest`; response DTO: `ImportWordsResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_import_words`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/import-words` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `importWords`.
 - Request DTO: `ImportWordsRequest`; response DTO: `ImportWordsResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_import_words`.
@@ -618,25 +346,9 @@
 - Backend: `app/routes.py` / `api_language_options`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/language-options` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getLanguageOptions`.
-- Request DTO: `query/path/none`; response DTO: `List<LanguageOption>`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_language_options`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/learning/streak` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getLearningStreak`.
-- Request DTO: `query/path/none`; response DTO: `LearningStreakResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_learning_streak`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/learning/streak` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getLearningStreak`.
 - Request DTO: `query/path/none`; response DTO: `LearningStreakResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_learning_streak`.
@@ -650,25 +362,9 @@
 - Backend: `app/routes.py` / `api_lesson_words_by_title`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/lesson_words` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getLessonWords`.
-- Request DTO: `query/path/none`; response DTO: `List<WordDto>`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_lesson_words_by_title`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/lessons` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getLessons`.
-- Request DTO: `query/path/none`; response DTO: `List<LessonDto>`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_lessons`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/lessons` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getLessons`.
 - Request DTO: `query/path/none`; response DTO: `List<LessonDto>`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_lessons`.
@@ -682,25 +378,9 @@
 - Backend: `app/routes.py` / `api_lessons_set_hidden`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/lessons/set_hidden` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `setLessonHidden`.
-- Request DTO: `SetHiddenRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_lessons_set_hidden`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/mcp/user` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getMcpUser`.
-- Request DTO: `query/path/none`; response DTO: `McpUserResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/mcp_api.py` / `mcp_user_status`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/mcp/user` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getMcpUser`.
 - Request DTO: `query/path/none`; response DTO: `McpUserResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/mcp_api.py` / `mcp_user_status`.
@@ -714,25 +394,9 @@
 - Backend: `app/mcp_api.py` / `mcp_user_toggle`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/mcp/user` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `setMcpEnabled`.
-- Request DTO: `McpEnabledRequest`; response DTO: `McpEnabledResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/mcp_api.py` / `mcp_user_toggle`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/me` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getMe`.
-- Request DTO: `query/path/none`; response DTO: `UserInfo`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_me`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/me` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getMe`.
 - Request DTO: `query/path/none`; response DTO: `UserInfo`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_me`.
@@ -746,25 +410,9 @@
 - Backend: `app/routes.py` / `api_next_lesson`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/next_lesson` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getNextLesson`.
-- Request DTO: `query/path/none`; response DTO: `LessonNavResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_next_lesson`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/prev_lesson` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getPrevLesson`.
-- Request DTO: `query/path/none`; response DTO: `LessonNavResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_prev_lesson`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/prev_lesson` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getPrevLesson`.
 - Request DTO: `query/path/none`; response DTO: `LessonNavResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_prev_lesson`.
@@ -778,25 +426,9 @@
 - Backend: `app/routes.py` / `api_progress_sync`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/progress/sync` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `syncProgress`.
-- Request DTO: `SyncProgressRequest`; response DTO: `SyncProgressResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_progress_sync`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/share/create` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `createShare`.
-- Request DTO: `CreateShareRequest`; response DTO: `CreateShareResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_share_create`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/share/create` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `createShare`.
 - Request DTO: `CreateShareRequest`; response DTO: `CreateShareResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_share_create`.
@@ -810,25 +442,9 @@
 - Backend: `app/routes.py` / `api_share_source_lessons`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/share/source_lessons` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getShareSourceLessons`.
-- Request DTO: `query/path/none`; response DTO: `List<LessonDto>`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_share_source_lessons`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/share/{token}/import` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `importShare`.
-- Request DTO: `query/path/none`; response DTO: `ImportShareResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_share_import`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/share/{token}/import` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `importShare`.
 - Request DTO: `query/path/none`; response DTO: `ImportShareResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_share_import`.
@@ -842,25 +458,9 @@
 - Backend: `app/routes.py` / `api_subscription_get`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/subscription` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getSubscription`.
-- Request DTO: `query/path/none`; response DTO: `SubscriptionResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_subscription_get`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/subscription/google-play-config` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getPlayConfig`.
-- Request DTO: `query/path/none`; response DTO: `PlayConfigResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_google_play_config`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/subscription/google-play-config` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getPlayConfig`.
 - Request DTO: `query/path/none`; response DTO: `PlayConfigResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_google_play_config`.
@@ -874,25 +474,9 @@
 - Backend: `app/google_play.py` / `sync_play_subscriptions`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `POST /api/subscription/sync` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `syncPlaySubscriptions`.
-- Request DTO: `query/path/none`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/google_play.py` / `sync_play_subscriptions`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/subscription/verify_purchase` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `verifyPurchase`.
-- Request DTO: `VerifyPurchaseRequest`; response DTO: `VerifyPurchaseResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_verify_purchase`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/subscription/verify_purchase` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `verifyPurchase`.
 - Request DTO: `VerifyPurchaseRequest`; response DTO: `VerifyPurchaseResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_verify_purchase`.
@@ -906,25 +490,9 @@
 - Backend: `app/routes.py` / `api_sync_updates`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/sync/updates` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getSyncUpdates`.
-- Request DTO: `query/path/none`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_sync_updates`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/translate/word` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `aiTranslateWord`.
-- Request DTO: `AiTranslateWordRequest`; response DTO: `AiTranslateWordResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_translate_word`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/translate/word` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `aiTranslateWord`.
 - Request DTO: `AiTranslateWordRequest`; response DTO: `AiTranslateWordResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_translate_word`.
@@ -938,25 +506,9 @@
 - Backend: `app/routes.py` / `api_ui_language_get`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/ui-language` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getUiLanguage`.
-- Request DTO: `query/path/none`; response DTO: `UiLanguageResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_ui_language_get`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/ui-language` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `saveUiLanguage`.
-- Request DTO: `SaveUiLanguageRequest`; response DTO: `UiLanguageResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_ui_language_save`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/ui-language` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `saveUiLanguage`.
 - Request DTO: `SaveUiLanguageRequest`; response DTO: `UiLanguageResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_ui_language_save`.
@@ -970,25 +522,9 @@
 - Backend: `app/routes.py` / `api_user_languages_get`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/user-languages` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getUserLanguages`.
-- Request DTO: `query/path/none`; response DTO: `List<UserLanguageDto>`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_user_languages_get`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/user-languages` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `saveUserLanguages`.
-- Request DTO: `SaveLanguagesRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_user_languages_save`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/user-languages` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `saveUserLanguages`.
 - Request DTO: `SaveLanguagesRequest`; response DTO: `GenericResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_user_languages_save`.
@@ -1002,25 +538,9 @@
 - Backend: `app/routes.py` / `api_user_lessons`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/user_lessons` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getUserLessons`.
-- Request DTO: `query/path/none`; response DTO: `List<LessonDto>`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_user_lessons`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `POST /api/user_lessons/delete` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `deleteLessons`.
-- Request DTO: `DeleteLessonsRequest`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_user_lessons_delete`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `POST /api/user_lessons/delete` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `deleteLessons`.
 - Request DTO: `DeleteLessonsRequest`; response DTO: `GenericResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_user_lessons_delete`.
@@ -1034,25 +554,9 @@
 - Backend: `app/routes.py` / `api_get_words`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/words` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getWords`.
-- Request DTO: `query/path/none`; response DTO: `WordsResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_get_words`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /api/words/duplicates` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getDuplicates`.
-- Request DTO: `query/path/none`; response DTO: `DuplicatesResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_words_duplicates`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `GET /api/words/duplicates` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getDuplicates`.
 - Request DTO: `query/path/none`; response DTO: `DuplicatesResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_words_duplicates`.
@@ -1066,25 +570,9 @@
 - Backend: `app/routes.py` / `api_words_nl_list`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `GET /api/words/nl-list` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getNlWordList`.
-- Request DTO: `query/path/none`; response DTO: `NlWordListResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_words_nl_list`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `DELETE /api/words/{id}` — confirmed
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `deleteWord`.
-- Request DTO: `query/path/none`; response DTO: `GenericResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_delete_word`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
-## `DELETE /api/words/{id}` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `deleteWord`.
 - Request DTO: `query/path/none`; response DTO: `GenericResponse`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `app/routes.py` / `api_delete_word`.
@@ -1098,25 +586,9 @@
 - Backend: `app/routes.py` / `api_update_word`.
 - Примечание: Confirmed by matching local Flask method and normalized route.
 
-## `PUT /api/words/{id}` — confirmed
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `updateWord`.
-- Request DTO: `UpdateWordRequest`; response DTO: `UpdateWordResponse`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `app/routes.py` / `api_update_word`.
-- Примечание: Confirmed by matching local Flask method and normalized route.
-
 ## `GET /share/{token}/info` — unresolved
 
 - Android: `android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt` / `getShareInfo`.
-- Request DTO: `query/path/none`; response DTO: `ShareSetDto`.
-- Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
-- Backend: `not matched` / `not matched`.
-- Примечание: No matching local Flask route found; compatibility review required.
-
-## `GET /share/{token}/info` — unresolved
-
-- Android: `output/google-play-preparation-20261021/sources/android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt` / `getShareInfo`.
 - Request DTO: `query/path/none`; response DTO: `ShareSetDto`.
 - Headers: `["X-User-Id", "X-Client", "X-Device-Language"]`.
 - Backend: `not matched` / `not matched`.

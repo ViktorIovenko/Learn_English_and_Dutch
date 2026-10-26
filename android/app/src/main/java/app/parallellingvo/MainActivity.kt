@@ -79,6 +79,19 @@ class MainActivity : AppCompatActivity() {
         val bottomNav: BottomNavigationView = binding.bottomNavigation
         bottomNav.setupWithNavController(navController)
         setParentNavigationVisible(false)
+        binding.adminPreviewIndicator.setOnClickListener { navController.navigateToTab(R.id.languageSettingsFragment) }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                kotlinx.coroutines.flow.combine((application as ParallelLingvoApp).repository.currentUser,
+                    prefs.userId) { user, uid -> user?.takeIf { it.userId == uid } }.collect { user ->
+                    if (user != null) updateParentNavigation(user)
+                    else {
+                        binding.adminPreviewIndicator.visibility = android.view.View.GONE
+                        setParentNavigationVisible(false)
+                    }
+                }
+            }
+        }
 
         // Hide bottom nav on study/auth screens
         navController.addOnDestinationChangedListener { _, destination, _ ->
@@ -581,6 +594,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun updateParentNavigation(user: UserInfo) {
+        val preview = user.planState?.preview
+        binding.adminPreviewIndicator.visibility = if (user.isAdmin == true && !preview.isNullOrBlank())
+            android.view.View.VISIBLE else android.view.View.GONE
+        binding.adminPreviewIndicator.text = getString(R.string.admin_preview_indicator, preview.orEmpty().uppercase())
         setParentNavigationVisible(user.canManageFamily)
         if (!user.canManageFamily && navController.currentDestination?.id == R.id.parentDashboardFragment) {
             navController.navigateToTab(R.id.lessonsFragment)

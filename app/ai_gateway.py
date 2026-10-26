@@ -3,13 +3,12 @@ import base64
 import hashlib
 import json
 import math
-import secrets
 import sqlite3
 from contextlib import closing
 from urllib.parse import urlsplit
 
 import requests
-from flask import jsonify, render_template, request, session
+from flask import jsonify, redirect, request
 
 from config import Config
 from app.content_db import connect, transaction
@@ -260,21 +259,32 @@ def register(web):
     install_legacy_bridge(ai_platform)
     @web.get("/admin/ai")
     def admin_ai_page():
+        from app.routes import _admin_site_url, _require_admin
+        _, error = _require_admin()
+        if error:
+            return error
+        # Интерфейс перенесён во вкладку «ИИ» админки на основном сайте.
+        return redirect(_admin_site_url("ai"))
+
+    @web.get("/api/admin/ai/settings")
+    def admin_ai_get():
+        from app.admin_api import csrf_token
         from app.routes import _require_admin
         _, error = _require_admin()
         if error:
             return error
-        csrf = session.setdefault("ai_settings_csrf", secrets.token_urlsafe(32))
-        return render_template("admin_ai.html", settings=public_settings(), tasks=TASKS, csrf=csrf), 200, {"Cache-Control": "no-store"}
+        csrf_token()
+        # API key itself is never returned: only key_configured.
+        return jsonify(ok=True, settings=public_settings(), tasks=TASKS), 200, {"Cache-Control": "no-store"}
 
     @web.post("/api/admin/ai/settings")
     def admin_ai_save():
+        from app.admin_api import csrf_valid
         from app.routes import _require_admin
         _, error = _require_admin()
         if error:
             return error
-        token = session.get("ai_settings_csrf", "")
-        if not request.is_json or not token or not secrets.compare_digest(token, request.headers.get("X-CSRF-Token", "")):
+        if not request.is_json or not csrf_valid():
             return jsonify(ok=False, error="Обновите страницу и повторите сохранение"), 403
         try:
             value = save_settings(request.get_json(silent=True))

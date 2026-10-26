@@ -107,7 +107,8 @@ class TariffPlansTest(unittest.TestCase):
         me = admin.get("/api/me").get_json()
         self.assertTrue(me["is_admin"])
         self.assertEqual(me["plan_state"]["plan"], "admin")
-        self.assertIn("dashboard-nav-admin", admin.get("/").get_data(as_text=True))
+        # The admin UI lives on the main site: no admin entry in the app navigation.
+        self.assertNotIn("dashboard-nav-admin", admin.get("/").get_data(as_text=True))
         before = self.subscriptions_snapshot()
 
         for plan, ads in (("free", True), ("premium", False), ("family", False)):
@@ -130,7 +131,8 @@ class TariffPlansTest(unittest.TestCase):
         me = admin.get("/api/me").get_json()
         self.assertTrue(me["is_admin"])
         self.assertIsNone(me["plan_state"]["preview"])
-        self.assertIn("dashboard-nav-admin", admin.get("/").get_data(as_text=True))
+        # The admin UI lives on the main site: no admin entry in the app navigation.
+        self.assertNotIn("dashboard-nav-admin", admin.get("/").get_data(as_text=True))
 
     def test_preview_does_not_leak_to_other_users_or_sessions(self):
         self.add_user("alice")

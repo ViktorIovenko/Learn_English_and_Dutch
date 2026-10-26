@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from flask import Blueprint, jsonify, render_template, request, session
+from flask import Blueprint, jsonify, redirect, request, session
 
 from config import Config
 from app.advertising import admin_ops, awin, policy, selection, store
@@ -107,10 +107,16 @@ def _admin_viewer() -> Viewer | None:
 
 
 def _admin_write_guard():
-    """Real admin session, JSON body and same origin (blocks cross-site forms)."""
+    """Real admin session, JSON body and same origin (blocks cross-site forms).
+
+    The main-site admin (parallellingvo.app) is cross-origin; it is accepted
+    only after app.admin_api checked the exact Origin allowlist and the
+    session CSRF token for this very request.
+    """
+    from app.admin_api import origin_verified
     if not _admin_viewer():
         return jsonify({"ok": False, "error": "unauthorized"}), 401
-    if not request.is_json or not _same_origin():
+    if not request.is_json or not (_same_origin() or origin_verified()):
         return jsonify({"ok": False, "error": "bad_request"}), 400
     return None
 
@@ -254,8 +260,10 @@ def api_ads_event():
 @ads_bp.get("/admin/ads")
 def admin_ads_page():
     if not _admin_viewer():
-        return render_template("admin_ads.html", title="Реклама", hide_timer=True, denied=True), 403
-    return render_template("admin_ads.html", title="Реклама", hide_timer=True, denied=False)
+        return jsonify({"ok": False, "error": "unauthorized"}), 403
+    # The UI is the "Реклама" tab of the main-site admin; APIs stay here.
+    from app.routes import _admin_site_url
+    return redirect(_admin_site_url("ads"))
 
 
 def _admin_state() -> dict[str, Any]:
@@ -285,6 +293,18 @@ def api_admin_ads_state():
     if not _admin_viewer():
         return jsonify({"ok": False, "error": "unauthorized"}), 401
     return jsonify(_admin_state())
+
+
+@ads_bp.get("/api/admin/ads/stats")
+def api_admin_ads_stats():
+    """Aggregated LIVE counters by advertiser/creative/placement/device/country."""
+    if not _admin_viewer():
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    try:
+        days = max(1, min(365, int(request.args.get("days", 30))))
+    except (TypeError, ValueError):
+        days = 30
+    return jsonify({"ok": True, "days": days, "rows": store.stats_breakdown(days)})
 
 
 @ads_bp.get("/api/admin/ads/simulate")

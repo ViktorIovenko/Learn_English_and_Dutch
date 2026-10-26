@@ -44,19 +44,18 @@ HTML-шаблоны рендерятся Flask, используют общие 
 ## `app/static/upload.js`
 
 - api: `/api/user_lessons` (`app/static/upload.js:8`).
-- api: `/api/me` (`app/static/upload.js:42`).
-- api: `/api/translate/word` (`app/static/upload.js:121`).
-- api: `/api/generate/topic` (`app/static/upload.js:132`).
-- api: `/api/translate/language` (`app/static/upload.js:144`).
-- api: `/api/import-words` (`app/static/upload.js:562`).
-- api: `/api/share/source_lessons` (`app/static/upload.js:773`).
-- api: `/api/user_lessons/rename` (`app/static/upload.js:834`).
-- api: `/api/words/${wordId}` (`app/static/upload.js:1042`).
-- api: `/api/words/${word.id}` (`app/static/upload.js:1116`).
-- api: `/api/share/assign_child` (`app/static/upload.js:1235`).
-- api: `/api/share/create` (`app/static/upload.js:1278`).
-- api: `/api/parse-file` (`app/static/upload.js:1356`).
-- api: `/api/import-words` (`app/static/upload.js:1429`).
+- api: `/api/translate/word` (`app/static/upload.js:109`).
+- api: `/api/generate/topic` (`app/static/upload.js:120`).
+- api: `/api/translate/language` (`app/static/upload.js:132`).
+- api: `/api/import-words` (`app/static/upload.js:550`).
+- api: `/api/share/source_lessons` (`app/static/upload.js:760`).
+- api: `/api/user_lessons/rename` (`app/static/upload.js:821`).
+- api: `/api/words/${wordId}` (`app/static/upload.js:1029`).
+- api: `/api/words/${word.id}` (`app/static/upload.js:1103`).
+- api: `/api/share/assign_child` (`app/static/upload.js:1222`).
+- api: `/api/share/create` (`app/static/upload.js:1265`).
+- api: `/api/parse-file` (`app/static/upload.js:1343`).
+- api: `/api/import-words` (`app/static/upload.js:1416`).
 
 ## `app/static/word_database.js`
 
@@ -70,14 +69,9 @@ HTML-шаблоны рендерятся Flask, используют общие 
 
 - api: `/api/account/type` (`app/templates/account_type.html:49`).
 
-## `app/templates/admin_ads.html`
-
-- global: `__adsResize` (`app/templates/admin_ads.html:464`).
-
 ## `app/templates/admin_users.html`
 
-- api: `/api/me` (`app/templates/admin_users.html:137`).
-- api: `/api/admin/plan-preview` (`app/templates/admin_users.html:213`).
+- api: `/api/me` (`app/templates/admin_users.html:31`).
 
 ## `app/templates/android_browser_login.html`
 
@@ -134,13 +128,13 @@ HTML-шаблоны рендерятся Flask, используют общие 
 
 ## `app/templates/index.html`
 
-- api: `/api/learning/streak?tz_offset=${offset}` (`app/templates/index.html:194`).
-- api: `/api/user_lessons` (`app/templates/index.html:469`).
-- api: `/api/user_lessons/delete` (`app/templates/index.html:550`).
-- api: `/api/lesson_words?lesson=${encodeURIComponent(lessonTitle)}` (`app/templates/index.html:614`).
-- api: `/api/lessons` (`app/templates/index.html:645`).
-- api: `/api/lessons` (`app/templates/index.html:664`).
-- api: `/api/lessons/set_hidden` (`app/templates/index.html:745`).
+- api: `/api/learning/streak?tz_offset=${offset}` (`app/templates/index.html:191`).
+- api: `/api/user_lessons` (`app/templates/index.html:466`).
+- api: `/api/user_lessons/delete` (`app/templates/index.html:547`).
+- api: `/api/lesson_words?lesson=${encodeURIComponent(lessonTitle)}` (`app/templates/index.html:611`).
+- api: `/api/lessons` (`app/templates/index.html:642`).
+- api: `/api/lessons` (`app/templates/index.html:661`).
+- api: `/api/lessons/set_hidden` (`app/templates/index.html:742`).
 
 ## `app/templates/learn.html`
 
@@ -196,17 +190,13 @@ HTML-шаблоны рендерятся Flask, используют общие 
 ## `app/templates/upload.html`
 
 - api: `/api/me` (`app/templates/upload.html:354`).
-- global: `PUBLIC_BASE_URL` (`app/templates/upload.html:603`).
-- template_script: `{{ url_for(` (`app/templates/upload.html:606`).
+- global: `PUBLIC_BASE_URL` (`app/templates/upload.html:594`).
+- template_script: `{{ url_for(` (`app/templates/upload.html:597`).
 
 ## `app/templates/word_database.html`
 
 - template_style: `{{ url_for(` (`app/templates/word_database.html:3`).
 - template_script: `{{ url_for(` (`app/templates/word_database.html:78`).
-
-## `output/deploy-ai-admin-20261022/app/templates/admin_users.html`
-
-- api: `/api/me` (`output/deploy-ai-admin-20261022/app/templates/admin_users.html:156`).
 
 ## Offline flow
 

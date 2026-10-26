@@ -73,8 +73,9 @@ class LearnViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             val accessResult = repo.getMe()
             hasSubscriptionAccess = (accessResult as? NetworkResult.Success)?.data?.let {
-                it.isAdmin == true || it.subscription?.isActive == true
-            } == true
+                it.canUseApp
+            } ?: (accessResult is NetworkResult.Error && accessResult.code == null &&
+                prefs.userId.first().isNotBlank() && prefs.authToken.first().isNotBlank())
             if (!hasSubscriptionAccess) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

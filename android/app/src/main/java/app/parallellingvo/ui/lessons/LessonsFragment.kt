@@ -82,12 +82,11 @@ class LessonsFragment : Fragment() {
 
         val adBanner = AdBannerController(
             container = binding.adContainer,
-            api = { ParallelLingvoApp.instance.apiClient.service },
-            scope = viewLifecycleOwner.lifecycleScope,
+            owner = viewLifecycleOwner,
+            session = androidx.lifecycle.ViewModelProvider(this)[app.parallellingvo.ui.ads.AdsSessionViewModel::class.java],
             page = "dashboard",
             placements = listOf("dashboard_bottom"),
         )
-        adBanner.load()
 
         binding.swipeRefresh.setOnRefreshListener {
             viewModel.refresh()

@@ -1,0 +1,7 @@
+<resources>
+    <string name="admin_preview_title">Предпросмотр тарифа</string>
+    <string name="admin_preview_ads">Показывать рекламные места</string>
+    <string name="admin_preview_exit">Выйти из предпросмотра</string>
+    <string name="admin_preview_indicator">ПРОСМОТР ТАРИФА: %1$s</string>
+    <string name="admin_preview_normal">Администратор</string>
+</resources>

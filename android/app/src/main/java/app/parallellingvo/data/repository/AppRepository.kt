@@ -5,6 +5,8 @@ import com.google.gson.reflect.TypeToken
 import app.parallellingvo.data.api.*
 import app.parallellingvo.data.db.*
 import app.parallellingvo.utils.*
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -14,6 +16,10 @@ class AppRepository(
     private val prefs: PreferencesManager,
     private val contentCache: WordContentCache
 ) {
+    private val _currentUser = kotlinx.coroutines.flow.MutableStateFlow<UserInfo?>(null)
+    val currentUser: kotlinx.coroutines.flow.StateFlow<UserInfo?> = _currentUser
+    fun clearCurrentUser() { _currentUser.value = null }
+    private val previewMutex = kotlinx.coroutines.sync.Mutex()
     private val gson = Gson()
     private val api: ApiService
         get() = apiClient.service
@@ -71,10 +77,36 @@ class AppRepository(
     suspend fun getMe(): NetworkResult<UserInfo> = SessionBoundary.withSession {
         val result = safeApiCall { api.getMe() }
         if (result is NetworkResult.Success) {
+            _currentUser.value = result.data
             prefs.saveIsAdmin(result.data.isAdmin == true)
             result.data.accountType?.let { prefs.saveAccountTypeCache(it) }
         }
         return@withSession result
+    }
+
+    suspend fun setAdminPreview(plan: String, ads: Boolean = plan == "free"): NetworkResult<UserInfo> = previewMutex.withLock {
+        val confirmed = getMe()
+        if (confirmed !is NetworkResult.Success) return@withLock confirmed
+        if (confirmed.data.isAdmin != true) return@withLock NetworkResult.Error("Administrator required")
+        val expected = SessionBoundary.generation
+        val oldPlan = prefs.adminPreviewPlan.first()
+        val oldAds = prefs.adminPreviewAds.first()
+        val changed = SessionBoundary.transition(cancelRequests = apiClient::clearCookies) {
+            if (SessionBoundary.generation != expected + 1 || prefs.userId.first() != confirmed.data.userId) false
+            else { prefs.saveAdminPreview(plan, ads); true }
+        }
+        if (!changed) return@withLock NetworkResult.Error("Session changed")
+        val updated = getMe()
+        if (updated !is NetworkResult.Success || updated.data.userId != confirmed.data.userId ||
+            updated.data.planState?.preview.orEmpty() != plan) {
+            SessionBoundary.transition(cancelRequests = apiClient::clearCookies) {
+                if (SessionBoundary.generation == expected + 3 && prefs.userId.first() == confirmed.data.userId)
+                    prefs.saveAdminPreview(oldPlan, oldAds)
+            }
+            getMe()
+            return@withLock NetworkResult.Error("Preview unavailable")
+        }
+        updated
     }
 
     suspend fun setAccountType(accountType: String): NetworkResult<GenericResponse> =

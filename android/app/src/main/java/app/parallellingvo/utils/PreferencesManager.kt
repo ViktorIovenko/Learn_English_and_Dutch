@@ -27,6 +27,8 @@ class PreferencesManager(private val context: Context) {
         val KEY_SELECTED_LANGS = stringPreferencesKey("selected_langs")
         val KEY_THEME_MODE = intPreferencesKey("theme_mode")
         val KEY_UI_LANGUAGE_OVERRIDE = stringPreferencesKey("ui_language_override")
+        val KEY_ADMIN_PREVIEW_PLAN = stringPreferencesKey("admin_preview_plan")
+        val KEY_ADMIN_PREVIEW_ADS = booleanPreferencesKey("admin_preview_ads")
         val KEY_IS_ADMIN = booleanPreferencesKey("is_admin")
         val KEY_AUTH_METHOD = stringPreferencesKey("auth_method")
         val KEY_PENDING_AUTH = stringPreferencesKey("pending_android_auth")
@@ -175,12 +177,36 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
+    val adminPreviewPlan: Flow<String> = context.dataStore.data.map {
+        it[KEY_ADMIN_PREVIEW_PLAN].orEmpty().takeIf { plan -> plan in setOf("free", "premium", "family") }.orEmpty()
+    }
+    val adminPreviewAds: Flow<Boolean> = context.dataStore.data.map { it[KEY_ADMIN_PREVIEW_ADS] ?: true }
+
+    suspend fun saveAdminPreview(plan: String, ads: Boolean = plan == "free") {
+        require(plan.isEmpty() || plan in setOf("free", "premium", "family"))
+        context.dataStore.edit {
+            if (it[KEY_IS_ADMIN] != true || plan.isEmpty()) {
+                it.remove(KEY_ADMIN_PREVIEW_PLAN)
+                it.remove(KEY_ADMIN_PREVIEW_ADS)
+            } else {
+                it[KEY_ADMIN_PREVIEW_PLAN] = plan
+                it[KEY_ADMIN_PREVIEW_ADS] = ads
+            }
+        }
+    }
+
     val isAdmin: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_IS_ADMIN] ?: false
     }
 
     suspend fun saveIsAdmin(value: Boolean) {
-        context.dataStore.edit { prefs -> prefs[KEY_IS_ADMIN] = value }
+        context.dataStore.edit { prefs ->
+            prefs[KEY_IS_ADMIN] = value
+            if (!value) {
+                prefs.remove(KEY_ADMIN_PREVIEW_PLAN)
+                prefs.remove(KEY_ADMIN_PREVIEW_ADS)
+            }
+        }
     }
 
     val accountTypeCache: Flow<String> = context.dataStore.data.map { prefs ->
@@ -227,6 +253,7 @@ class PreferencesManager(private val context: Context) {
 
     private suspend fun eraseSessionData(clearAccount: Boolean) {
         val app = context.applicationContext as ParallelLingvoApp
+        app.repository.clearCurrentUser()
         app.apiClient.clearCookies()
         if (clearAccount) {
             ChildLearningReminder.setEnabled(context, false)
@@ -242,6 +269,8 @@ class PreferencesManager(private val context: Context) {
     private fun clearAccountPreferences(prefs: MutablePreferences) {
         for (key in listOf(KEY_USER_ID, KEY_AUTH_TOKEN, KEY_USERNAME, KEY_AUTH_METHOD,
             KEY_PENDING_AUTH, KEY_ACCOUNT_TYPE_CACHE, KEY_SELECTED_LANGS, KEY_TIMER_DATE)) prefs.remove(key)
+        prefs.remove(KEY_ADMIN_PREVIEW_PLAN)
+        prefs.remove(KEY_ADMIN_PREVIEW_ADS)
         prefs.remove(KEY_IS_ADMIN)
         prefs.remove(KEY_LAST_SYNC)
         prefs.remove(KEY_TIMER_SECONDS)

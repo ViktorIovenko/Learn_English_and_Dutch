@@ -1718,9 +1718,15 @@ def _real_plan(user_id: str | None) -> str:
 
 
 def _preview_plan_for(user_id: str | None) -> str:
-    """Admin preview is kept in the admin's own session cookie only."""
+    """Preview belongs to an authenticated admin, never a claimed user id."""
     if not has_request_context():
         return ""  # MCP internals, bot and background jobs never preview.
+    if not _session_user_id() and request.headers.get("X-Client") == "android":
+        uid = _bearer_user_id()
+        if uid and uid == str(user_id or "") and _is_admin_user_id(uid):
+            value = request.headers.get("X-Admin-Plan-Preview", "")
+            return value if value in plans.PREVIEW_PLANS else ""
+        return ""
     admin_uid = _session_admin_user_id()
     if not admin_uid or str(user_id or "") != admin_uid:
         return ""
@@ -1732,8 +1738,16 @@ def _plan_state(user_id: str | None) -> Dict[str, Any]:
     return plans.entitlements(
         _real_plan(user_id),
         preview=preview,
-        preview_ads=bool(session.get(plans.PREVIEW_ADS_SESSION_KEY)) if preview else False,
+        preview_ads=_preview_ads_for(user_id) if preview else False,
     )
+
+
+def _preview_ads_for(user_id: str | None) -> bool:
+    if not _preview_plan_for(user_id):
+        return False
+    if not _session_user_id():
+        return request.headers.get("X-Admin-Preview-Ads", "true") == "true"
+    return bool(session.get(plans.PREVIEW_ADS_SESSION_KEY))
 
 
 def _ui_is_admin(user_id: str | None) -> bool:
@@ -1809,12 +1823,13 @@ def _ads_viewer():
     return Viewer(
         user_id=uid,
         is_admin=is_admin,
-        preview_plan=plans.preview_plan(session, True) if is_admin and channel == "session" else "",
+        preview_plan=_preview_plan_for(uid) if is_admin else "",
         real_plan=_real_plan(uid),
         subscription_status=status,
         account_type=_account_context(uid)["account_type"],
         ui_language=_get_ui_language(uid)["ui_language"],
         channel=channel,
+        preview_ads=_preview_ads_for(uid),
     )
 
 
@@ -2203,7 +2218,17 @@ def admin_users_page():
             users=[],
             admin_user_id=admin_user_id,
         ), 403
+    # Админка перенесена на основной сайт; здесь остаются только API.
+    return redirect(_admin_site_url("general"))
 
+
+def _admin_site_url(tab: str) -> str:
+    base = str(Config.ADMIN_SITE_URL or "https://parallellingvo.app/admin/")
+    return base + ("&" if "?" in base else "?") + "tab=" + tab
+
+
+def _admin_overview_data() -> Dict[str, Any]:
+    """Users, subscriptions and usage for the admin tabs General/Subscriptions/Costs."""
     _ensure_schema()
     _ensure_subscription_schema()
     _ensure_progress_schema()
@@ -2359,17 +2384,11 @@ def admin_users_page():
             "translation_total_tokens": translation_usage["by_user"].get(uid, {}).get("total_tokens", 0),
         })
 
-    return render_template(
-        "admin_users.html",
-        title="Пользователи",
-        hide_timer=True,
-        access_pending=False,
-        access_denied=False,
-        users=rows,
-        admin_user_id=admin_user_id,
-        tts_usage_summary=tts_usage,
-        translation_usage_summary=translation_usage,
-    )
+    return {
+        "users": rows,
+        "tts_usage": {key: value for key, value in tts_usage.items() if key != "by_user"},
+        "translation_usage": {key: value for key, value in translation_usage.items() if key != "by_user"},
+    }
 
 
 @web.get("/share/<token>")
@@ -3315,7 +3334,7 @@ def api_me():
                 "languages_configured": 3 <= len(language_preferences) <= 5,
                 "language_preferences": language_preferences,
                 "subscription": subscription,
-                "is_admin": _ui_is_admin(uid),
+                "is_admin": _is_admin_user_id(uid),
                 "plan_state": _plan_state(uid),
                 **_account_context(str(uid)),
                 **_get_ui_language(str(uid)),
@@ -4744,24 +4763,43 @@ def api_prev_lesson():
 # ─── Admin helpers ───────────────────────────────────────────────────────────
 
 def _require_admin(*, allow_platform: bool = False) -> tuple:
+    from app.admin_api import platform_token_ok
     uid = _session_admin_user_id()
-    if not uid and allow_platform:
-        configured_token = str(Config.AI_PLATFORM_ADMIN_TOKEN or "").strip()
-        authorization = str(request.headers.get("Authorization") or "").strip()
-        supplied_token = (
-            authorization[7:].strip()
-            if authorization.lower().startswith("bearer ")
-            else ""
-        )
-        if (
-            configured_token
-            and supplied_token
-            and secrets.compare_digest(supplied_token, configured_token)
-        ):
-            uid = "ai-platform"
+    if not uid and allow_platform and platform_token_ok():
+        uid = "ai-platform"
     if not uid:
         return None, (jsonify({"ok": False, "error": "unauthorized"}), 401)
     return uid, None
+
+
+@web.get("/api/admin/session")
+def api_admin_session():
+    """Admin shell bootstrap for the main site: who is signed in + CSRF token."""
+    if not _session_user_id():
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    admin_uid = _session_admin_user_id()
+    if not admin_uid:
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+    from app.admin_api import csrf_token
+    return jsonify({
+        "ok": True,
+        "is_admin": True,
+        "user": {
+            "id": admin_uid,
+            "first_name": session.get("tg_first_name"),
+            "last_name": session.get("tg_last_name"),
+        },
+        "csrf_token": csrf_token(),
+    })
+
+
+@web.get("/api/admin/overview")
+def api_admin_overview():
+    """Data of the General / Subscriptions / Costs tabs (former /admin/users page)."""
+    uid, err = _require_admin()
+    if err:
+        return err
+    return jsonify({"ok": True, "admin_user_id": uid, **_admin_overview_data()})
 
 
 @web.get("/api/admin/users")
@@ -5273,6 +5311,9 @@ def auth_status():
     authenticated = bool(session.get("is_auth"))
     resp = jsonify({
         "authenticated": authenticated,
+        # Only a UX hint for the main site's "Admin" button; every
+        # /api/admin/* call re-checks the session on its own.
+        "is_admin": bool(authenticated and _session_admin_user_id()),
         "user": {
             "id": session.get("tg_user_id"),
             "first_name": session.get("tg_first_name"),
@@ -5284,6 +5325,7 @@ def auth_status():
         resp.headers["Access-Control-Allow-Origin"] = origin
         resp.headers["Access-Control-Allow-Credentials"] = "true"
         resp.headers["Vary"] = "Origin"
+    resp.headers["Cache-Control"] = "no-store"
     return resp
 
 
@@ -5338,6 +5380,8 @@ def init_app(app):
             "t": lambda key, **kwargs: translate(language, key, **kwargs),
         }
 
+    from app.admin_api import init_admin_api
+    init_admin_api(app)
     app.register_blueprint(web)
     from app.mcp_api import mcp_api
     app.register_blueprint(mcp_api)

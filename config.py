@@ -55,6 +55,14 @@ class Config:
     # Username Telegram не принимается — его можно сменить и занять.
     ADMIN_IDS = _parse_admin_ids(os.getenv("ADMIN_IDS") or os.getenv("ADMIN_TG_IDS"))
     ADMIN_EMAILS = _parse_admin_emails(os.getenv("ADMIN_EMAILS"))
+    # Админка живёт на основном сайте и обращается к /api/admin/* cross-origin.
+    # Только точные origin из этого списка получают CORS и могут менять данные.
+    ADMIN_SITE_ORIGINS = tuple(dict.fromkeys(
+        part.strip().rstrip("/") for part in os.getenv(
+            "ADMIN_SITE_ORIGINS", "https://parallellingvo.app,https://www.parallellingvo.app",
+        ).split(",") if part.strip().startswith(("https://", "http://localhost", "http://127.0.0.1"))
+    ))
+    ADMIN_SITE_URL = os.getenv("ADMIN_SITE_URL", "https://parallellingvo.app/admin/").strip()
 
     # Google OAuth
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")

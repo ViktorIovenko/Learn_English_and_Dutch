@@ -300,6 +300,84 @@ class AdvertisingTest(unittest.TestCase):
     def android(self, user_id):
         return {"Authorization": f"Bearer {create_auth_token(user_id)}", "X-Client": "android"}
 
+    def test_android_admin_preview_contract_and_no_real_ads(self):
+        client = self.app.test_client()
+        before = self.subscription_rows()
+        for plan in ("free", "premium", "family"):
+            with self.subTest(plan=plan):
+                headers = {**self.android(ADMIN), "X-Admin-Plan-Preview": plan}
+                me = client.get("/api/me", headers=headers).get_json()
+                self.assertTrue(me["is_admin"])
+                self.assertEqual(me["plan_state"]["real_plan"], "admin")
+                self.assertEqual(me["plan_state"]["preview"], plan)
+                self.assertEqual(me["subscription"]["plan"], plan)
+                self.assertTrue(me["subscription"]["access"])
+                self.assertEqual(me["subscription"]["paid_access"], plan != "free")
+                self.assertEqual(me["plan_state"]["features"]["family"], plan == "family")
+                self.assertEqual(me["plan_state"]["features"]["ai_paid"], plan != "free")
+                self.assertEqual(me["plan_state"]["features"]["max_children"], 4 if plan == "family" else 0)
+                ads = client.get("/api/ads/page?page=lesson&placements=lesson_bottom&device=phone", headers=headers).get_json()
+                self.assertEqual(ads["decision"]["serve"], "demo" if plan == "free" else "none")
+                self.assertNotIn("consent_prompt", ads)
+                for slot in ads["slots"]:
+                    self.assertTrue(slot["preview"])
+                    self.assertIn(slot["render"], ("demo", "mock", "placeholder"))
+                    self.assertNotIn("image_url", slot)
+                    self.assertNotIn("click_url", slot)
+        self.assertEqual(self.subscription_rows(), before)
+        self.assertIsNone(client.get("/api/me", headers=self.android(ADMIN)).get_json()["plan_state"]["preview"])
+        with self.app.app_context():
+            self.assertEqual(routes._preview_plan_for(ADMIN), "")
+
+    def subscription_rows(self):
+        routes._ensure_subscription_schema()
+        with sqlite3.connect(self.db_path) as conn:
+            return conn.execute("SELECT * FROM user_subscriptions ORDER BY user_id").fetchall()
+
+    def test_android_preview_headers_require_real_admin_bearer_and_channel(self):
+        client = self.app.test_client()
+        for plan in ("free", "premium", "family", "superadmin", "paid", "vip"):
+            headers = {**self.android("free_user"), "X-Admin-Plan-Preview": plan}
+            me = client.get("/api/me", headers=headers).get_json()
+            self.assertIsNone(me["plan_state"]["preview"])
+            self.assertEqual(me["plan_state"]["plan"], "free")
+        for headers in (
+            {"Authorization": "Bearer invalid", "X-Client": "android"},
+            {"X-User-Id": ADMIN, "X-Client": "android"},
+            {"Authorization": self.android(ADMIN)["Authorization"]},
+            {**self.android(ADMIN), "X-Client": "mcp"},
+            {**self.android(ADMIN), "X-Admin-Plan-Preview": "vip"},
+        ):
+            headers.setdefault("X-Admin-Plan-Preview", "family")
+            with self.app.test_request_context("/api/me", headers=headers):
+                self.assertEqual(routes._preview_plan_for(ADMIN), "")
+                self.assertEqual(routes._preview_plan_for("free_user"), "")
+
+    def test_android_preview_ads_switch_and_disabled_placeholder(self):
+        client = self.app.test_client()
+        headers = {**self.android(ADMIN), "X-Admin-Plan-Preview": "free"}
+        disabled = next(p for p in store.list_placements() if p["key"] == "dashboard_top")
+        self.assertFalse(disabled["enabled"])
+        ads = client.get("/api/ads/page?page=dashboard&placements=dashboard_top", headers=headers).get_json()
+        self.assertEqual(ads["slots"][0]["render"], "placeholder")
+        headers["X-Admin-Preview-Ads"] = "false"
+        self.assertFalse(client.get("/api/me", headers=headers).get_json()["plan_state"]["ads_visible"])
+        self.assertEqual(client.get("/api/ads/page?page=dashboard", headers=headers).get_json()["slots"], [])
+
+    def test_android_preview_never_counts_live_events_or_exposes_awin(self):
+        self.go_live(platforms=("android",))
+        self.add_live_creative()
+        client = self.app.test_client()
+        headers = {**self.android(ADMIN), "X-Admin-Plan-Preview": "free"}
+        store.save_consent(ADMIN, "android", "granted")
+        ads = client.get("/api/ads/page?page=dashboard", headers=headers).get_json()
+        self.assertEqual(ads["decision"]["serve"], "demo")
+        self.assertTrue(all("image_url" not in s and "click_url" not in s for s in ads["slots"]))
+        for event in ("impression", "click"):
+            client.post("/api/ads/event", headers=headers,
+                        json={"event": event, "placement": "dashboard_bottom", "creative_id": 1})
+        self.assertEqual(store.stats_summary(), [])
+
     def test_android_free_user_gets_ads_after_in_app_consent(self):
         self.go_live(platforms=("web", "telegram", "android"))
         self.add_live_creative(width=320, height=50)

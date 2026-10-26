@@ -423,14 +423,20 @@ class AdminTtsUsageApiTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    def test_admin_page_has_general_subscription_and_cost_tabs(self):
-        response = self.client.get("/admin/users")
-        self.assertEqual(response.status_code, 200)
-        html = response.get_data(as_text=True)
-        self.assertIn('data-admin-tab="general"', html)
-        self.assertIn('data-admin-tab="subscriptions"', html)
-        self.assertIn('data-admin-tab="costs"', html)
-        self.assertIn('value="500000"', html)
+    def test_admin_overview_feeds_general_subscription_and_cost_tabs(self):
+        # The tabs live on the main site (parallellingvo.app/admin); the app
+        # redirects the old page and serves the same data as JSON.
+        legacy = self.client.get("/admin/users")
+        self.assertEqual(legacy.status_code, 302)
+        self.assertTrue(legacy.headers["Location"].endswith("tab=general"))
+        data = self.client.get("/api/admin/overview").get_json()
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["tts_usage"]["character_limit"], 500000)
+        self.assertNotIn("by_user", data["tts_usage"])
+        row = data["users"][0]
+        for key in ("display_name", "subscription_status", "access_until", "tts_characters",
+                    "translation_total_tokens", "lessons_count", "words_count", "last_event_ts"):
+            self.assertIn(key, row)
 
 
 if __name__ == "__main__":

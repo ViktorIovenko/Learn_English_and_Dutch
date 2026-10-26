@@ -35,18 +35,6 @@ function _jsArg(s) {
   return JSON.stringify(String(s)).replace(/</g, '\\u003c');
 }
 
-async function initAdminSubscriptionsLink() {
-  const link = document.getElementById('admin-subscriptions-link');
-  if (!link) return;
-  try {
-    const resp = await apiFetch('/api/me');
-    const data = await resp.json();
-    if (!data.ok || !data.is_admin) return;
-    link.href = '/admin/users';
-    link.style.display = 'inline-flex';
-  } catch (_) {}
-}
-
 function addLesson() {
   const idx = lessonCounter++;
   const container = document.getElementById('lessons-container');
@@ -622,7 +610,6 @@ async function _resolveKnownTranslation(lessonName, nl, ru, level) {
 
 addLesson();
 loadUploadLessons();
-initAdminSubscriptionsLink();
 
 
 // ════════════════════════════════════════════════════════════════

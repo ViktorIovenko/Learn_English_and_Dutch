@@ -27,6 +27,7 @@ and supplies a read-only viewer (real plan, subscription status, account type, a
 - MCP: scope `ads.admin` (admin only) — see `docs/MCP_CONNECTOR.md`.
 - Android is identified by its signed Bearer token (platform forced to `android`, never from a parameter); the legacy `X-User-Id` header is never trusted. Admin tools need the browser session. Admin always sees mock-ups (no real image, link, impression).
 - Android client: `ui/ads/AdBannerController.kt` on the lessons screen (`dashboard_bottom`, own row above the buttons). Banner images are fetched by a separate OkHttp client without token, user id or cookies; a click opens the Awin link in the browser. No ad SDK.
+- Android integration and tariff preview: see [ANDROID_ADVERTISING.md](ANDROID_ADVERTISING.md). Shared repository/controller also serve `lesson_bottom` and `secondary_bottom`; Coil loads LIVE images, Custom Tabs opens validated HTTPS links. Admin Bearer preview uses the existing plan_state contract and never serves real affiliate material.
 - Nothing personal is sent to Awin; `clickref` may only be a placement key.
 
 ## Env

@@ -1,0 +1,7 @@
+<resources>
+    <string name="admin_preview_title">Plan preview</string>
+    <string name="admin_preview_ads">Show advertising placements</string>
+    <string name="admin_preview_exit">Exit preview</string>
+    <string name="admin_preview_indicator">ADMIN PREVIEW · %1$s</string>
+    <string name="admin_preview_normal">Administrator</string>
+</resources>

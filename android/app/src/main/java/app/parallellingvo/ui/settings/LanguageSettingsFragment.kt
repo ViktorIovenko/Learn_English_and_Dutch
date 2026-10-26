@@ -224,6 +224,38 @@ class LanguageSettingsFragment : Fragment() {
         }
     }
 
+    private fun renderAdminPreview(user: app.parallellingvo.data.api.UserInfo) {
+        val root = _binding?.root ?: return
+        val card = root.findViewById<View>(R.id.admin_preview_card)
+        card.visibility = if (user.isAdmin == true) View.VISIBLE else View.GONE
+        if (user.isAdmin != true) return
+        val preview = user.planState?.preview.orEmpty()
+        root.findViewById<TextView>(R.id.admin_preview_status).text =
+            if (preview.isBlank()) getString(R.string.admin_preview_normal)
+            else getString(R.string.admin_preview_indicator, preview.uppercase())
+        val ads = root.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.preview_ads)
+        ads.setOnCheckedChangeListener(null)
+        ads.visibility = if (preview == "free") View.VISIBLE else View.GONE
+        ads.isChecked = user.planState?.adsVisible == true
+        fun choose(plan: String, showAds: Boolean = plan == "free") {
+            val controls = listOf(R.id.preview_free, R.id.preview_premium, R.id.preview_family,
+                R.id.preview_exit, R.id.preview_ads).map { root.findViewById<View>(it) }
+            controls.forEach { it.isEnabled = false }
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val result = ParallelLingvoApp.instance.repository.setAdminPreview(plan, showAds)
+                    if (result is NetworkResult.Error) context?.toast(getString(R.string.page_unavailable))
+                    if (_binding != null) loadSubscriptionSummary()
+                } finally { controls.forEach { it.isEnabled = true } }
+            }
+        }
+        listOf(R.id.preview_free to "free", R.id.preview_premium to "premium",
+            R.id.preview_family to "family", R.id.preview_exit to "").forEach { (id, plan) ->
+            root.findViewById<View>(id).setOnClickListener { choose(plan) }
+        }
+        ads.setOnCheckedChangeListener { _, checked -> choose("free", checked) }
+    }
+
     private fun loadSubscriptionSummary() {
         familyInvitationUrl = ""
         _binding?.familyQrContent?.visibility = View.GONE
@@ -237,6 +269,7 @@ class LanguageSettingsFragment : Fragment() {
                 return@launch
             }
             val user = result.data
+            renderAdminPreview(user)
             val state = user.planState
             val plan = state?.plan ?: user.subscription?.plan
                 ?: if (user.subscription?.isActive == true) "premium" else "free"

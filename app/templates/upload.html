@@ -368,15 +368,6 @@ table.db-tbl { border-collapse: collapse; width: 100%; font-size: 13px; min-widt
 
   <!-- Навигация назад к урокам -->
   <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-      <a id="admin-subscriptions-link" href="{{ url_for('web.admin_users_page') }}" style="
-        display:inline-flex;align-items:center;gap:7px;
-        padding:10px 16px;border-radius:12px;
-        background:#2563eb;color:#fff;
-        font-size:15px;font-weight:600;text-decoration:none;
-        box-shadow:0 3px 10px rgba(37,99,235,.24);
-        transition:background .2s,transform .15s;
-        {% if not is_admin %}display:none;{% endif %}
-      " onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Управление подписками</a>
     <a href="/static/downloads/learnwords.apk" download style="
       display:inline-flex;align-items:center;gap:7px;
       padding:10px 18px;border-radius:12px;

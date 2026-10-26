@@ -104,9 +104,6 @@
     <a class="dashboard-nav-item" href="/upload"><span class="dashboard-nav-icon" aria-hidden="true">＋</span>{{ t("index.add_words") }}</a>
     <a class="dashboard-nav-item" href="{{ url_for('web.parent_dashboard_page') }}" data-family-feature><span class="dashboard-nav-icon" aria-hidden="true">♧</span>{{ t("nav.parent") }}</a>
     <a class="dashboard-nav-item" href="{{ url_for('web.settings_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">⚙</span>{{ t("nav.settings") }}</a>
-    {% if is_admin %}
-      <a class="dashboard-nav-item dashboard-nav-admin" href="{{ url_for('web.admin_users_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">◇</span>{{ t("nav.admin") }}</a>
-    {% endif %}
 </nav>
 {% with ad_placement="dashboard_top", ad_page="dashboard" %}{% include "_ad_slot.html" %}{% endwith %}
 

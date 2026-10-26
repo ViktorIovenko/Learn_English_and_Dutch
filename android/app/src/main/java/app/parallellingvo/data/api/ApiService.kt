@@ -267,8 +267,11 @@ interface ApiService {
         @Query("placements") placements: String
     ): Response<AdsPageResponse>
 
+    @GET("api/ads/consent")
+    suspend fun getAdsConsent(): Response<AdsConsentResponse>
+
     @POST("api/ads/consent")
-    suspend fun setAdsConsent(@Body request: AdsConsentRequest): Response<GenericResponse>
+    suspend fun setAdsConsent(@Body request: AdsConsentRequest): Response<AdsConsentResponse>
 
     @POST("api/ads/event")
     suspend fun sendAdsEvent(@Body request: AdsEventRequest): Response<Unit>

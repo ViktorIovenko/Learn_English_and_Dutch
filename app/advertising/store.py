@@ -489,6 +489,26 @@ def stats_summary(days: int = 30) -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+def stats_breakdown(days: int = 30) -> list[dict[str, Any]]:
+    """Same anonymous counters, split by advertiser, device and country."""
+    since = date.fromordinal(date.today().toordinal() - max(1, int(days)) + 1).isoformat()
+    with closing(connect()) as conn:
+        rows = conn.execute("""
+            SELECT s.placement, s.creative_id, COALESCE(c.name, '') AS creative_name,
+                   COALESCE(a.name, '') AS advertiser_name, s.device, s.country,
+                   MIN(s.day) AS first_day, MAX(s.day) AS last_day,
+                   SUM(CASE WHEN s.event = 'impression' THEN s.count ELSE 0 END) AS impressions,
+                   SUM(CASE WHEN s.event = 'click' THEN s.count ELSE 0 END) AS clicks
+            FROM ad_stats s
+            LEFT JOIN ad_creatives c ON c.id = s.creative_id
+            LEFT JOIN ad_advertisers a ON a.id = c.advertiser_id
+            WHERE s.day >= ?
+            GROUP BY s.placement, s.creative_id, s.device, s.country
+            ORDER BY impressions DESC
+        """, (since,)).fetchall()
+    return [dict(row) for row in rows]
+
+
 # ----------------------------------------------------------------- API log
 
 def log_api(operation: str, ok: bool, http_status: int = 0, message: str = "") -> None:
