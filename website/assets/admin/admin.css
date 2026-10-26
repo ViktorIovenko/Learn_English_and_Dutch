@@ -95,6 +95,7 @@ code.adm-raw{display:block;max-width:300px;white-space:pre-wrap;word-break:break
 /* stats cards (costs tab) */
 .adm-stats{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px;margin-bottom:14px;}
 .adm-stats-5{grid-template-columns:repeat(5,minmax(150px,1fr));}
+.adm-stats-6{grid-template-columns:repeat(6,minmax(140px,1fr));}
 .adm-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px;}
 .adm-stat-label{color:var(--muted);font-size:11.5px;}
 .adm-stat-value{font-size:22px;line-height:1.1;font-weight:800;font-variant-numeric:tabular-nums;}
@@ -149,7 +150,7 @@ code.adm-raw{display:block;max-width:300px;white-space:pre-wrap;word-break:break
 .adm-modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--border);}
 
 @media (max-width:900px){
-  .adm-stats,.adm-stats-5{grid-template-columns:repeat(2,minmax(140px,1fr));}
+  .adm-stats,.adm-stats-5,.adm-stats-6{grid-template-columns:repeat(2,minmax(140px,1fr));}
   .adm-main{padding:12px 12px 40px;}
   .adm-header .container{padding-left:12px;padding-right:12px;}
   .adm-user{display:none;}
