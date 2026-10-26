@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plan_title">Offres</string>
+    <string name="plan_current">Votre offre</string>
+    <string name="plan_price_free">0 €</string>
+    <string name="plan_price_premium">4,99 € / mois</string>
+    <string name="plan_price_family">9,99 € / mois</string>
+    <string name="plan_f_learning">Apprentissage et exercices gratuits</string>
+    <string name="plan_f_manual">Ajout manuel de mots et de leçons</string>
+    <string name="plan_f_ads">Avec publicité</string>
+    <string name="plan_f_no_ads">Sans publicité</string>
+    <string name="plan_f_ai">Fonctions IA avancées</string>
+    <string name="plan_f_limits">Limites plus élevées</string>
+    <string name="plan_f_family">Un parent et jusqu’à 4 enfants, tableau familial</string>
+    <string name="plan_free_note">Offre gratuite : apprentissage, exercices et ajout manuel de mots. Votre progression est toujours conservée.</string>
+    <string name="plan_upgrade_family">Le tableau familial fait partie de l’offre Family.</string>
+    <string name="plan_ai_paused">Les fonctions IA sont suspendues pour le moment. Les traductions, exemples et audios enregistrés restent disponibles.</string>
+    <string name="plan_unlimited">Accès complet</string>
+    <string name="plan_no_expiry">Sans date d’expiration</string>
+    <string name="plan_valid_until">Accès jusqu’au : %1$s</string>
+    <string name="plan_price_note">Tarifs web indicatifs. Le prix d’achat Google Play apparaît ci-dessous lorsque le paiement est disponible.</string>
+    <string name="plan_ai_upgrade">Les nouvelles requêtes IA nécessitent Premium ou Family. Le contenu enregistré et l’ajout manuel restent gratuits.</string>
+    <string name="settings_subscribe">S’abonner</string>
+</resources>

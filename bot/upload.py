@@ -8,6 +8,7 @@
 # [ИЗМЕНЕНО v4.27] Кнопки подтверждения показываются сразу после парсинга.
 
 import os
+import html
 import tempfile
 import sqlite3
 import asyncio
@@ -16,9 +17,10 @@ from typing import List, Dict, Tuple
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from config import Config
+from bot.i18n import user_language, text as tr, values as localized_values
 from bot.db import is_user_registered, bulk_upsert_words
 from bot.validators import parse_csv_to_rows, validate_example_usage, expected_word_for
-from bot.auth import get_persistent_keyboard, show_menu_with_keyboard  # ← ИЗМЕНЕНО: новый хелпер
+from bot.auth import _account_user_id, get_persistent_keyboard, show_menu_with_keyboard  # ← ИЗМЕНЕНО: новый хелпер
 from bot.onboarding import (
     bot_interface_text,
     bot_interface_values,
@@ -192,13 +194,13 @@ def _prepare_import_rows(rows: List[Dict[str, str]], db_path: str, user_id: str)
 async def cmd_upload_words(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     user = update.effective_user
-    language = selected_ui_language(Config.DB_PATH, user.id) or normalize_telegram_language(
+    language = selected_ui_language(Config.DB_PATH, _account_user_id(user.id)) or normalize_telegram_language(
         user.language_code
     )
     await _delete_user_trigger(update, context)
-    await show_menu_with_keyboard(update, context, user.id)
+    await show_menu_with_keyboard(update, context, _account_user_id(user.id))
 
-    if not is_user_registered(Config.DB_PATH, user.id):
+    if not is_user_registered(Config.DB_PATH, _account_user_id(user.id)):
         m = await update.effective_chat.send_message(
             bot_interface_text(language, "registration_required")
         )
@@ -220,11 +222,12 @@ async def cmd_upload_words(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+    language = user_language(Config.DB_PATH, _account_user_id(user.id), user.language_code)
     await _delete_user_trigger(update, context)
-    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
+    await show_menu_with_keyboard(update, context, _account_user_id(user.id))   # ← ИЗМЕНЕНО
 
-    if not is_user_registered(Config.DB_PATH, user.id):
-        m = await update.effective_chat.send_message("Сначала пройдите регистрацию: отправьте /start и введите пароль.")
+    if not is_user_registered(Config.DB_PATH, _account_user_id(user.id)):
+        m = await update.effective_chat.send_message(bot_interface_text(language, "registration_required"))
         asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
@@ -232,7 +235,7 @@ async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if not doc: return
     fname = (doc.file_name or "").lower()
     if not (fname.endswith(".csv") or (doc.mime_type and "csv" in doc.mime_type.lower())):
-        m = await update.effective_chat.send_message("Это не .csv файл. Пожалуйста, пришлите CSV.")
+        m = await update.effective_chat.send_message(tr(language, "csv_required"))
         asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
@@ -243,12 +246,12 @@ async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     try:
         all_rows: List[Dict[str, str]] = parse_csv_to_rows(tmp_path)
         # Фильтруем дубль-слова заранее
-        filtered_rows, skipped_in_file, skipped_in_db = _prepare_import_rows(all_rows, Config.DB_PATH, str(user.id))
+        filtered_rows, skipped_in_file, skipped_in_db = _prepare_import_rows(all_rows, Config.DB_PATH, str(_account_user_id(user.id)))
 
         if not filtered_rows:
-            blocks = ["⚠ Все загруженные слова уже есть (или повторяются в файле) и были пропущены."]
-            if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", "Повторы внутри файла"))
-            if skipped_in_db:   blocks.append(_format_full_list(skipped_in_db, "📚", "Уже были в базе"))
+            blocks = [tr(language, "duplicates")]
+            if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", tr(language, "in_file")))
+            if skipped_in_db:   blocks.append(_format_full_list(skipped_in_db, "📚", tr(language, "in_db")))
             ids = await _send_long(update, "\n\n".join(blocks))
             for mid in ids: asyncio.create_task(_delete_later(context, update.effective_chat.id, mid))
             return
@@ -262,17 +265,17 @@ async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         # 1) Кнопки подтверждения — сразу и тоже удалим через 20 сек (клавиатура останется)
         kb_confirm = ReplyKeyboardMarkup(
-            [["Импортировать как есть", "Отменить импорт"]],
+            [[tr(language, "confirm"), tr(language, "cancel")]],
             resize_keyboard=True, is_persistent=True, one_time_keyboard=False
         )
-        m = await update.effective_chat.send_message("Подтвердите импорт:", reply_markup=kb_confirm)
+        m = await update.effective_chat.send_message(tr(language, "confirm_prompt"), reply_markup=kb_confirm)
         asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))  # ← ИЗМЕНЕНО
 
         # 2) Отчёт — отдельно, самоуничтожится
         extra_blocks = []
         if remap:            extra_blocks.append(_format_lesson_remap(remap))        # ← [ДОБАВЛЕНО v4.29]
-        if skipped_in_file:  extra_blocks.append(_format_full_list(skipped_in_file, "🔁", "Пропущены повторы внутри файла"))
-        if skipped_in_db:    extra_blocks.append(_format_full_list(skipped_in_db, "📚", "Пропущены как уже существующие в базе"))
+        if skipped_in_file:  extra_blocks.append(_format_full_list(skipped_in_file, "🔁", tr(language, "in_file")))
+        if skipped_in_db:    extra_blocks.append(_format_full_list(skipped_in_db, "📚", tr(language, "in_db")))
 
         if bad_rows:
             tip_lines = []
@@ -281,73 +284,75 @@ async def on_csv_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 for fld in b["missing"]:
                     parts.append(f"{fld}: «{expected_word_for(fld, b)}»")
                 tip_lines.append(f"{b['number']}: " + "; ".join(parts))
-            more = f"\n... и ещё {len(bad_rows) - 30} строк(и)." if len(bad_rows) > 30 else ""
-            head = "⚠ Обнаружены строки, где слово не встречается в своём примере."
-            body = ("\n".join(tip_lines) + more) if tip_lines else "Нет подробностей по строкам."
+            more = '\n' + tr(language, "more", count=len(bad_rows) - 30) if len(bad_rows) > 30 else ""
+            head = tr(language, "invalid_examples")
+            body = ("\n".join(tip_lines) + more) if tip_lines else tr(language, "no_details")
             tail = "\n\n".join(extra_blocks) if extra_blocks else ""
             msg = f"{head}\n\n{body}" + (f"\n\n{tail}" if tail else "")
         else:
-            head = "⚙ Проверка завершена, ошибок не найдено."
+            head = tr(language, "valid")
             tail = ("\n\n" + "\n\n".join(extra_blocks)) if extra_blocks else ""
-            msg = f"{head}\nНайдено строк к импорту: {len(filtered_rows)}{tail}"
+            msg = head + "\n" + tr(language, "row_count", count=len(filtered_rows)) + tail
 
-        ids = await _send_long(update, msg + "\n\nВыберите действие ниже.")
+        ids = await _send_long(update, msg + "\n\n" + tr(language, "choose"))
         for mid in ids: asyncio.create_task(_delete_later(context, update.effective_chat.id, mid))
         return
 
     except Exception as e:
-        m = await update.effective_chat.send_message(f"❌ Ошибка импорта: {e}")
+        m = await update.effective_chat.send_message(tr(language, "import_error"))
         asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
 
 async def on_confirm_import_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+    language = user_language(Config.DB_PATH, _account_user_id(user.id), user.language_code)
     await _delete_user_trigger(update, context)
 
     rows: List[Dict[str, str]] = context.user_data.get("pending_import_all") or []
 
     # Сразу вернём «меню» (это уберёт клавиатуру подтверждения) — старое меню удалится само
-    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
+    await show_menu_with_keyboard(update, context, _account_user_id(user.id))   # ← ИЗМЕНЕНО
 
     if not rows:
-        m = await update.effective_chat.send_message("Нет данных к импорту. Пришлите CSV снова.")
+        m = await update.effective_chat.send_message(tr(language, "no_data"))
         asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
         return
 
-    m = await update.effective_chat.send_message("⏳ Импортирую...")
+    m = await update.effective_chat.send_message(tr(language, "importing"))
     asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
 
     # Повторная защита: если pending появился до обновления — всё равно перенумеруем при необходимости
     rows2, remap = rows, {}  # Numbering is assigned by the shared server importer.
 
-    filtered_rows, skipped_in_file, skipped_in_db = _prepare_import_rows(rows2, Config.DB_PATH, str(user.id))
+    filtered_rows, skipped_in_file, skipped_in_db = _prepare_import_rows(rows2, Config.DB_PATH, str(_account_user_id(user.id)))
     if not filtered_rows:
-        blocks = ["⚠ Все загруженные слова уже есть (или повторяются в файле) и были пропущены."]
-        if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", "Внутри файла повторов"))
-        if skipped_in_db:   blocks.append(_format_full_list(skipped_in_db, "📚", "Уже были в базе"))
+        blocks = [tr(language, "duplicates")]
+        if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", tr(language, "in_file")))
+        if skipped_in_db:   blocks.append(_format_full_list(skipped_in_db, "📚", tr(language, "in_db")))
         if remap:           blocks.append(_format_lesson_remap(remap))  # ← [ДОБАВЛЕНО v4.29]
         ids = await _send_long(update, "\n\n".join(blocks))
         for mid in ids: asyncio.create_task(_delete_later(context, update.effective_chat.id, mid))
         context.user_data.pop("pending_import_all", None)
         return
 
-    count = bulk_upsert_words(Config.DB_PATH, str(user.id), filtered_rows)
+    count = bulk_upsert_words(Config.DB_PATH, str(_account_user_id(user.id)), filtered_rows)
     context.user_data.pop("pending_import_all", None)
 
-    blocks = [f"✅ Импортировано записей (после фильтра дублей): {count}"]
+    blocks = [tr(language, "imported", count=count)]
     if remap:           blocks.append(_format_lesson_remap(remap))      # ← [ДОБАВЛЕНО v4.29]
-    if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", "Пропущены повторы внутри файла"))
-    if skipped_in_db:   blocks.append(_format_full_list(skipped_in_db, "📚", "Уже были в базе"))
+    if skipped_in_file: blocks.append(_format_full_list(skipped_in_file, "🔁", tr(language, "in_file")))
+    if skipped_in_db:   blocks.append(_format_full_list(skipped_in_db, "📚", tr(language, "in_db")))
     ids = await _send_long(update, "\n\n".join(blocks))
     for mid in ids: asyncio.create_task(_delete_later(context, update.effective_chat.id, mid))
 
 async def on_cancel_import(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+    language = user_language(Config.DB_PATH, _account_user_id(user.id), user.language_code)
     await _delete_user_trigger(update, context)
 
     # Возвращаем «меню» (и тем самым убираем клавиатуру подтверждения)
-    await show_menu_with_keyboard(update, context, user.id)   # ← ИЗМЕНЕНО
+    await show_menu_with_keyboard(update, context, _account_user_id(user.id))   # ← ИЗМЕНЕНО
 
-    m = await update.effective_chat.send_message("❎ Импорт отменён...")
+    m = await update.effective_chat.send_message(tr(language, "cancelled"))
     asyncio.create_task(_delete_later(context, m.chat_id, m.message_id))
     context.user_data.pop("pending_import_all", None)
 
@@ -395,32 +400,32 @@ def _mark_difficult_by_id(db_path: str, user_id: str, word_id: int) -> None:
 async def on_single_word(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обрабатывает одиночные слова: дубль → в сложные; нет в базе → предлагает веб-страницу."""
     user = update.effective_user
+    language = user_language(Config.DB_PATH, _account_user_id(user.id), user.language_code)
     text = (update.message.text or "").strip()
 
     if not text or len(text) > 100:
         return
-    if not is_user_registered(Config.DB_PATH, user.id):
+    if not is_user_registered(Config.DB_PATH, _account_user_id(user.id)):
         return
 
     await _delete_user_trigger(update, context)
 
-    word_id = _find_word_in_db(Config.DB_PATH, str(user.id), text)
+    word_id = _find_word_in_db(Config.DB_PATH, str(_account_user_id(user.id)), text)
 
     if word_id is not None:
-        _mark_difficult_by_id(Config.DB_PATH, str(user.id), word_id)
+        _mark_difficult_by_id(Config.DB_PATH, str(_account_user_id(user.id)), word_id)
         m = await update.effective_chat.send_message(
-            f"⭐ <b>«{text}»</b> уже есть в базе — добавлено в список сложных слов.",
+            tr(language, "word_exists", word=html.escape(text)),
             parse_mode="HTML"
         )
     else:
         upload_url = f"{Config.PUBLIC_BASE_URL}/upload"
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
         keyboard = InlineKeyboardMarkup([[
-            InlineKeyboardButton("📤 Открыть страницу загрузки", url=upload_url)
+            InlineKeyboardButton(bot_interface_text(language, "open_upload_page"), url=upload_url)
         ]])
         m = await update.effective_chat.send_message(
-            f"❓ <b>«{text}»</b> не найдено в базе.\n\n"
-            "Для добавления новых слов с переводами и примерами — используйте веб-страницу:",
+            tr(language, "word_missing", word=html.escape(text)),
             parse_mode="HTML",
             reply_markup=keyboard
         )
@@ -432,15 +437,17 @@ def register_upload_handlers(application: Application) -> None:
     upload_words_pattern = "^(?:" + "|".join(
         re.escape(value) for value in bot_interface_values("upload_words")
     ) + ")$"
+    confirm_pattern = "^(?:" + "|".join(re.escape(v) for v in localized_values("confirm")) + ")$"
+    cancel_pattern = "^(?:" + "|".join(re.escape(v) for v in localized_values("cancel")) + ")$"
     application.add_handler(CommandHandler("upload_words", cmd_upload_words))
     application.add_handler(MessageHandler(filters.Regex(upload_words_pattern), cmd_upload_words))
     application.add_handler(MessageHandler(filters.Regex(r"^(Добавить слова|Импортировать слова)$"), cmd_upload_words))
     application.add_handler(MessageHandler(filters.Document.ALL & (~filters.COMMAND), on_csv_document))
-    application.add_handler(MessageHandler(filters.Regex(r"(?i)^(импортировать как есть)$"), on_confirm_import_all))
-    application.add_handler(MessageHandler(filters.Regex(r"(?i)^(отменить импорт)$"), on_cancel_import))
+    application.add_handler(MessageHandler(filters.Regex(confirm_pattern), on_confirm_import_all))
+    application.add_handler(MessageHandler(filters.Regex(cancel_pattern), on_cancel_import))
     # Одиночное слово — последним, чтобы не перехватывать команды и кнопки
     application.add_handler(MessageHandler(
-        filters.TEXT & (~filters.COMMAND) & (~filters.Regex(upload_words_pattern)) & (~filters.Regex(
+        filters.TEXT & (~filters.COMMAND) & (~filters.Regex(confirm_pattern)) & (~filters.Regex(cancel_pattern)) & (~filters.Regex(upload_words_pattern)) & (~filters.Regex(
             r"(?i)^(добавить слова|импортировать слова|импортировать как есть|отменить импорт|меню|начать|помощь|старт)$"
         )),
         on_single_word,

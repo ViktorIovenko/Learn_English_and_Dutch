@@ -1,419 +1,144 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="42dp"
-            android:layout_gravity="center"
-            android:adjustViewBounds="true"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/logo_wordmark" />
-    </com.google.android.material.appbar.MaterialToolbar>
-
-    <ScrollView
-        android:id="@+id/scroll_content"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:fillViewport="true"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="24dp">
-
-            <LinearLayout
-                android:id="@+id/ui_language_section"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingTop="8dp">
-
-                <TextView
-                    android:id="@+id/tv_ui_language_label"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/interface_language"
-                    android:textColor="@color/colorOnBackground"
-                    android:textStyle="bold"
-                    android:textSize="15sp" />
-
-                <Spinner
-                    android:id="@+id/sp_ui_language"
-                    android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:layout_marginTop="4dp" />
-
-                <TextView
-                    android:id="@+id/tv_ui_language_hint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/interface_language_auto_hint"
-                    android:textColor="@color/colorTextSecondary"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tv_hint"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/learning_languages_hint"
-                android:textColor="@color/colorTextSecondary"
-                android:paddingHorizontal="16dp"
-                android:paddingTop="8dp"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/tv_max_warning"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/max_languages_warning"
-                android:textColor="@color/colorWrong"
-                android:paddingHorizontal="16dp"
-                android:textSize="13sp"
-                android:visibility="gone" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_selected_langs"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:nestedScrollingEnabled="false"
-                android:overScrollMode="never"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
-            <LinearLayout
-                android:id="@+id/bottom_bar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_add_lang"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="@string/add_language"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_save"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/save" />
+<?xml version='1.0' encoding='utf-8'?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/colorBackground">
+    <ScrollView android:id="@+id/scroll_content" android:layout_width="0dp" android:layout_height="0dp" android:clipToPadding="false" android:fillViewport="true" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" android:scrollbars="none">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingBottom="32dp" android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingTop="20dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/nav_settings" style="@style/SettingsSectionTitle" android:textSize="28sp" android:layout_marginBottom="20dp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" style="@style/SettingsCard" app:strokeColor="@color/colorPrimary">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/subscription_title" style="@style/SettingsSectionTitle" android:textSize="18sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/tv_settings_plan" android:text="@string/loading" android:textSize="26sp" android:textStyle="bold" android:layout_marginTop="12dp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/tv_settings_subscription_summary" android:text="@string/plan_title" android:layout_marginTop="8dp" android:textSize="14sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorSecondary" />
+                    <com.google.android.material.button.MaterialButton android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/btn_settings_subscription" android:text="@string/settings_subscribe" android:layout_marginTop="8dp" style="@style/SettingsPrimaryButton" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/daily_goal_section"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-                    <TextView android:id="@+id/tv_daily_goal_label" android:layout_width="0dp"
-                        android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="@string/daily_goal" android:textStyle="bold" />
-                    <EditText android:id="@+id/et_daily_goal" android:layout_width="72dp"
-                        android:layout_height="48dp" android:inputType="number" android:gravity="center" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_save_daily_goal"
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp" android:text="@string/save" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/cache_limit_section"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/cache_limit_mb"
-                        android:textStyle="bold" />
-                    <EditText
-                        android:id="@+id/et_cache_limit_mb"
-                        android:layout_width="72dp"
-                        android:layout_height="48dp"
-                        android:gravity="center"
-                        android:inputType="number"
-                        android:maxLength="4" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_save_cache_limit"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="@string/save" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/auth_section"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="vertical"
-                    android:padding="12dp"
-                    android:background="@color/colorSurface">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/authorization"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:textColor="@color/colorOnBackground" />
-
-                    <TextView
-                        android:id="@+id/tv_auth_method"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:id="@+id/tv_auth_user_id"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:id="@+id/tv_auth_server_url"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="14sp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_relogin"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/login_again"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_logout"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:text="@string/logout"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" style="@style/SettingsCard">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <LinearLayout android:id="@+id/ui_language_section" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:id="@+id/tv_ui_language_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/interface_language" android:textColor="?android:attr/textColorPrimary" android:textStyle="bold" android:textSize="18sp" style="@style/SettingsSectionTitle" android:lineSpacingExtra="3dp" />
+                        <Spinner android:id="@+id/sp_ui_language" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="4dp" />
+                        <TextView android:id="@+id/tv_ui_language_hint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/interface_language_auto_hint" android:textColor="?android:attr/textColorSecondary" android:textSize="13sp" android:lineSpacingExtra="3dp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/languages_title" style="@style/SettingsSectionTitle" android:layout_marginTop="24dp" android:layout_marginBottom="8dp" android:textSize="18sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tv_hint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/learning_languages_hint" android:textColor="?android:attr/textColorSecondary" android:textSize="14sp" android:lineSpacingExtra="3dp" />
+                    <TextView android:id="@+id/tv_max_warning" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/max_languages_warning" android:textColor="@color/colorWrong" android:textSize="13sp" android:visibility="gone" android:lineSpacingExtra="3dp" />
+                    <androidx.recyclerview.widget.RecyclerView android:id="@+id/rv_selected_langs" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:nestedScrollingEnabled="false" android:overScrollMode="never" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                    <LinearLayout android:id="@+id/bottom_bar" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="0dp" android:layout_marginTop="12dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btn_add_lang" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/add_language" style="@style/SettingsButton" android:layout_marginTop="8dp" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btn_save" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save" style="@style/SettingsPrimaryButton" android:layout_marginTop="12dp" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/mcp_section"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="vertical"
-                    android:padding="12dp"
-                    android:background="@color/colorSurface">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/mcp_connector_title"
-                            android:textStyle="bold"
-                            android:textSize="16sp"
-                            android:textColor="@color/colorOnBackground" />
-
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/sw_mcp_enabled"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:enabled="false" />
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" style="@style/SettingsCard">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <LinearLayout android:id="@+id/daily_goal_section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="0dp" android:gravity="center_vertical" android:orientation="vertical">
+                        <TextView android:id="@+id/tv_daily_goal_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/daily_goal" android:textStyle="bold" style="@style/SettingsSectionTitle" android:textSize="18sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                        <EditText android:id="@+id/et_daily_goal" android:layout_width="match_parent" android:layout_height="48dp" android:inputType="number" android:gravity="center" android:layout_marginTop="12dp" android:paddingStart="12dp" android:paddingEnd="12dp" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_save_daily_goal" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save" android:layout_marginTop="8dp" style="@style/SettingsButton" />
                     </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tv_mcp_status"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="13sp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/mcp_connector_name_label"
-                            android:textColor="@color/colorTextSecondary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-                        <TextView
-                            android:id="@+id/tv_mcp_name"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:textIsSelectable="true"
-                            android:textColor="@color/colorOnBackground"
-                            android:textSize="14sp" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_mcp_copy_name"
-                            style="@style/Widget.MaterialComponents.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="0dp"
-                            android:text="@string/mcp_copy" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/mcp_connector_description_label"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-                        <TextView
-                            android:id="@+id/tv_mcp_description"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/mcp_connector_description"
-                            android:textIsSelectable="true"
-                            android:textColor="@color/colorOnBackground"
-                            android:textSize="14sp" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_mcp_copy_description"
-                            style="@style/Widget.MaterialComponents.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="0dp"
-                            android:text="@string/mcp_copy" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/mcp_how_to_connect_label"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-                        <TextView
-                            android:id="@+id/tv_mcp_how_to_connect"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/mcp_how_to_connect"
-                            android:textIsSelectable="true"
-                            android:textColor="@color/colorOnBackground"
-                            android:textSize="13sp" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_mcp_copy_howto"
-                            style="@style/Widget.MaterialComponents.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="0dp"
-                            android:text="@string/mcp_copy" />
-                    </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_mcp_manage"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/mcp_connector_manage"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
                 </LinearLayout>
-
-                <!-- Кнопка только для администраторов -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_family"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/family_settings"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_admin_panel"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/admin_access_management"
-                    android:visibility="gone"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-            </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" style="@style/SettingsCard">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/family_settings" style="@style/SettingsSectionTitle" android:textSize="18sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/plan_f_family" android:layout_marginTop="8dp" android:textSize="14sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorSecondary" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/tv_family_invite_status" android:visibility="gone" android:layout_marginTop="12dp" android:textSize="14sp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/family_qr_content" android:orientation="vertical" android:visibility="gone" android:layout_marginTop="12dp">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/family_parent_qr_note" android:textSize="14sp" android:lineSpacingExtra="3dp" />
+                        <ImageView android:layout_width="match_parent" android:layout_height="240dp" android:id="@+id/iv_family_qr" android:layout_marginTop="12dp" android:background="@android:color/white" android:padding="12dp" android:scaleType="fitCenter" android:contentDescription="@string/family_settings" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/tv_family_invite_code" android:gravity="center" android:layout_marginTop="8dp" android:textSize="18sp" android:textStyle="bold" android:textIsSelectable="true" />
+                        <com.google.android.material.button.MaterialButton android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/btn_family_copy" android:text="@string/family_copy_link" android:layout_marginTop="8dp" style="@style/SettingsButton" />
+                        <com.google.android.material.button.MaterialButton android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/btn_family_share" android:text="@string/family_share_link" android:layout_marginTop="8dp" style="@style/SettingsButton" />
+                    </LinearLayout>
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_family" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/family_settings" style="@style/SettingsButton" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" style="@style/SettingsCard">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="0dp" android:text="@string/account_signin_methods" style="@style/SettingsSectionTitle" android:textSize="18sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/account_link_explanation" android:layout_marginBottom="12dp" android:textSize="14sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorSecondary" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Google" android:textStyle="bold" android:textSize="14sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tv_google_identity" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/loading" android:layout_marginBottom="12dp" android:textIsSelectable="true" android:layout_marginTop="4dp" android:textSize="14sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorSecondary" />
+                    <com.google.android.material.button.MaterialButton android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/btn_link_google" android:text="@string/account_link_google" android:enabled="false" android:visibility="gone" android:layout_marginBottom="12dp" style="@style/SettingsButton" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Telegram" android:textStyle="bold" android:textSize="14sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tv_telegram_identity" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/loading" android:textIsSelectable="true" android:layout_marginTop="4dp" android:layout_marginBottom="12dp" android:textSize="14sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorSecondary" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_link_telegram" android:enabled="false" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/account_link_telegram" style="@style/SettingsButton" android:layout_marginTop="8dp" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/tv_email_method" android:text="@string/auth_email_address" android:textStyle="bold" android:textSize="14sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tv_email_identity" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/loading" android:textIsSelectable="true" android:layout_marginTop="4dp" android:layout_marginBottom="12dp" android:textSize="14sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorSecondary" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_link_email" android:enabled="false" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/account_link_email" style="@style/SettingsButton" android:layout_marginTop="8dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/email_link_form" android:orientation="vertical" android:visibility="gone" android:layout_marginTop="12dp">
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/til_link_email" android:hint="@string/auth_email_address" android:layout_marginTop="8dp" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusTopEnd="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp">
+                            <com.google.android.material.textfield.TextInputEditText android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/et_link_email" android:inputType="textEmailAddress" android:maxLines="1" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/til_link_password" android:hint="@string/hint_password" android:layout_marginTop="8dp" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusTopEnd="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:endIconMode="password_toggle" app:helperText="@string/account_email_password_hint">
+                            <com.google.android.material.textfield.TextInputEditText android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/et_link_password" android:inputType="textPassword" android:maxLines="1" android:saveEnabled="false" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/til_link_password_confirmation" android:hint="@string/account_email_password_confirm" android:layout_marginTop="8dp" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxCornerRadiusTopStart="12dp" app:boxCornerRadiusTopEnd="12dp" app:boxCornerRadiusBottomStart="12dp" app:boxCornerRadiusBottomEnd="12dp" app:endIconMode="password_toggle">
+                            <com.google.android.material.textfield.TextInputEditText android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/et_link_password_confirmation" android:inputType="textPassword" android:maxLines="1" android:saveEnabled="false" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.button.MaterialButton android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/btn_email_link_send" android:text="@string/account_email_send" android:layout_marginTop="12dp" style="@style/SettingsPrimaryButton" />
+                    </LinearLayout>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/tv_email_link_status" android:textSize="14sp" android:layout_marginTop="12dp" android:visibility="gone" />
+                    <LinearLayout android:id="@+id/auth_section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:orientation="vertical" android:padding="0dp">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/authorization" android:textStyle="bold" android:textSize="16sp" android:textColor="?android:attr/textColorPrimary" style="@style/SettingsSectionTitle" android:lineSpacingExtra="3dp" />
+                        <TextView android:id="@+id/tv_auth_method" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="?android:attr/textColorSecondary" android:textSize="14sp" android:lineSpacingExtra="3dp" />
+                        <TextView android:id="@+id/tv_auth_user_id" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="?android:attr/textColorSecondary" android:textSize="14sp" android:lineSpacingExtra="3dp" />
+                        <TextView android:id="@+id/tv_auth_server_url" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="?android:attr/textColorSecondary" android:textSize="14sp" android:visibility="gone" android:lineSpacingExtra="3dp" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="vertical">
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btn_relogin" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/login_again" style="@style/SettingsButton" android:layout_marginTop="8dp" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btn_logout" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/logout" style="@style/SettingsButton" android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" style="@style/SettingsCard">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <LinearLayout android:id="@+id/mcp_section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="0dp" android:orientation="vertical" android:padding="0dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/mcp_connector_title" android:textStyle="bold" android:textColor="?android:attr/textColorPrimary" style="@style/SettingsSectionTitle" android:textSize="18sp" android:lineSpacingExtra="3dp" />
+                            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/sw_mcp_enabled" android:layout_width="wrap_content" android:layout_height="wrap_content" android:enabled="false" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/tv_mcp_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="?android:attr/textColorSecondary" android:textSize="13sp" android:lineSpacingExtra="3dp" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center_vertical" android:orientation="horizontal">
+                            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/mcp_connector_name_label" android:textColor="?android:attr/textColorPrimary" android:textSize="12sp" android:textStyle="bold" android:lineSpacingExtra="3dp" />
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="vertical" android:layout_marginTop="8dp">
+                            <TextView android:id="@+id/tv_mcp_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:textIsSelectable="true" android:textColor="?android:attr/textColorSecondary" android:textSize="14sp" android:lineSpacingExtra="3dp" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btn_mcp_copy_name" style="@style/SettingsButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minWidth="0dp" android:text="@string/mcp_copy" android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/mcp_connector_description_label" android:textColor="?android:attr/textColorPrimary" android:textSize="12sp" android:textStyle="bold" android:lineSpacingExtra="3dp" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="vertical" android:layout_marginTop="8dp">
+                            <TextView android:id="@+id/tv_mcp_description" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mcp_connector_description" android:textIsSelectable="true" android:textColor="?android:attr/textColorSecondary" android:textSize="14sp" android:lineSpacingExtra="3dp" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btn_mcp_copy_description" style="@style/SettingsButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minWidth="0dp" android:text="@string/mcp_copy" android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/mcp_how_to_connect_label" android:textColor="?android:attr/textColorPrimary" android:textSize="12sp" android:textStyle="bold" android:lineSpacingExtra="3dp" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="vertical" android:layout_marginTop="8dp">
+                            <TextView android:id="@+id/tv_mcp_how_to_connect" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mcp_how_to_connect" android:textIsSelectable="true" android:textColor="?android:attr/textColorSecondary" android:textSize="13sp" android:lineSpacingExtra="3dp" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/btn_mcp_copy_howto" style="@style/SettingsButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minWidth="0dp" android:text="@string/mcp_copy" android:layout_marginTop="8dp" />
+                        </LinearLayout>
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_mcp_manage" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/mcp_connector_manage" style="@style/SettingsButton" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" style="@style/SettingsCard">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <LinearLayout android:id="@+id/cache_limit_section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="0dp" android:gravity="center_vertical" android:orientation="vertical">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/cache_limit_mb" android:textStyle="bold" style="@style/SettingsSectionTitle" android:textSize="18sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                        <EditText android:id="@+id/et_cache_limit_mb" android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center" android:inputType="number" android:maxLength="4" android:layout_marginTop="12dp" android:paddingStart="12dp" android:paddingEnd="12dp" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btn_save_cache_limit" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/save" android:layout_marginTop="8dp" style="@style/SettingsButton" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp" style="@style/SettingsCard">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/privacy_policy" style="@style/SettingsSectionTitle" android:textSize="18sp" android:lineSpacingExtra="3dp" android:textColor="?android:attr/textColorPrimary" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_privacy_policy" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/privacy_policy" style="@style/SettingsButton" android:layout_marginTop="8dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_deletion_page" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/account_deletion_page" style="@style/SettingsButton" android:layout_marginTop="8dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_delete_account" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/delete_account" style="@style/SettingsButton" android:layout_marginTop="8dp" android:textColor="@color/colorError" app:strokeColor="@color/colorError" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
-
-    <ProgressBar
-        android:id="@+id/progress_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
+    <ProgressBar android:id="@+id/progress_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

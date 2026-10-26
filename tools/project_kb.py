@@ -114,17 +114,17 @@ TASK_ROUTES = [
     ("telegram registration", "telegram registration регистрация onboarding start auth",
      ["bot/auth.py", "bot/onboarding.py", "config.py"], ["run.py", "bot/db.py"], ["app/static", "android"], ["python -m unittest tests.test_telegram_onboarding"], "local"),
     ("word import", "import words upload csv импорт слов translation examples аудио content reuse переводы примеры",
-     ["app/content_service.py", "docs/CONTENT_PIPELINE.md", "app/audio_gen.py"], ["app/routes.py", "app/mcp_service.py", "bot/upload.py", "app/static/upload.js", "android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt"], ["bot/reminder.py"], ["python tools/project_kb.py route /api/import-words"], "local"),
+     ["app/content_service.py", "docs/CONTENT_PIPELINE.md", "app/audio_gen.py"], ["app/routes.py", "app/mcp_service.py", "bot/upload.py", "app/static/upload.js", "android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt"], ["bot/reminder.py"], ["python tools/project_kb.py route /api/import-words"], "local"),
     ("learning", "learn lesson обучение progress",
      ["app/static/learn.js", "app/templates/learn.html"], ["app/routes.py", "app/models.py"], ["nginx", "bot/reminder.py"], ["python tools/project_kb.py query learning"], "local"),
     ("offline sync", "offline sync indexeddb outbox delta progress синхронизация",
-     ["app/static/sync.js", "app/static/idb.js"], ["app/routes.py", "android/app/src/main/java/com/learnwords/app/data/repository/AppRepository.kt"], ["bot/reminder.py"], ["python tools/project_kb.py route /api/progress/sync", "python tools/project_kb.py route /api/sync/updates"], "local android"),
+     ["app/static/sync.js", "app/static/idb.js"], ["app/routes.py", "android/app/src/main/java/app/parallellingvo/data/repository/AppRepository.kt"], ["bot/reminder.py"], ["python tools/project_kb.py route /api/progress/sync", "python tools/project_kb.py route /api/sync/updates"], "local android"),
     ("android api", "android api retrofit dto authentication synchronization",
-     ["docs/codex/ANDROID_API.md", "android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt"], ["android/app/src/main/java/com/learnwords/app/data/api/ApiModels.kt", "app/routes.py"], ["app/templates"], ["python tools/project_kb.py android-api /api/progress/sync"], "android local"),
+     ["docs/codex/ANDROID_API.md", "android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt"], ["android/app/src/main/java/app/parallellingvo/data/api/ApiModels.kt", "app/routes.py"], ["app/templates"], ["python tools/project_kb.py android-api /api/progress/sync"], "android local"),
     ("difficult words", "difficult words сложные слова flags",
-     ["app/static/difficult.js"], ["app/routes.py", "android/app/src/main/java/com/learnwords/app/ui/difficult"], ["bot/reminder.py"], ["python tools/project_kb.py table user_word_flags"], "local android"),
+     ["app/static/difficult.js"], ["app/routes.py", "android/app/src/main/java/app/parallellingvo/ui/difficult"], ["bot/reminder.py"], ["python tools/project_kb.py table user_word_flags"], "local android"),
     ("audio", "audio tts generation cache аудио",
-     ["app/audio_gen.py", "app/static/audio_worker.js"], ["app/routes.py", "android/app/src/main/java/com/learnwords/app/utils/AudioPlayer.kt", "config.py"], ["bot/auth.py"], ["python tools/project_kb.py route /api/audio/ensure"], "local android"),
+     ["app/audio_gen.py", "app/static/audio_worker.js"], ["app/routes.py", "android/app/src/main/java/app/parallellingvo/utils/AudioPlayer.kt", "config.py"], ["bot/auth.py"], ["python tools/project_kb.py route /api/audio/ensure"], "local android"),
     ("reminders", "reminder telegram notification напоминания",
      ["bot/reminder.py"], ["run.py", "docs/codex/DEPLOYMENT.md"], ["app/static"], ["python -m py_compile bot/reminder.py"], "local production"),
     ("database change", "database schema table migration sqlite база таблица",
@@ -203,8 +203,8 @@ def purpose(path: str) -> str:
         "app/static/idb.js": "IndexedDB stores and primitives",
         "app/static/sync.js": "Offline outbox upload and delta synchronization",
         "app/static/sw.js": "Service Worker caching strategy",
-        "android/app/src/main/java/com/learnwords/app/data/api/ApiService.kt": "Retrofit backend contract",
-        "android/app/src/main/java/com/learnwords/app/data/api/ApiClient.kt": "Android base URL and request headers",
+        "android/app/src/main/java/app/parallellingvo/data/api/ApiService.kt": "Retrofit backend contract",
+        "android/app/src/main/java/app/parallellingvo/data/api/ApiClient.kt": "Android base URL and request headers",
     }
     if path in known: return known[path]
     return f"{layer(path).capitalize()} file: {Path(path).name}"
@@ -569,7 +569,7 @@ def build(db_path: Path=DB_PATH) -> dict[str,int]:
 
 
 def update(files: list[str] | None=None, db_path: Path=DB_PATH) -> tuple[int,int]:
-    con=connect(db_path); current={p.relative_to(ROOT).as_posix():p for p in tracked_paths()}
+    con=connect(db_path); current={p.relative_to(ROOT).as_posix():p for p in tracked_paths() if p.is_file()}
     targets=current if not files else {Path(f).as_posix():ROOT/f for f in files}
     changed=sum(int(index_file(con,p)) for p in targets.values() if p.exists() and should_index(Path(p.name) if p.is_absolute() else p))
     removed=0

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_link_google">Google verknüpfen</string>
+    <string name="account_email_password_confirm">Passwort bestätigen</string>
+    <string name="account_email_password_hint">12–128 Zeichen verwenden.</string>
+    <string name="account_email_send">E-Mail senden</string>
+    <string name="account_email_sent">Falls die Adresse berechtigt ist, erhalten Sie eine E-Mail. Prüfen Sie auch den Spamordner.</string>
+    <string name="account_email_password_mismatch">Die Passwörter stimmen nicht überein.</string>
+    <string name="account_link_conflict">Diese Anmeldemethode ist bereits mit einem Konto verknüpft.</string>
+</resources>

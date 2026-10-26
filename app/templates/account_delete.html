@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ParallelLingvo — Delete account</title>
+<style>body{font:16px/1.65 system-ui;max-width:700px;margin:40px auto;padding:0 20px}button{padding:12px;margin-top:12px}input{padding:10px}</style></head><body>
+<h1>Delete your ParallelLingvo account</h1>
+<p>Controller: Виктор Иовенко, Netherlands. Privacy and deletion contact:
+<a href="mailto:info@parallellingvo.app">info@parallellingvo.app</a>.</p>
+{% if deleted %}<p>Your live account and associated personal records have been deleted. You have been signed out.</p>
+{% else %}
+<p>This applies to ParallelLingvo, Android package app.parallellingvo. Deletion is permanent and removes your account, login identities, personal lessons/progress, settings, advertising consent and family links. Other family members' accounts are kept.</p>
+<p><strong>Cancel any Google Play subscription separately.</strong> Account deletion does not cancel billing.
+<a href="https://play.google.com/store/account/subscriptions?package=app.parallellingvo">Manage Google Play subscriptions</a>.</p>
+<p>Shared dictionary/audio content and copies already shared with others may remain. Minimal pseudonymous purchase/revocation fingerprints prevent replay. Backups, infrastructure logs and provider-held records require the operator's approved retention rules; see the privacy policy when published.</p>
+<p>A parent or legal guardian requesting deletion of a child's account can contact the email above. We verify account ownership or parental authority before acting on another account. Do not send passwords or payment tokens by email.</p>
+{% if authenticated %}
+<form method="post" action="/api/account/delete">
+<input type="hidden" name="challenge" value="{{ challenge }}">
+<label>Type DELETE to confirm deletion of your currently signed-in account:<br><input name="confirm" required pattern="DELETE" autocomplete="off"></label><br>
+<button type="submit">Permanently delete my account</button></form>
+{% else %}
+<p>Sign in to the account you want to delete, then return to this page. No app installation is required.</p>
+<p><a href="/auth/email?next=/account/delete">Sign in with email</a> ·
+<a href="/auth/google?next=/account/delete">Sign in with Google</a> ·
+<a href="/auth/telegram?next=/account/delete">Sign in with Telegram</a></p>
+{% endif %}{% endif %}
+</body></html>

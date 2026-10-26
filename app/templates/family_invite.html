@@ -3,7 +3,28 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='family_invite.css') }}?v=2">
 <div class="family-invite-page">{% include "_family_invite_form.html" %}</div>
 {% endblock %}
+{% block auth_gate_extra %}
+{% if family_telegram_url or family_android_url %}
+<div class="family-gate-handoff">
+  <p class="family-gate-title">{{ t("family.gate_title") }}</p>
+  <p class="auth-gate-note">{{ t("family.gate_note") }}</p>
+  {% if family_android_url %}<a id="family-gate-android" class="auth-gate-btn family-gate-android" href="{{ family_android_url }}" hidden>{{ t("family.open_android") }}</a>{% endif %}
+  {% if family_telegram_url %}<a class="auth-gate-btn telegram" href="{{ family_telegram_url }}">{{ t("family.open_telegram") }}</a>{% endif %}
+</div>
+<style>
+.family-gate-handoff{margin-top:22px;padding-top:18px;border-top:1px solid #EEE7F7;display:flex;flex-direction:column;gap:10px}
+.family-gate-title{margin:0;font-weight:600;color:#17092B}
+.family-gate-android{color:#0F5132;border-color:#BFE3CF;background:#EFFAF3}
+</style>
+<script>
+(function(){
+  var android = document.getElementById("family-gate-android");
+  if (android && /Android/i.test(navigator.userAgent)) android.hidden = false;
+})();
+</script>
+{% endif %}
+{% endblock %}
 {% block scripts %}
 <script>window.FAMILY_BOT_USERNAME = {{ family_bot_username | tojson }};</script>
-<script src="{{ url_for('static', filename='family_invite.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='family_invite.js') }}?v=4"></script>
 {% endblock %}

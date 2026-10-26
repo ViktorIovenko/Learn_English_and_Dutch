@@ -8,6 +8,7 @@ from config import Config
 from app.family_pairing import (
     _connect, invite_code_details, pairing_code_details,
     link_child_with_invite_code, link_parent_with_pairing_code, _is_effectively_child,
+    _can_become_child,
 )
 
 
@@ -94,13 +95,21 @@ def preview_invitation(user_id, value, kind=""):
             return {"ok": False, "error": "invalid_or_expired_pairing_code"}
         user = conn.execute("SELECT account_type, first_name, username FROM users WHERE user_id=?", (str(user_id),)).fetchone()
         is_child = bool(user and _is_effectively_child(conn, user_id, user["account_type"]))
+        # Accepting a parent's invite turns an adult account without children into a child account.
+        becomes_child = bool(user and kind == "invite" and not is_child and _can_become_child(conn, user_id))
+    # A new account without a chosen type becomes a parent by accepting a child's code.
+    becomes_parent = bool(user and kind == "family" and user["account_type"] == "pending" and not is_child)
+    if user and kind == "invite" and not is_child and not becomes_child:
+        # An adult with linked children must unlink them before becoming a child.
+        return {"ok": False, "error": "unlink_children_required"}
     required = "child" if kind == "invite" else "standard"
-    if not user or (not is_child if required == "child" else user["account_type"] != "standard" or is_child):
+    if not user or (not (is_child or becomes_child) if required == "child"
+                    else (user["account_type"] != "standard" and not becomes_parent) or is_child):
         return {"ok": False, "error": "child_account_required" if kind == "invite" else "parent_account_required"}
     target = details["parent_user_id" if kind == "invite" else "child_user_id"]
     if target == str(user_id):
         return {"ok": False, "error": "cannot_link_self"}
-    return {"ok": True, "code": code, "kind": kind,
+    return {"ok": True, "code": code, "kind": kind, "becomes_child": becomes_child, "becomes_parent": becomes_parent,
             "display_name": details["parent_display_name" if kind == "invite" else "child_display_name"],
             "account_name": " · ".join(dict.fromkeys(part for part in (user["first_name"], user["username"]) if part)) or str(user_id)}
 

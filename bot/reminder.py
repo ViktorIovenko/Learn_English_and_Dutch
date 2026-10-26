@@ -17,6 +17,8 @@ from typing import Optional, Sequence, Tuple
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from telegram.ext import ContextTypes, Application, CommandHandler
 from config import Config
+from app.account_linking import telegram_chat_id
+from bot.i18n import user_language, text
 
 # ---------- КОНСТАНТЫ (МЕНЯЕМ ЗДЕСЬ) ----------
 # Ежедневный режим (по Europe/Amsterdam):
@@ -152,12 +154,14 @@ async def send_to_user_id(context: ContextTypes.DEFAULT_TYPE, user_id: str | int
     Отсылает REMINDER_TEXT пользователю (chat_id == user_id) + inline-кнопку «Учить слова».
     Возвращает True, если успешно, иначе False.
     """
-    chat_id = int(user_id)
+    chat_id = telegram_chat_id(user_id)
+    if chat_id is None:
+        return False
     last_msg_id, _ = _get_last_state(str(user_id))
     today = date.today().isoformat()
     try:
-        markup = _learn_inline_markup(chat_id)  # ← [ИЗМЕНЕНО v1.4] добавили кнопку
-        m = await context.bot.send_message(chat_id=chat_id, text=REMINDER_TEXT, reply_markup=markup)
+        language = user_language(Config.DB_PATH, user_id)
+        m = await context.bot.send_message(chat_id=chat_id, text=text(language, "reminder"))
         _set_last_state(str(user_id), m.message_id, today)
         if last_msg_id:
             try:
@@ -253,12 +257,13 @@ def _is_admin(tg_user_id: Optional[int]) -> bool:
 
 async def _cmd_reminder_now(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+    language = user_language(Config.DB_PATH, user.id, user.language_code) if user else "en"
     if not _is_admin(user.id if user else None):
-        await update.effective_message.reply_text("⛔ Доступ запрещён.")
+        await update.effective_message.reply_text(text(language, "denied"))
         return
-    await update.effective_message.reply_text("⏳ Отправляю напоминания всем активным пользователям…")
+    await update.effective_message.reply_text(text(language, "sending"))
     await send_reminders_all(context)
-    await update.effective_message.reply_text("✅ Готово.")
+    await update.effective_message.reply_text(text(language, "done"))
 
 def register_admin_handlers(application: Application) -> None:
     application.add_handler(CommandHandler("reminder_now", _cmd_reminder_now))

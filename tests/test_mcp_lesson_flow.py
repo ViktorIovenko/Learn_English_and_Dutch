@@ -40,8 +40,10 @@ class McpLessonFlowTest(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.db_path = str(Path(self.temp_dir.name) / "flow.db")
-        self.original = {key: getattr(Config, key) for key in ("DB_PATH", "SECRET_KEY", "ADMIN_IDS", "MCP_INTERNAL_TOKEN", "AI_PLATFORM_BASE_URL")}
+        self.original = {key: getattr(Config, key) for key in ("DB_PATH", "SECRET_KEY", "ADMIN_IDS", "MCP_INTERNAL_TOKEN", "AI_PLATFORM_BASE_URL", "PAID_AI_ENABLED")}
         Config.DB_PATH = self.db_path
+        # The flow uses a fake content provider behind the paid-AI switch.
+        Config.PAID_AI_ENABLED = True
         Config.SECRET_KEY = "flow-secret"
         Config.ADMIN_IDS = (999,)
         Config.MCP_INTERNAL_TOKEN = "internal"

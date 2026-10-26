@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_link_google">Link Google</string>
+    <string name="account_email_password_confirm">Confirm password</string>
+    <string name="account_email_password_hint">Use 12–128 characters.</string>
+    <string name="account_email_send">Send email</string>
+    <string name="account_email_sent">If this address is eligible, an email is on its way. Check your inbox and spam folder.</string>
+    <string name="account_email_password_mismatch">The passwords do not match.</string>
+    <string name="account_link_conflict">This sign-in method is already linked to an account.</string>
+</resources>

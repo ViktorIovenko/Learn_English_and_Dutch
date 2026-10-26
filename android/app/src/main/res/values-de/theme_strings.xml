@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="theme_title">Darstellung</string>
+    <string name="theme_system">Wie Android</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="theme_current">Design: %1$s</string>
+</resources>

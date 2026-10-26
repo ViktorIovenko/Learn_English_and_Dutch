@@ -180,8 +180,9 @@ def _find_or_create_google_user(google_id: str, email: str, name: str, photo_url
             if email:
                 existing = conn.execute(
                     "SELECT user_id FROM users WHERE lower(google_email) = lower(?) "
+                    "OR user_id IN (SELECT user_id FROM auth_identities WHERE provider='email' AND external_id=lower(?)) "
                     "ORDER BY (user_id LIKE 'g\\_%' ESCAPE '\\') ASC, created_at ASC LIMIT 1",
-                    (email,),
+                    (email, email),
                 ).fetchone()
                 if existing:
                     matched_user_id = str(existing["user_id"])
@@ -203,6 +204,7 @@ def _find_or_create_google_user(google_id: str, email: str, name: str, photo_url
                     return matched_user_id
 
             # New user — insert
+            is_new = not conn.execute("SELECT 1 FROM users WHERE user_id=?", (user_id,)).fetchone()
             first_name = name.split()[0] if name else email
             last_name = " ".join(name.split()[1:]) if name and " " in name else ""
             conn.execute(
@@ -226,6 +228,12 @@ def _find_or_create_google_user(google_id: str, email: str, name: str, photo_url
             )
             conn.commit()
             log.info("New Google user created: %s (%s)", user_id, email)
+            if is_new:
+                from app.routes import _notify_admins_new_user
+                _notify_admins_new_user({
+                    "user_id": user_id, "username": email, "first_name": first_name,
+                    "last_name": last_name, "auth_provider": "google",
+                })
             return user_id
         finally:
             conn.close()
@@ -375,7 +383,7 @@ def callback():
         return redirect("/upload?error=google_auth_failed")
 
     google_id = user_info.get("sub", "")
-    email = user_info.get("email", "")
+    email = user_info.get("email", "") if user_info.get("email_verified") is True else ""
     name = user_info.get("name", "")
     picture = user_info.get("picture", "")
 
@@ -418,11 +426,18 @@ def android_google_config():
 
 
 @google_bp.post("/api/auth/google/verify")
+@google_bp.post("/api/auth/google/link")
 def verify_android_token():
     """
     Android sends:  { "id_token": "<JWT from Google Sign-In SDK>" }
     Returns:        { "ok": true, "user_id": "g_<sub>", "email": ..., "name": ... }
     """
+    linking_owner = None
+    if request.path.endswith('/link'):
+        from app.routes import _bearer_user_id, _user_exists
+        linking_owner = _bearer_user_id()
+        if not linking_owner or not _user_exists(linking_owner):
+            return jsonify(ok=False, error='not_authenticated'), 401
     if not Config.GOOGLE_CLIENT_ID:
         return jsonify({"ok": False, "error": "google_auth_not_configured"}), 501
 
@@ -444,9 +459,17 @@ def verify_android_token():
         return jsonify({"ok": False, "error": "invalid_token"}), 401
 
     google_id = claims.get("sub", "")
-    email = claims.get("email", "")
+    email = claims.get("email", "") if claims.get("email_verified") is True else ""
     name = claims.get("name", "")
     picture = claims.get("picture", "")
+
+    if linking_owner:
+        if not google_id or not email:
+            return jsonify(ok=False, error='invalid_token'), 401
+        result = _link_google_user(linking_owner, google_id, email)
+        if result != 'linked':
+            return jsonify(ok=False, error='identity_conflict' if result == 'conflict' else 'account_link_failed'), 409 if result == 'conflict' else 503
+        return jsonify(ok=True, email=email)
 
     user_id = _find_or_create_google_user(google_id, email, name, picture)
     if not user_id:

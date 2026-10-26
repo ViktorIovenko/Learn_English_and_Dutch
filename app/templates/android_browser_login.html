@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="{{ 'ru' if russian else 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>ParallelLingvo</title>
+</head>
+<body>
+  <p id="status">{{ '??????????? ?????' if russian else 'Signing in?' }}</p>
+  <script>
+    (async () => {
+      const ticket = location.hash.slice(1);
+      history.replaceState(null, '', location.pathname + location.search);
+      try {
+        const response = await fetch('/api/auth/android/browser-session', {
+          method: 'POST', credentials: 'same-origin',
+          headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ticket})
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error();
+        location.replace('/settings/mcp');
+      } catch (_) {
+        document.getElementById('status').textContent = {{ ('?????? ??????????????? ??? ???????. ????????? ? ?????????? ? ??????? ?????? ??? ???.' if russian else 'This link is invalid or expired. Return to the app and press the button again.') | tojson }};
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -4,26 +4,25 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
-        android:name=".LearnWordsApp"
+        android:name=".ParallelLingvoApp"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.LearnWordsApp"
+        android:theme="@style/Theme.ParallelLingvoApp"
         android:usesCleartextTraffic="false">
 
         <activity
             android:name=".MainActivity"
+            android:theme="@style/Theme.ParallelLingvoApp.Starting"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -47,6 +46,29 @@
                     android:scheme="https"
                     android:host="app.parallellingvo.app"
                     android:pathPrefix="/family/link" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="app.parallellingvo.app"
+                    android:path="/auth/android/return" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${telegramLoginHost}"
+                    android:path="/tglogin" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="app.parallellingvo.app"
+                    android:pathPrefix="/family/connect" />
             </intent-filter>
         </activity>
 

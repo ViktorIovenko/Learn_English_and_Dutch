@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="theme_title">Weergave</string>
+    <string name="theme_system">Android volgen</string>
+    <string name="theme_light">Licht</string>
+    <string name="theme_dark">Donker</string>
+    <string name="theme_current">Thema: %1$s</string>
+</resources>

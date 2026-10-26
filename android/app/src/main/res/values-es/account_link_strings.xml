@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_link_google">Vincular Google</string>
+    <string name="account_email_password_confirm">Confirmar contraseña</string>
+    <string name="account_email_password_hint">Usa entre 12 y 128 caracteres.</string>
+    <string name="account_email_send">Enviar correo</string>
+    <string name="account_email_sent">Si esta dirección cumple los requisitos, recibirás un correo. Revisa también la carpeta de spam.</string>
+    <string name="account_email_password_mismatch">Las contraseñas no coinciden.</string>
+    <string name="account_link_conflict">Este método de acceso ya está vinculado a una cuenta.</string>
+</resources>

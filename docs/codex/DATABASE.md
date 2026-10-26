@@ -4,6 +4,123 @@
 
 Создание/миграции распределены между `run.py`, `db_init.py`, `app/routes.py`, `app/models.py`, `bot/db.py`, `bot/auth.py` и специализированными модулями. Это известное дублирование; менять схему следует только после проверки всех владельцев.
 
+## `account_revocations`
+
+- local: `app/account_privacy.py`:19.
+- Колонки: `subject_hash` TEXT PRIMARY KEY, `generation` TEXT NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:9621.
+- Колонки: `subject_hash` TEXT PRIMARY KEY, `generation` TEXT NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/account_privacy.py`:19.
+- Колонки: `subject_hash` TEXT PRIMARY KEY, `generation` TEXT NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/account_privacy.py:19` (migration, local), `app/account_privacy.py:24` (read, local), `app/account_privacy.py:26` (read, local), `app/account_privacy.py:99` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9621` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9626` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9628` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9701` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:17830` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18751` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:19` (migration, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:24` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:26` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:99` (insert, local), `tests/test_android_auth.py:88` (insert, local).
+- Связанные API файла-владельца: `/privacy`, `/account/delete`, `/api/account/deletion-challenge`, `/api/account/delete`.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `ad_advertisers`
+
+- local: `app/advertising/store.py`:96.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `awin_id` INTEGER UNIQUE, `name` TEXT NOT NULL, `membership_status` TEXT NOT NULL DEFAULT 'manual', `enabled` INTEGER NOT NULL DEFAULT 0, `countries` TEXT NOT NULL DEFAULT '[]', `languages` TEXT NOT NULL DEFAULT '[]', `topics` TEXT NOT NULL DEFAULT '[]', `primary_region` TEXT NOT NULL DEFAULT '', `valid_domains` TEXT NOT NULL DEFAULT '[]', `logo_url` TEXT NOT NULL DEFAULT '', `notes` TEXT NOT NULL DEFAULT '', `synced_at` INTEGER NOT NULL DEFAULT 0, `created_at` INTEGER NOT NULL DEFAULT 0.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/advertising/store.py:96` (migration, local), `app/advertising/store.py:114` (delete, local), `app/advertising/store.py:283` (read, local), `app/advertising/store.py:289` (read, local), `app/advertising/store.py:308` (update, local), `app/advertising/store.py:315` (insert, local), `app/advertising/store.py:331` (insert, local), `app/advertising/store.py:341` (read, local), `app/advertising/store.py:348` (update, local), `app/advertising/store.py:446` (read, local).
+- Связанные API файла-владельца: проверять по handler.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `ad_api_log`
+
+- local: `app/advertising/store.py`:156.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `at` INTEGER NOT NULL, `operation` TEXT NOT NULL, `http_status` INTEGER NOT NULL DEFAULT 0, `ok` INTEGER NOT NULL DEFAULT 0, `message` TEXT NOT NULL DEFAULT ''.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/advertising/store.py:156` (migration, local), `app/advertising/store.py:496` (insert, local), `app/advertising/store.py:498` (delete, local), `app/advertising/store.py:504` (read, local).
+- Связанные API файла-владельца: проверять по handler.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `ad_consent`
+
+- local: `app/advertising/store.py`:149.
+- Колонки: `user_id` TEXT NOT NULL, `platform` TEXT NOT NULL, `status` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:20897.
+- Колонки: `user_id` TEXT, `choice` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/tests/test_play_release.py`:255.
+- Колонки: `user_id` TEXT, `choice` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_play_release.py`:255.
+- Колонки: `user_id` TEXT, `choice` TEXT.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/advertising/store.py:149` (migration, local), `app/advertising/store.py:512` (read, local), `app/advertising/store.py:520` (insert, local), `docs/codex/ADVERTISING.md:23` (update, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9682` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:17857` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18754` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20897` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20898` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20903` (read, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:255` (migration, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:256` (insert, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:261` (read, local), `tests/test_play_release.py:255` (migration, local), `tests/test_play_release.py:256` (insert, local), `tests/test_play_release.py:261` (read, local).
+- Связанные API файла-владельца: проверять по handler.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `ad_creatives`
+
+- local: `app/advertising/store.py`:112.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `advertiser_id` INTEGER NOT NULL REFERENCES ad_advertisers(id.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/advertising/store.py:112` (migration, local), `app/advertising/store.py:382` (read, local), `app/advertising/store.py:388` (read, local), `app/advertising/store.py:409` (update, local), `app/advertising/store.py:416` (migration, local), `app/advertising/store.py:426` (update, local), `app/advertising/store.py:433` (update, local), `app/advertising/store.py:446` (read, local), `app/advertising/store.py:484` (read, local).
+- Связанные API файла-владельца: проверять по handler.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `ad_placements`
+
+- local: `app/advertising/store.py`:87.
+- Колонки: `key` TEXT PRIMARY KEY, `page` TEXT NOT NULL, `label` TEXT NOT NULL DEFAULT '', `enabled` INTEGER NOT NULL DEFAULT 0, `priority` INTEGER NOT NULL DEFAULT 50, `sizes` TEXT NOT NULL DEFAULT '{}', `builtin` INTEGER NOT NULL DEFAULT 0.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/advertising/store.py:87` (migration, local), `app/advertising/store.py:171` (insert, local), `app/advertising/store.py:232` (read, local), `app/advertising/store.py:245` (insert, local), `app/advertising/store.py:256` (delete, local).
+- Связанные API файла-владельца: проверять по handler.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `ad_settings`
+
+- local: `app/advertising/store.py`:82.
+- Колонки: `id` INTEGER PRIMARY KEY CHECK (id = 1.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/advertising/store.py:82` (migration, local), `app/advertising/store.py:166` (insert, local), `app/advertising/store.py:201` (read, local), `app/advertising/store.py:211` (update, local).
+- Связанные API файла-владельца: проверять по handler.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `ad_stats`
+
+- local: `app/advertising/store.py`:137.
+- Колонки: `day` TEXT NOT NULL, `placement` TEXT NOT NULL, `creative_id` INTEGER NOT NULL, `device` TEXT NOT NULL, `country` TEXT NOT NULL, `event` TEXT NOT NULL, `count` INTEGER NOT NULL DEFAULT 0.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/advertising/store.py:137` (migration, local), `app/advertising/store.py:470` (insert, local), `app/advertising/store.py:484` (read, local), `tests/test_advertising.py:467` (read, local), `tests/test_advertising.py:468` (read, local).
+- Связанные API файла-владельца: проверять по handler.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `ai_gateway_settings`
+
+- local: `app/ai_gateway.py`:107.
+- Колонки: `id` INTEGER PRIMARY KEY CHECK(id=1.
+- Индексы: не найдены в этом определении.
+- local: `output/deploy-ai-admin-20261022/app/ai_gateway.py`:107.
+- Колонки: `id` INTEGER PRIMARY KEY CHECK(id=1.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/ai_gateway.py:50` (read, local), `app/ai_gateway.py:107` (migration, local), `app/ai_gateway.py:122` (insert, local), `output/deploy-ai-admin-20261022/app/ai_gateway.py:50` (read, local), `output/deploy-ai-admin-20261022/app/ai_gateway.py:107` (migration, local), `output/deploy-ai-admin-20261022/app/ai_gateway.py:122` (insert, local), `tests/test_ai_gateway.py:69` (read, local).
+- Связанные API файла-владельца: `/admin/ai`, `/api/admin/ai/settings`.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `android_auth_flows`
+
+- local: `app/android_auth.py`:30.
+- Колонки: `id` TEXT PRIMARY KEY, `challenge` TEXT NOT NULL, `provider` TEXT NOT NULL, `created` INTEGER NOT NULL, `ip_hash` TEXT NOT NULL, `user_id` TEXT, `version` TEXT, `error` TEXT, `delivered` INTEGER.
+- Индексы: `android_auth_ip` (ip_hash,created), `android_native_token` (native_token_hash).
+- Чтение/запись/миграции: `app/android_auth.py:30` (migration, local), `app/android_auth.py:34` (migration, local), `app/android_auth.py:35` (read, local), `app/android_auth.py:38` (migration, local), `app/android_auth.py:39` (migration, local), `app/android_auth.py:108` (migration, local), `app/android_auth.py:115` (update, local), `app/android_auth.py:137` (migration, local), `app/android_auth.py:143` (update, local), `app/android_auth.py:173` (migration, local), `app/android_auth.py:174` (migration, local), `app/android_auth.py:182` (migration, local), `app/android_auth.py:248` (read, local), `app/android_auth.py:254` (read, local), `app/android_auth.py:276` (update, local), `app/android_auth.py:297` (read, local), `app/android_auth.py:322` (update, local), `app/android_auth.py:324` (read, local), `app/android_auth.py:334` (update, local), `app/email_auth.py:227` (read, local), `app/email_auth.py:279` (update, local), `app/email_auth.py:282` (update, local), `app/email_auth.py:314` (update, local), `app/email_auth.py:381` (update, local), `tests/test_android_auth.py:116` (update, local), `tests/test_android_auth.py:136` (migration, local), `tests/test_telegram_native.py:124` (update, local), `tests/test_telegram_native.py:127` (migration, local), `tests/test_telegram_native.py:135` (update, local), `tests/test_telegram_native.py:139` (update, local).
+- Связанные API файла-владельца: `/api/auth/android/browser-link`, `/auth/android/browser`, `/api/auth/android/browser-session`, `/api/account/identities`, `/api/auth/android/start`, `/api/auth/telegram/native`, `/api/auth/android/exchange`, `/auth/android/return`.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `android_browser_links`
+
+- local: `app/android_auth.py`:40.
+- Колонки: `ticket_hash` TEXT PRIMARY KEY, `user_id` TEXT NOT NULL, `expires` INTEGER NOT NULL, `version` TEXT, `generation` TEXT NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/android_auth.py:40` (migration, local), `app/android_auth.py:57` (delete, local), `app/android_auth.py:58` (insert, local), `app/android_auth.py:84` (read, local), `app/android_auth.py:92` (delete, local), `tests/test_android_auth.py:78` (update, local).
+- Связанные API файла-владельца: `/api/auth/android/browser-link`, `/auth/android/browser`, `/api/auth/android/browser-session`, `/api/account/identities`, `/api/auth/android/start`, `/api/auth/telegram/native`, `/api/auth/android/exchange`, `/auth/android/return`.
+- Telegram handlers файла-владельца: нет прямой связи.
+
 ## `android_contracts`
 
 - local: `tools/project_kb.py`:86.
@@ -48,14 +165,23 @@
 - local: `app/account_types.py`:17.
 - Колонки: `provider` TEXT NOT NULL, `external_id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `email` TEXT, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:20487.
+- Колонки: `provider` TEXT NOT NULL, `external_id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `email` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/tests/test_google_account_link.py`:54.
+- Колонки: `provider` TEXT NOT NULL, `external_id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `email` TEXT.
+- Индексы: не найдены в этом определении.
 - local: `tests/test_db_migrations.py`:21.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT NOT NULL, `provider` TEXT NOT NULL, `subject` TEXT NOT NULL, `provider_user_id` TEXT, `email` TEXT.
 - Индексы: не найдены в этом определении.
-- local: `tests/test_google_account_link.py`:54.
+- local: `tests/test_google_account_link.py`:56.
 - Колонки: `provider` TEXT NOT NULL, `external_id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `email` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/account_types.py:13` (read, local), `app/account_types.py:17` (migration, local), `app/account_types.py:29` (read, local), `app/account_types.py:33` (read, local), `app/account_types.py:37` (read, local), `app/account_types.py:44` (read, local), `app/account_types.py:64` (read, local), `app/account_types.py:69` (read, local), `app/account_types.py:71` (migration, local), `app/account_types.py:75` (read, local), `app/google_auth.py:51` (read, local), `app/google_auth.py:55` (read, local), `app/google_auth.py:59` (read, local), `app/google_auth.py:154` (read, local), `app/google_auth.py:165` (update, local), `app/google_auth.py:171` (read, local), `app/google_auth.py:189` (insert, local), `app/google_auth.py:224` (insert, local), `app/google_auth.py:243` (read, local), `app/google_auth.py:251` (read, local), `app/google_auth.py:261` (read, local), `app/google_auth.py:298` (update, local), `app/google_auth.py:313` (insert, local), `app/routes.py:3039` (insert, local), `app/telegram_oauth.py:206` (insert, local), `run.py:128` (migration, local), `run.py:130` (insert, local), `run.py:135` (insert, local), `tests/test_db_migrations.py:21` (migration, local), `tests/test_db_migrations.py:35` (insert, local).
-- Связанные API файла-владельца: `/auth/google`, `/auth/google/callback`, `/api/auth/google/config`, `/api/auth/google/verify`, `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`.
+- local: `tests/test_registration_notifications.py`:33.
+- Колонки: `provider` TEXT, `external_id` TEXT, `user_id` TEXT, `email` TEXT.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/account_linking.py:12` (read, local), `app/account_linking.py:23` (read, local), `app/account_linking.py:36` (read, local), `app/account_linking.py:39` (read, local), `app/account_linking.py:43` (read, local), `app/account_linking.py:48` (read, local), `app/account_linking.py:53` (insert, local), `app/account_types.py:13` (read, local), `app/account_types.py:17` (migration, local), `app/account_types.py:29` (read, local), `app/account_types.py:33` (read, local), `app/account_types.py:37` (read, local), `app/account_types.py:44` (read, local), `app/account_types.py:64` (read, local), `app/account_types.py:69` (read, local), `app/account_types.py:71` (migration, local), `app/account_types.py:75` (read, local), `app/android_auth.py:130` (read, local), `app/android_auth.py:230` (insert, local), `app/email_auth.py:188` (read, local), `app/email_auth.py:322` (read, local), `app/email_auth.py:325` (read, local), `app/email_auth.py:331` (insert, local), `app/google_auth.py:51` (read, local), `app/google_auth.py:55` (read, local), `app/google_auth.py:59` (read, local), `app/google_auth.py:154` (read, local), `app/google_auth.py:165` (update, local), `app/google_auth.py:171` (read, local), `app/google_auth.py:183` (read, local).
+- Связанные API файла-владельца: `/auth/telegram`, `/auth/telegram/callback`, `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `auth_identities__canonical_new`
@@ -69,37 +195,64 @@
 
 ## `child_goal_notifications`
 
-- local: `app/routes.py`:486.
+- local: `app/routes.py`:514.
+- Колонки: `child_user_id` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `local_date` TEXT NOT NULL, `message_id` INTEGER, `sent_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:485.
+- Колонки: `child_user_id` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `local_date` TEXT NOT NULL, `message_id` INTEGER, `sent_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:10668.
+- Колонки: `child_user_id` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `local_date` TEXT NOT NULL, `message_id` INTEGER, `sent_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:505.
 - Колонки: `child_user_id` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `local_date` TEXT NOT NULL, `message_id` INTEGER, `sent_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
 - production: `/app/words.db sqlite_master`.
 - Колонки: `child_user_id` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `local_date` TEXT NOT NULL, `message_id` INTEGER, `sent_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/routes.py:486` (migration, local), `app/routes.py:497` (read, local), `app/routes.py:502` (migration, local), `app/routes.py:642` (read, local), `app/routes.py:650` (insert, local), `app/routes.py:669` (update, local), `app/routes.py:691` (delete, local).
+- Чтение/запись/миграции: `app/routes.py:514` (migration, local), `app/routes.py:525` (read, local), `app/routes.py:530` (migration, local), `app/routes.py:673` (read, local), `app/routes.py:681` (insert, local), `app/routes.py:700` (update, local), `app/routes.py:722` (delete, local), `output/deploy-ai-admin-20261022/app/routes.py:485` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:496` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:501` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:641` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:649` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:668` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:690` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9679` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10668` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10679` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10684` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10824` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10832` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10851` (update, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10873` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:17977` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18766` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:505` (migration, local), `output/google-play-preparation-20261021/sources/app/routes.py:516` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:521` (migration, local), `output/google-play-preparation-20261021/sources/app/routes.py:661` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:669` (insert, local), `output/google-play-preparation-20261021/sources/app/routes.py:688` (update, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `child_lesson_priorities`
 
-- local: `app/routes.py`:842.
+- local: `app/routes.py`:873.
+- Колонки: `child_user_id` TEXT PRIMARY KEY, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:841.
+- Колонки: `child_user_id` TEXT PRIMARY KEY, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:11024.
+- Колонки: `child_user_id` TEXT PRIMARY KEY, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:861.
 - Колонки: `child_user_id` TEXT PRIMARY KEY, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
 - production: `/app/words.db sqlite_master`.
 - Колонки: `child_user_id` TEXT PRIMARY KEY, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/mcp_service.py:1011` (read, local), `app/mcp_service.py:1023` (delete, local), `app/mcp_service.py:1104` (delete, local), `app/mcp_service.py:1137` (insert, local), `app/mcp_service.py:1158` (delete, local), `app/routes.py:842` (migration, local), `app/routes.py:871` (read, local), `app/routes.py:909` (read, local), `app/routes.py:941` (delete, local), `app/routes.py:3264` (read, local), `app/routes.py:3279` (insert, local), `app/routes.py:3294` (delete, local), `app/routes.py:3982` (update, local), `app/routes.py:4891` (delete, local), `tests/test_family_accounts.py:879` (read, local), `tests/test_family_accounts.py:967` (insert, local).
+- Чтение/запись/миграции: `app/mcp_service.py:1019` (read, local), `app/mcp_service.py:1031` (delete, local), `app/mcp_service.py:1112` (delete, local), `app/mcp_service.py:1145` (insert, local), `app/mcp_service.py:1166` (delete, local), `app/routes.py:873` (migration, local), `app/routes.py:902` (read, local), `app/routes.py:940` (read, local), `app/routes.py:972` (delete, local), `app/routes.py:3499` (read, local), `app/routes.py:3514` (insert, local), `app/routes.py:3529` (delete, local), `app/routes.py:4198` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:841` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:870` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:908` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:940` (delete, local), `output/deploy-ai-admin-20261022/app/routes.py:3240` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:3255` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:3270` (delete, local), `output/deploy-ai-admin-20261022/app/routes.py:3961` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:4870` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9679` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11024` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11053` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11091` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11123` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:13648` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:13663` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:13678` (delete, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `child_lesson_priority_history`
 
-- local: `app/routes.py`:852.
+- local: `app/routes.py`:883.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `started_at` INTEGER NOT NULL, `ended_at` INTEGER.
+- Индексы: `idx_child_priority_history_child_started` (child_user_id, started_at DESC).
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:851.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `started_at` INTEGER NOT NULL, `ended_at` INTEGER.
+- Индексы: `idx_child_priority_history_child_started` (child_user_id, started_at DESC).
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:11034.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `started_at` INTEGER NOT NULL, `ended_at` INTEGER.
+- Индексы: `idx_child_priority_history_child_started` (child_user_id, started_at DESC).
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:871.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `started_at` INTEGER NOT NULL, `ended_at` INTEGER.
 - Индексы: `idx_child_priority_history_child_started` (child_user_id, started_at DESC).
 - production: `/app/words.db sqlite_master`.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `parent_user_id` TEXT NOT NULL, `started_at` INTEGER NOT NULL, `ended_at` INTEGER.
 - Индексы: `idx_child_priority_history_child_started` (child_user_id, started_at DESC).
-- Чтение/запись/миграции: `app/mcp_service.py:1020` (update, local), `app/mcp_service.py:1108` (update, local), `app/mcp_service.py:1142` (update, local), `app/mcp_service.py:1145` (read, local), `app/mcp_service.py:1147` (insert, local), `app/mcp_service.py:1157` (update, local), `app/routes.py:852` (migration, local), `app/routes.py:865` (read, local), `app/routes.py:868` (insert, local), `app/routes.py:874` (read, local), `app/routes.py:945` (update, local), `app/routes.py:1197` (read, local), `app/routes.py:3273` (update, local), `app/routes.py:3288` (insert, local), `app/routes.py:3986` (update, local), `app/routes.py:4899` (delete, local), `tests/test_family_accounts.py:567` (update, local).
+- Чтение/запись/миграции: `app/mcp_service.py:1028` (update, local), `app/mcp_service.py:1116` (update, local), `app/mcp_service.py:1150` (update, local), `app/mcp_service.py:1153` (read, local), `app/mcp_service.py:1155` (insert, local), `app/mcp_service.py:1165` (update, local), `app/routes.py:883` (migration, local), `app/routes.py:896` (read, local), `app/routes.py:899` (insert, local), `app/routes.py:905` (read, local), `app/routes.py:976` (update, local), `app/routes.py:1228` (read, local), `app/routes.py:3508` (update, local), `app/routes.py:3523` (insert, local), `app/routes.py:4202` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:851` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:864` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:867` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:873` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:944` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:1196` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:3249` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:3264` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:3965` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:4878` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9679` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11034` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11047` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11050` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11056` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -108,7 +261,10 @@
 - local: `app/content_service.py`:52.
 - Колонки: `fingerprint` TEXT PRIMARY KEY, `variant_id` INTEGER NOT NULL REFERENCES content_variants(id.
 - Индексы: `idx_content_examples_variant` (variant_id,level).
-- Чтение/запись/миграции: `app/content_service.py:52` (migration, local), `app/content_service.py:55` (migration, local), `app/content_service.py:106` (insert, local), `app/content_service.py:173` (read, local), `app/content_service.py:194` (read, local), `tests/test_content_pipeline.py:102` (read, local).
+- local: `output/deploy-ai-admin-20261022/app/content_service.py`:52.
+- Колонки: `fingerprint` TEXT PRIMARY KEY, `variant_id` INTEGER NOT NULL REFERENCES content_variants(id.
+- Индексы: `idx_content_examples_variant` (variant_id,level).
+- Чтение/запись/миграции: `app/content_service.py:52` (migration, local), `app/content_service.py:55` (migration, local), `app/content_service.py:106` (insert, local), `app/content_service.py:173` (read, local), `app/content_service.py:194` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:52` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:55` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:106` (insert, local), `output/deploy-ai-admin-20261022/app/content_service.py:173` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:194` (read, local), `tests/test_content_pipeline.py:102` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -117,7 +273,10 @@
 - local: `app/content_service.py`:61.
 - Колонки: `user_id` TEXT NOT NULL, `request_key` TEXT NOT NULL, `request_hash` TEXT NOT NULL, `response_json` TEXT NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/content_service.py:61` (migration, local), `app/content_service.py:302` (read, local), `app/content_service.py:367` (insert, local).
+- local: `output/deploy-ai-admin-20261022/app/content_service.py`:61.
+- Колонки: `user_id` TEXT NOT NULL, `request_key` TEXT NOT NULL, `request_hash` TEXT NOT NULL, `response_json` TEXT NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/content_service.py:61` (migration, local), `app/content_service.py:302` (read, local), `app/content_service.py:367` (insert, local), `output/deploy-ai-admin-20261022/app/content_service.py:61` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:302` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:367` (insert, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -126,7 +285,10 @@
 - local: `app/content_service.py`:39.
 - Колонки: `name` TEXT PRIMARY KEY, `completed_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/content_service.py:39` (migration, local), `app/content_service.py:71` (read, local), `app/content_service.py:80` (insert, local).
+- local: `output/deploy-ai-admin-20261022/app/content_service.py`:39.
+- Колонки: `name` TEXT PRIMARY KEY, `completed_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/content_service.py:39` (migration, local), `app/content_service.py:71` (read, local), `app/content_service.py:80` (insert, local), `output/deploy-ai-admin-20261022/app/content_service.py:39` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:71` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:80` (insert, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -135,7 +297,10 @@
 - local: `app/content_service.py`:58.
 - Колонки: `request_key` TEXT PRIMARY KEY, `operation` TEXT NOT NULL, `request_json` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/content_service.py:58` (migration, local), `app/content_service.py:128` (delete, local), `app/content_service.py:145` (insert, local), `app/content_service.py:149` (insert, local), `tests/test_content_pipeline.py:107` (read, local).
+- local: `output/deploy-ai-admin-20261022/app/content_service.py`:58.
+- Колонки: `request_key` TEXT PRIMARY KEY, `operation` TEXT NOT NULL, `request_json` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/content_service.py:58` (migration, local), `app/content_service.py:128` (delete, local), `app/content_service.py:145` (insert, local), `app/content_service.py:149` (insert, local), `output/deploy-ai-admin-20261022/app/content_service.py:58` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:128` (delete, local), `output/deploy-ai-admin-20261022/app/content_service.py:145` (insert, local), `output/deploy-ai-admin-20261022/app/content_service.py:149` (insert, local), `tests/test_content_pipeline.py:107` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -144,7 +309,10 @@
 - local: `app/content_service.py`:56.
 - Колонки: `request_key` TEXT PRIMARY KEY, `operation` TEXT NOT NULL, `result_json` TEXT NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/content_service.py:56` (migration, local), `app/content_service.py:121` (read, local), `app/content_service.py:126` (insert, local), `app/content_service.py:133` (read, local).
+- local: `output/deploy-ai-admin-20261022/app/content_service.py`:56.
+- Колонки: `request_key` TEXT PRIMARY KEY, `operation` TEXT NOT NULL, `result_json` TEXT NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/content_service.py:56` (migration, local), `app/content_service.py:121` (read, local), `app/content_service.py:126` (insert, local), `app/content_service.py:133` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:56` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:121` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:126` (insert, local), `output/deploy-ai-admin-20261022/app/content_service.py:133` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -153,7 +321,10 @@
 - local: `app/content_service.py`:44.
 - Колонки: `variant_id` INTEGER NOT NULL REFERENCES content_variants(id.
 - Индексы: `idx_content_terms_lookup` (language,text_key).
-- Чтение/запись/миграции: `app/content_service.py:44` (migration, local), `app/content_service.py:47` (migration, local), `app/content_service.py:95` (insert, local), `app/content_service.py:162` (read, local).
+- local: `output/deploy-ai-admin-20261022/app/content_service.py`:44.
+- Колонки: `variant_id` INTEGER NOT NULL REFERENCES content_variants(id.
+- Индексы: `idx_content_terms_lookup` (language,text_key).
+- Чтение/запись/миграции: `app/content_service.py:44` (migration, local), `app/content_service.py:47` (migration, local), `app/content_service.py:95` (insert, local), `app/content_service.py:162` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:44` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:47` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:95` (insert, local), `output/deploy-ai-admin-20261022/app/content_service.py:162` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -162,7 +333,10 @@
 - local: `app/content_service.py`:48.
 - Колонки: `fingerprint` TEXT PRIMARY KEY, `source_language` TEXT NOT NULL, `source_key` TEXT NOT NULL, `target_language` TEXT NOT NULL, `target_text` TEXT NOT NULL, `sense` TEXT NOT NULL, `context` TEXT NOT NULL, `source` TEXT NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/content_service.py:48` (migration, local), `app/content_service.py:100` (insert, local), `tests/test_content_pipeline.py:96` (read, local).
+- local: `output/deploy-ai-admin-20261022/app/content_service.py`:48.
+- Колонки: `fingerprint` TEXT PRIMARY KEY, `source_language` TEXT NOT NULL, `source_key` TEXT NOT NULL, `target_language` TEXT NOT NULL, `target_text` TEXT NOT NULL, `sense` TEXT NOT NULL, `context` TEXT NOT NULL, `source` TEXT NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/content_service.py:48` (migration, local), `app/content_service.py:100` (insert, local), `output/deploy-ai-admin-20261022/app/content_service.py:48` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:100` (insert, local), `tests/test_content_pipeline.py:96` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -171,7 +345,10 @@
 - local: `app/content_service.py`:40.
 - Колонки: `id` INTEGER PRIMARY KEY, `fingerprint` TEXT NOT NULL UNIQUE, `sense` TEXT NOT NULL, `context` TEXT NOT NULL, `words_json` TEXT NOT NULL, `source` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/content_service.py:40` (migration, local), `app/content_service.py:45` (read, local), `app/content_service.py:53` (read, local), `app/content_service.py:91` (migration, local), `app/content_service.py:93` (read, local), `app/content_service.py:162` (read, local).
+- local: `output/deploy-ai-admin-20261022/app/content_service.py`:40.
+- Колонки: `id` INTEGER PRIMARY KEY, `fingerprint` TEXT NOT NULL UNIQUE, `sense` TEXT NOT NULL, `context` TEXT NOT NULL, `words_json` TEXT NOT NULL, `source` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/content_service.py:40` (migration, local), `app/content_service.py:45` (read, local), `app/content_service.py:53` (read, local), `app/content_service.py:91` (migration, local), `app/content_service.py:93` (read, local), `app/content_service.py:162` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:40` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:45` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:53` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:91` (migration, local), `output/deploy-ai-admin-20261022/app/content_service.py:93` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:162` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -211,6 +388,51 @@
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
+## `email_auth_attempts`
+
+- local: `app/email_auth.py`:44.
+- Колонки: `email_hash` TEXT NOT NULL, `ip_hash` TEXT NOT NULL, `kind` TEXT NOT NULL, `created` INTEGER NOT NULL.
+- Индексы: `email_attempt_address` (email_hash,kind,created), `email_attempt_ip` (ip_hash,kind,created).
+- Чтение/запись/миграции: `app/account_privacy.py:60` (read, local), `app/account_privacy.py:62` (delete, local), `app/email_auth.py:44` (migration, local), `app/email_auth.py:47` (migration, local), `app/email_auth.py:48` (migration, local), `app/email_auth.py:105` (migration, local), `app/email_auth.py:106` (migration, local), `app/email_auth.py:107` (read, local), `app/email_auth.py:111` (migration, local), `app/email_auth.py:115` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9662` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9664` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18121` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18781` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:60` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:62` (delete, local), `tests/test_email_auth.py:56` (delete, local).
+- Связанные API файла-владельца: `/privacy`, `/account/delete`, `/api/account/deletion-challenge`, `/api/account/delete`.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `email_auth_credentials`
+
+- local: `app/email_auth.py`:37.
+- Колонки: `user_id` TEXT PRIMARY KEY, `email` TEXT NOT NULL UNIQUE COLLATE NOCASE, `password_hash` TEXT NOT NULL, `version` TEXT NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:20891.
+- Колонки: `user_id` TEXT, `email` TEXT, `version` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/tests/test_play_release.py`:249.
+- Колонки: `user_id` TEXT, `email` TEXT, `version` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_play_release.py`:249.
+- Колонки: `user_id` TEXT, `email` TEXT, `version` TEXT.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/account_linking.py:47` (read, local), `app/account_linking.py:51` (insert, local), `app/android_auth.py:131` (read, local), `app/android_auth.py:315` (read, local), `app/android_auth.py:329` (read, local), `app/auth_links.py:22` (read, local), `app/email_auth.py:37` (migration, local), `app/email_auth.py:187` (read, local), `app/email_auth.py:239` (read, local), `app/email_auth.py:277` (read, local), `app/email_auth.py:372` (read, local), `app/email_auth.py:389` (insert, local), `app/email_auth.py:408` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9656` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9682` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9802` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18130` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18782` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20891` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20892` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20903` (read, local), `output/google-play-preparation-20261021/sources/app/auth_links.py:22` (read, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:249` (migration, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:250` (insert, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:261` (read, local), `tests/test_account_linking.py:71` (read, local), `tests/test_account_linking.py:104` (read, local), `tests/test_account_linking.py:113` (read, local), `tests/test_account_linking.py:119` (insert, local), `tests/test_account_linking.py:121` (read, local).
+- Связанные API файла-владельца: `/api/auth/android/browser-link`, `/auth/android/browser`, `/api/auth/android/browser-session`, `/api/account/identities`, `/api/auth/android/start`, `/api/auth/telegram/native`, `/api/auth/android/exchange`, `/auth/android/return`.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `email_auth_links`
+
+- local: `app/email_auth.py`:40.
+- Колонки: `token_hash` TEXT PRIMARY KEY, `email` TEXT NOT NULL, `purpose` TEXT NOT NULL, `created` INTEGER NOT NULL, `consumed` INTEGER NOT NULL DEFAULT 0, `language` TEXT NOT NULL, `next_url` TEXT NOT NULL, `android` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:20893.
+- Колонки: `email` TEXT, `token_hash` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/tests/test_play_release.py`:251.
+- Колонки: `email` TEXT, `token_hash` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_play_release.py`:251.
+- Колонки: `email` TEXT, `token_hash` TEXT.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/account_privacy.py:58` (read, local), `app/account_privacy.py:59` (delete, local), `app/email_auth.py:40` (migration, local), `app/email_auth.py:49` (read, local), `app/email_auth.py:51` (migration, local), `app/email_auth.py:194` (migration, local), `app/email_auth.py:195` (update, local), `app/email_auth.py:196` (migration, local), `app/email_auth.py:203` (update, local), `app/email_auth.py:211` (migration, local), `app/email_auth.py:283` (update, local), `app/email_auth.py:284` (migration, local), `app/email_auth.py:290` (update, local), `app/email_auth.py:316` (update, local), `app/email_auth.py:383` (update, local), `app/email_auth.py:392` (update, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9660` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9661` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18142` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18783` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20893` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20894` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20903` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:58` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:59` (delete, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:251` (migration, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:252` (insert, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:261` (read, local), `tests/test_account_linking.py:126` (migration, local), `tests/test_email_auth.py:107` (migration, local).
+- Связанные API файла-владельца: `/privacy`, `/account/delete`, `/api/account/deletion-challenge`, `/api/account/delete`.
+- Telegram handlers файла-владельца: нет прямой связи.
+
 ## `environment_snapshots`
 
 - local: `tools/project_kb.py`:100.
@@ -222,61 +444,70 @@
 
 ## `family_invitation_aliases`
 
-- local: `app/family_invites.py`:15.
+- local: `app/family_invites.py`:16.
 - Колонки: `short_code` TEXT PRIMARY KEY, `code` TEXT NOT NULL, `kind` TEXT NOT NULL, `expires_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/family_invites.py:15` (migration, local), `app/family_invites.py:29` (delete, local), `app/family_invites.py:30` (read, local), `app/family_invites.py:37` (read, local), `app/family_invites.py:39` (insert, local), `app/family_invites.py:63` (read, local).
-- Связанные API файла-владельца: проверять по handler.
+- Чтение/запись/миграции: `app/account_privacy.py:70` (read, local), `app/account_privacy.py:72` (delete, local), `app/family_invites.py:16` (migration, local), `app/family_invites.py:30` (delete, local), `app/family_invites.py:31` (read, local), `app/family_invites.py:38` (read, local), `app/family_invites.py:40` (insert, local), `app/family_invites.py:64` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9672` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9674` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18163` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18785` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:70` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:72` (delete, local).
+- Связанные API файла-владельца: `/privacy`, `/account/delete`, `/api/account/deletion-challenge`, `/api/account/delete`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `family_invitation_attempts`
 
-- local: `app/family_invites.py`:21.
+- local: `app/family_invites.py`:22.
 - Колонки: `user_id` TEXT PRIMARY KEY, `window_start` INTEGER NOT NULL, `count` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/family_invites.py:21` (migration, local), `app/family_invites.py:76` (delete, local), `app/family_invites.py:77` (insert, local), `app/family_invites.py:79` (read, local).
+- Чтение/запись/миграции: `app/family_invites.py:22` (migration, local), `app/family_invites.py:77` (delete, local), `app/family_invites.py:78` (insert, local), `app/family_invites.py:80` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `family_invitation_uses`
 
-- local: `app/family_invites.py`:18.
+- local: `app/family_invites.py`:19.
 - Колонки: `code` TEXT NOT NULL, `kind` TEXT NOT NULL, `user_id` TEXT NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/family_invites.py:18` (migration, local), `app/family_invites.py:92` (read, local), `app/family_pairing.py:203` (read, local), `app/family_pairing.py:254` (insert, local), `app/family_pairing.py:354` (read, local), `app/family_pairing.py:405` (insert, local).
+- Чтение/запись/миграции: `app/family_invites.py:19` (migration, local), `app/family_invites.py:93` (read, local), `app/family_pairing.py:236` (read, local), `app/family_pairing.py:291` (insert, local), `app/family_pairing.py:392` (read, local), `app/family_pairing.py:450` (insert, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `family_invite_codes`
 
-- local: `app/family_pairing.py`:95.
+- local: `app/family_pairing.py`:129.
 - Колонки: `code` TEXT PRIMARY KEY, `parent_user_id` TEXT NOT NULL, `expires_at` INTEGER NOT NULL, `created_at` INTEGER NOT NULL.
 - Индексы: `idx_family_invite_codes_parent` (parent_user_id).
-- Чтение/запись/миграции: `app/family_pairing.py:95` (migration, local), `app/family_pairing.py:105` (read, local), `app/family_pairing.py:129` (delete, local), `app/family_pairing.py:137` (insert, local), `app/family_pairing.py:162` (read, local), `app/family_pairing.py:167` (delete, local), `app/family_pairing.py:210` (read, local), `app/family_pairing.py:216` (delete, local), `tests/test_family_universal.py:71` (update, local).
+- Чтение/запись/миграции: `app/family_pairing.py:129` (migration, local), `app/family_pairing.py:139` (read, local), `app/family_pairing.py:163` (delete, local), `app/family_pairing.py:171` (insert, local), `app/family_pairing.py:196` (read, local), `app/family_pairing.py:201` (delete, local), `app/family_pairing.py:243` (read, local), `app/family_pairing.py:249` (delete, local), `tests/test_family_universal.py:72` (update, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `family_lesson_assignments`
 
-- local: `app/mcp_service.py`:187.
+- local: `app/mcp_service.py`:192.
 - Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
 - Индексы: `idx_family_lesson_assignments_child` (child_user_id, lesson).
-- local: `app/routes.py`:762.
+- local: `app/routes.py`:793.
 - Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/content_service.py:333` (read, local), `app/content_service.py:334` (read, local), `app/content_service.py:336` (read, local), `app/mcp_service.py:187` (migration, local), `app/mcp_service.py:195` (read, local), `app/mcp_service.py:525` (read, local), `app/mcp_service.py:983` (read, local), `app/mcp_service.py:1001` (migration, local), `app/mcp_service.py:1003` (migration, local), `app/mcp_service.py:1033` (read, local), `app/mcp_service.py:1049` (update, local), `app/mcp_service.py:1100` (delete, local), `app/mcp_service.py:1120` (read, local), `app/mcp_service.py:1178` (read, local), `app/mcp_service.py:1202` (read, local), `app/mcp_service.py:1213` (update, local), `app/mcp_service.py:1225` (read, local), `app/mcp_service.py:1249` (migration, local), `app/mcp_service.py:1262` (read, local), `app/mcp_service.py:1589` (read, local), `app/mcp_service.py:2016` (migration, local), `app/routes.py:762` (migration, local), `app/routes.py:774` (read, local), `app/routes.py:887` (read, local), `app/routes.py:889` (migration, local), `app/routes.py:891` (migration, local), `app/routes.py:933` (read, local), `app/routes.py:937` (delete, local), `app/routes.py:973` (read, local), `app/routes.py:1001` (read, local).
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:761.
+- Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:10944.
+- Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:781.
+- Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/content_service.py:333` (read, local), `app/content_service.py:334` (read, local), `app/content_service.py:336` (read, local), `app/mcp_service.py:192` (migration, local), `app/mcp_service.py:200` (read, local), `app/mcp_service.py:533` (read, local), `app/mcp_service.py:991` (read, local), `app/mcp_service.py:1009` (migration, local), `app/mcp_service.py:1011` (migration, local), `app/mcp_service.py:1041` (read, local), `app/mcp_service.py:1057` (update, local), `app/mcp_service.py:1108` (delete, local), `app/mcp_service.py:1128` (read, local), `app/mcp_service.py:1186` (read, local), `app/mcp_service.py:1210` (read, local), `app/mcp_service.py:1221` (update, local), `app/mcp_service.py:1233` (read, local), `app/mcp_service.py:1257` (migration, local), `app/mcp_service.py:1270` (read, local), `app/mcp_service.py:1676` (read, local), `app/mcp_service.py:2104` (migration, local), `app/routes.py:793` (migration, local), `app/routes.py:805` (read, local), `app/routes.py:918` (read, local), `app/routes.py:920` (migration, local), `app/routes.py:922` (migration, local), `app/routes.py:964` (read, local), `app/routes.py:968` (delete, local), `app/routes.py:1004` (read, local), `app/routes.py:1032` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `family_pairing_codes`
 
-- local: `app/family_pairing.py`:38.
+- local: `app/family_pairing.py`:72.
 - Колонки: `code` TEXT PRIMARY KEY, `child_user_id` TEXT NOT NULL, `expires_at` INTEGER NOT NULL, `created_at` INTEGER NOT NULL.
 - Индексы: `idx_family_pairing_codes_child` (child_user_id).
 - production: `/app/words.db sqlite_master`.
 - Колонки: `code` TEXT PRIMARY KEY, `child_user_id` TEXT NOT NULL, `expires_at` INTEGER NOT NULL, `created_at` INTEGER NOT NULL.
 - Индексы: `idx_family_pairing_codes_child` (child_user_id).
-- Чтение/запись/миграции: `app/family_pairing.py:38` (migration, local), `app/family_pairing.py:48` (read, local), `app/family_pairing.py:71` (delete, local), `app/family_pairing.py:79` (insert, local), `app/family_pairing.py:314` (read, local), `app/family_pairing.py:319` (delete, local), `app/family_pairing.py:361` (read, local), `app/family_pairing.py:367` (delete, local), `tests/test_family_pairing_bot.py:110` (update, local).
+- Чтение/запись/миграции: `app/family_pairing.py:72` (migration, local), `app/family_pairing.py:82` (read, local), `app/family_pairing.py:105` (delete, local), `app/family_pairing.py:113` (insert, local), `app/family_pairing.py:351` (read, local), `app/family_pairing.py:356` (delete, local), `app/family_pairing.py:399` (read, local), `app/family_pairing.py:405` (delete, local), `tests/test_family_pairing_bot.py:111` (update, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -296,6 +527,21 @@
 - Индексы: не найдены в этом определении.
 - Чтение/запись/миграции: `tools/project_kb.py:83` (migration, local), `tools/project_kb.py:400` (insert, local), `tools/project_kb.py:450` (read, local), `tools/project_kb.py:514` (read, local), `tools/project_kb.py:535` (read, local), `tools/project_kb.py:536` (read, local), `tools/project_kb.py:580` (delete, local).
 - Связанные API файла-владельца: проверять по handler.
+- Telegram handlers файла-владельца: нет прямой связи.
+
+## `google_play_purchases`
+
+- local: `app/google_play.py`:56.
+- Колонки: `token_hash` TEXT PRIMARY KEY, `user_id` TEXT, `token_cipher` TEXT NOT NULL, `product_id` TEXT NOT NULL, `state` TEXT NOT NULL, `expires_at` INTEGER NOT NULL, `acknowledged` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL, `superseded_by` TEXT, `checked_at_ns` INTEGER NOT NULL DEFAULT 0.
+- Индексы: `play_purchase_user` (user_id).
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:9907.
+- Колонки: `token_hash` TEXT PRIMARY KEY, `user_id` TEXT, `token_cipher` TEXT NOT NULL, `product_id` TEXT NOT NULL, `state` TEXT NOT NULL, `expires_at` INTEGER NOT NULL, `acknowledged` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL, `superseded_by` TEXT, `checked_at_ns` INTEGER NOT NULL DEFAULT 0.
+- Индексы: `play_purchase_user` (user_id).
+- local: `output/google-play-preparation-20261021/sources/app/google_play.py`:56.
+- Колонки: `token_hash` TEXT PRIMARY KEY, `user_id` TEXT, `token_cipher` TEXT NOT NULL, `product_id` TEXT NOT NULL, `state` TEXT NOT NULL, `expires_at` INTEGER NOT NULL, `acknowledged` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL, `superseded_by` TEXT, `checked_at_ns` INTEGER NOT NULL DEFAULT 0.
+- Индексы: `play_purchase_user` (user_id).
+- Чтение/запись/миграции: `app/account_privacy.py:73` (read, local), `app/account_privacy.py:74` (update, local), `app/google_play.py:56` (migration, local), `app/google_play.py:61` (read, local), `app/google_play.py:62` (migration, local), `app/google_play.py:63` (migration, local), `app/google_play.py:119` (read, local), `app/google_play.py:144` (read, local), `app/google_play.py:158` (read, local), `app/google_play.py:175` (read, local), `app/google_play.py:178` (insert, local), `app/google_play.py:186` (insert, local), `app/google_play.py:189` (update, local), `app/google_play.py:196` (read, local), `app/google_play.py:224` (read, local), `app/google_play.py:238` (read, local), `app/google_play.py:289` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9675` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9676` (update, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9907` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9912` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9913` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9914` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9970` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9995` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10009` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10026` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10029` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10037` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10040` (update, local).
+- Связанные API файла-владельца: `/api/subscription/sync`, `/api/subscription/google-play-notifications`, `/privacy`, `/account/delete`, `/api/account/deletion-challenge`, `/api/account/delete`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `google_tts_budget_monthly`
@@ -318,8 +564,8 @@
 - production: `/app/words.db sqlite_master`.
 - Колонки: `scope` TEXT PRIMARY KEY, `monthly_character_limit` INTEGER, `updated_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/routes.py:4928` (delete, local), `app/tts_usage.py:98` (migration, local), `app/tts_usage.py:107` (insert, local), `app/tts_usage.py:126` (delete, local), `app/tts_usage.py:133` (insert, local), `app/tts_usage.py:146` (read, local).
-- Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
+- Чтение/запись/миграции: `app/account_privacy.py:93` (read, local), `app/account_privacy.py:94` (delete, local), `app/tts_usage.py:98` (migration, local), `app/tts_usage.py:107` (insert, local), `app/tts_usage.py:126` (delete, local), `app/tts_usage.py:133` (insert, local), `app/tts_usage.py:146` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:4907` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9695` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9696` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18262` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18795` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:93` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:94` (delete, local).
+- Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/settings`, `/account-type`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`, `/api/auth/login_link`, `/android-auth`, `/api/auth/login_webapp`, `/api/me`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `google_tts_usage_monthly`
@@ -354,88 +600,124 @@
 
 ## `mcp_access_grants`
 
-- local: `app/mcp_service.py`:159.
+- local: `app/mcp_service.py`:164.
 - Колонки: `token_hash` TEXT PRIMARY KEY, `client_id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `resource` TEXT NOT NULL, `scopes` TEXT NOT NULL, `expires_at` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `last_used_at` INTEGER, `revoked_at` INTEGER.
 - Индексы: `idx_mcp_grants_user` (user_id, revoked_at, expires_at).
-- Чтение/запись/миграции: `app/mcp_api.py:104` (read, local), `app/mcp_api.py:114` (update, local), `app/mcp_api.py:140` (read, local), `app/mcp_api.py:211` (update, local), `app/mcp_api.py:255` (migration, local), `app/mcp_api.py:301` (update, local), `app/mcp_api.py:303` (update, local), `app/mcp_api.py:537` (migration, local), `app/mcp_api.py:558` (update, local).
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:20895.
+- Колонки: `user_id` TEXT, `token_hash` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/tests/test_play_release.py`:253.
+- Колонки: `user_id` TEXT, `token_hash` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_play_release.py`:253.
+- Колонки: `user_id` TEXT, `token_hash` TEXT.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/mcp_api.py:102` (read, local), `app/mcp_api.py:112` (update, local), `app/mcp_api.py:142` (read, local), `app/mcp_api.py:213` (update, local), `app/mcp_api.py:257` (migration, local), `app/mcp_api.py:303` (update, local), `app/mcp_api.py:305` (update, local), `app/mcp_api.py:539` (migration, local), `app/mcp_api.py:560` (update, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9681` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18304` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18799` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20895` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20896` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20903` (read, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:253` (migration, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:254` (insert, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:261` (read, local), `tests/test_play_release.py:253` (migration, local), `tests/test_play_release.py:254` (insert, local), `tests/test_play_release.py:261` (read, local).
 - Связанные API файла-владельца: `/api/mcp/user`, `/api/mcp/user/revoke-all`, `/admin/mcp`, `/admin/mcp/revoke`, `/.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, `/api/internal/mcp/resolve`, `/api/internal/mcp/execute`, `/api/internal/mcp/health`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `mcp_admin_audit_log`
 
-- local: `app/mcp_service.py`:209.
+- local: `app/mcp_service.py`:214.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `created_at` INTEGER NOT NULL, `admin_user_id` TEXT NOT NULL, `target_user_id` TEXT NOT NULL, `action` TEXT NOT NULL, `old_value` TEXT NOT NULL, `new_value` TEXT NOT NULL, `request_id` TEXT NOT NULL DEFAULT ''.
 - Индексы: `idx_mcp_admin_audit_created` (created_at DESC).
-- Чтение/запись/миграции: `app/mcp_service.py:209` (migration, local), `app/mcp_service.py:219` (migration, local), `app/mcp_service.py:1323` (migration, local), `app/mcp_service.py:1530` (migration, local).
+- Чтение/запись/миграции: `app/mcp_service.py:214` (migration, local), `app/mcp_service.py:224` (migration, local), `app/mcp_service.py:1331` (migration, local), `app/mcp_service.py:1538` (migration, local), `app/mcp_service.py:1554` (migration, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `mcp_audit_log`
 
-- local: `app/mcp_service.py`:196.
+- local: `app/mcp_service.py`:201.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `created_at` INTEGER NOT NULL, `request_id` TEXT NOT NULL, `client_hash` TEXT NOT NULL, `user_hash` TEXT NOT NULL, `operation` TEXT NOT NULL, `success` INTEGER NOT NULL, `error_code` TEXT, `duration_ms` INTEGER NOT NULL, `item_count` INTEGER NOT NULL DEFAULT 0.
 - Индексы: `idx_mcp_audit_created_at` (created_at).
-- Чтение/запись/миграции: `app/mcp_api.py:259` (migration, local), `app/mcp_api.py:622` (migration, local).
-- Связанные API файла-владельца: `/api/mcp/user`, `/api/mcp/user/revoke-all`, `/admin/mcp`, `/admin/mcp/revoke`, `/.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, `/api/internal/mcp/resolve`, `/api/internal/mcp/execute`, `/api/internal/mcp/health`.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:20899.
+- Колонки: `user_hash` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/tests/test_play_release.py`:257.
+- Колонки: `user_hash` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_play_release.py`:257.
+- Колонки: `user_hash` TEXT.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/account_privacy.py:95` (read, local), `app/account_privacy.py:98` (delete, local), `app/mcp_api.py:261` (migration, local), `app/mcp_api.py:624` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9697` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9700` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18325` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18801` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20899` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20900` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:20903` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:95` (read, local), `output/google-play-preparation-20261021/sources/app/account_privacy.py:98` (delete, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:257` (migration, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:258` (insert, local), `output/google-play-preparation-20261021/sources/tests/test_play_release.py:261` (read, local), `tests/test_play_release.py:257` (migration, local), `tests/test_play_release.py:258` (insert, local), `tests/test_play_release.py:261` (read, local).
+- Связанные API файла-владельца: `/privacy`, `/account/delete`, `/api/account/deletion-challenge`, `/api/account/delete`, `/api/mcp/user`, `/api/mcp/user/revoke-all`, `/admin/mcp`, `/admin/mcp/revoke`, `/.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, `/api/internal/mcp/resolve`, `/api/internal/mcp/execute`, `/api/internal/mcp/health`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `mcp_idempotency`
 
-- local: `app/mcp_service.py`:178.
+- local: `app/mcp_service.py`:183.
 - Колонки: `user_id` TEXT NOT NULL, `operation` TEXT NOT NULL, `idempotency_key` TEXT NOT NULL, `request_hash` TEXT NOT NULL, `response_json` TEXT NOT NULL, `created_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/mcp_service.py:178` (migration, local), `app/mcp_service.py:238` (read, local), `app/mcp_service.py:244` (migration, local), `tests/test_content_pipeline.py:239` (read, local).
+- Чтение/запись/миграции: `app/mcp_service.py:183` (migration, local), `app/mcp_service.py:243` (read, local), `app/mcp_service.py:249` (migration, local), `tests/test_content_pipeline.py:239` (read, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `mcp_oauth_clients`
 
-- local: `app/mcp_service.py`:138.
+- local: `app/mcp_service.py`:143.
 - Колонки: `client_id` TEXT PRIMARY KEY, `client_name` TEXT NOT NULL DEFAULT '', `redirect_uris` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `last_used_at` INTEGER, `revoked_at` INTEGER.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/mcp_api.py:115` (update, local), `app/mcp_api.py:140` (read, local), `app/mcp_api.py:251` (migration, local), `app/mcp_api.py:255` (migration, local), `app/mcp_api.py:300` (update, local), `app/mcp_api.py:347` (migration, local), `app/mcp_api.py:388` (read, local).
+- Чтение/запись/миграции: `app/mcp_api.py:113` (update, local), `app/mcp_api.py:142` (read, local), `app/mcp_api.py:253` (migration, local), `app/mcp_api.py:257` (migration, local), `app/mcp_api.py:302` (update, local), `app/mcp_api.py:349` (migration, local), `app/mcp_api.py:390` (read, local).
 - Связанные API файла-владельца: `/api/mcp/user`, `/api/mcp/user/revoke-all`, `/admin/mcp`, `/admin/mcp/revoke`, `/.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, `/api/internal/mcp/resolve`, `/api/internal/mcp/execute`, `/api/internal/mcp/health`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `mcp_oauth_codes`
 
-- local: `app/mcp_service.py`:146.
+- local: `app/mcp_service.py`:151.
 - Колонки: `code_hash` TEXT PRIMARY KEY, `client_id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `redirect_uri` TEXT NOT NULL, `resource` TEXT NOT NULL, `scopes` TEXT NOT NULL, `code_challenge` TEXT NOT NULL, `expires_at` INTEGER NOT NULL, `used_at` INTEGER, `created_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/mcp_api.py:481` (insert, local), `app/mcp_api.py:516` (read, local), `app/mcp_api.py:533` (update, local).
+- Чтение/запись/миграции: `app/mcp_api.py:483` (insert, local), `app/mcp_api.py:518` (read, local), `app/mcp_api.py:535` (update, local).
 - Связанные API файла-владельца: `/api/mcp/user`, `/api/mcp/user/revoke-all`, `/admin/mcp`, `/admin/mcp/revoke`, `/.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, `/api/internal/mcp/resolve`, `/api/internal/mcp/execute`, `/api/internal/mcp/health`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `mcp_user_settings`
 
-- local: `app/mcp_service.py`:173.
+- local: `app/mcp_service.py`:178.
 - Колонки: `user_id` TEXT PRIMARY KEY, `enabled` INTEGER NOT NULL DEFAULT 1, `updated_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/mcp_api.py:81` (read, local), `app/mcp_api.py:194` (insert, local).
+- Чтение/запись/миграции: `app/mcp_api.py:79` (read, local), `app/mcp_api.py:196` (insert, local).
 - Связанные API файла-владельца: `/api/mcp/user`, `/api/mcp/user/revoke-all`, `/admin/mcp`, `/admin/mcp/revoke`, `/.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, `/api/internal/mcp/resolve`, `/api/internal/mcp/execute`, `/api/internal/mcp/health`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `parent_child_links`
 
-- local: `app/routes.py`:745.
+- local: `app/routes.py`:776.
+- Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:744.
+- Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:10927.
+- Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:764.
 - Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
 - local: `run.py`:149.
 - Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
-- local: `tests/test_family_pairing_bot.py`:163.
+- local: `tests/test_family_pairing_bot.py`:251.
 - Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL.
 - Индексы: не найдены в этом определении.
 - production: `/app/words.db sqlite_master`.
 - Колонки: `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: `idx_parent_child_links_child` (child_user_id).
-- Чтение/запись/миграции: `app/family_pairing.py:30` (read, local), `app/family_pairing.py:235` (read, local), `app/family_pairing.py:243` (read, local), `app/family_pairing.py:250` (insert, local), `app/family_pairing.py:270` (read, local), `app/family_pairing.py:288` (read, local), `app/family_pairing.py:386` (read, local), `app/family_pairing.py:394` (read, local), `app/family_pairing.py:401` (insert, local), `app/mcp_service.py:911` (read, local), `app/mcp_service.py:931` (read, local), `app/routes.py:626` (read, local), `app/routes.py:745` (migration, local), `app/routes.py:757` (read, local), `app/routes.py:811` (read, local), `app/routes.py:933` (read, local), `app/routes.py:1059` (read, local), `app/routes.py:1063` (read, local), `app/routes.py:1088` (read, local), `app/routes.py:1095` (read, local), `app/routes.py:1124` (read, local), `app/routes.py:1152` (read, local), `app/routes.py:2042` (read, local), `app/routes.py:2397` (read, local), `app/routes.py:3197` (read, local), `app/routes.py:3245` (read, local), `app/routes.py:3490` (read, local), `app/routes.py:3496` (read, local), `app/routes.py:3502` (insert, local), `app/routes.py:3525` (delete, local).
+- Чтение/запись/миграции: `app/family_pairing.py:25` (read, local), `app/family_pairing.py:47` (read, local), `app/family_pairing.py:56` (read, local), `app/family_pairing.py:268` (read, local), `app/family_pairing.py:276` (read, local), `app/family_pairing.py:287` (insert, local), `app/family_pairing.py:307` (read, local), `app/family_pairing.py:325` (read, local), `app/family_pairing.py:424` (read, local), `app/family_pairing.py:432` (read, local), `app/family_pairing.py:446` (insert, local), `app/mcp_service.py:919` (read, local), `app/mcp_service.py:939` (read, local), `app/routes.py:654` (read, local), `app/routes.py:776` (migration, local), `app/routes.py:788` (read, local), `app/routes.py:842` (read, local), `app/routes.py:964` (read, local), `app/routes.py:1090` (read, local), `app/routes.py:1094` (read, local), `app/routes.py:1119` (read, local), `app/routes.py:1126` (read, local), `app/routes.py:1155` (read, local), `app/routes.py:1183` (read, local), `app/routes.py:1709` (read, local), `app/routes.py:2264` (read, local), `app/routes.py:2619` (read, local), `app/routes.py:3429` (read, local), `app/routes.py:3480` (read, local), `app/routes.py:3738` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `progress_events`
 
-- local: `app/routes.py`:471.
+- local: `app/routes.py`:499.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT, `scope` TEXT, `event_type` TEXT, `event_ts` INTEGER, `payload` TEXT, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: `idx_progress_events_user_ts` (user_id, event_ts).
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:470.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT, `scope` TEXT, `event_type` TEXT, `event_ts` INTEGER, `payload` TEXT, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: `idx_progress_events_user_ts` (user_id, event_ts).
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:10653.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT, `scope` TEXT, `event_type` TEXT, `event_ts` INTEGER, `payload` TEXT, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: `idx_progress_events_user_ts` (user_id, event_ts).
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:490.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT, `scope` TEXT, `event_type` TEXT, `event_ts` INTEGER, `payload` TEXT, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: `idx_progress_events_user_ts` (user_id, event_ts).
 - local: `tests/test_project_kb.py`:60.
@@ -444,13 +726,13 @@
 - production: `/app/words.db sqlite_master`.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT, `scope` TEXT, `event_type` TEXT, `event_ts` INTEGER, `payload` TEXT, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: `idx_progress_events_user_ts` (user_id, event_ts).
-- Чтение/запись/миграции: `app/mcp_service.py:771` (read, local), `app/mcp_service.py:814` (read, local), `app/mcp_service.py:878` (insert, local), `app/mcp_service.py:1352` (read, local), `app/mcp_service.py:1504` (read, local), `app/mcp_service.py:1507` (read, local), `app/mcp_service.py:1613` (read, local), `app/routes.py:471` (migration, local), `app/routes.py:483` (read, local), `app/routes.py:560` (read, local), `app/routes.py:1166` (read, local), `app/routes.py:1174` (read, local), `app/routes.py:1417` (read, local), `app/routes.py:2018` (read, local), `app/routes.py:3782` (read, local), `app/routes.py:4358` (insert, local), `app/routes.py:4910` (read, local), `docs/MCP_CONNECTOR.md:44` (update, local), `tests/test_family_accounts.py:306` (insert, local), `tests/test_family_accounts.py:387` (insert, local), `tests/test_family_accounts.py:447` (insert, local), `tests/test_mcp_connector.py:349` (read, local), `tests/test_project_kb.py:58` (insert, local), `tests/test_project_kb.py:60` (migration, local), `tests/test_project_kb.py:65` (read, local).
+- Чтение/запись/миграции: `app/mcp_service.py:779` (read, local), `app/mcp_service.py:822` (read, local), `app/mcp_service.py:886` (insert, local), `app/mcp_service.py:1360` (read, local), `app/mcp_service.py:1512` (read, local), `app/mcp_service.py:1515` (read, local), `app/mcp_service.py:1700` (read, local), `app/routes.py:499` (migration, local), `app/routes.py:511` (read, local), `app/routes.py:588` (read, local), `app/routes.py:1197` (read, local), `app/routes.py:1205` (read, local), `app/routes.py:1448` (read, local), `app/routes.py:2240` (read, local), `app/routes.py:3998` (read, local), `app/routes.py:4574` (insert, local), `docs/MCP_CONNECTOR.md:47` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:470` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:482` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:559` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:1165` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:1173` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:1416` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:1969` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:3761` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:4337` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:4889` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9683` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10653` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10665` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `reminder_state`
 
-- local: `bot/reminder.py`:50.
+- local: `bot/reminder.py`:52.
 - Колонки: `user_id` TEXT PRIMARY KEY, `last_msg_id` INTEGER, `last_sent_date` TEXT.
 - Индексы: не найдены в этом определении.
 - local: `run.py`:109.
@@ -459,7 +741,7 @@
 - production: `/app/words.db sqlite_master`.
 - Колонки: `user_id` TEXT PRIMARY KEY, `last_msg_id` INTEGER, `last_sent_date` TEXT.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `bot/reminder.py:50` (migration, local), `bot/reminder.py:87` (read, local), `bot/reminder.py:101` (insert, local), `docs/codex/ARCHITECTURE.md:18` (update, local).
+- Чтение/запись/миграции: `bot/reminder.py:52` (migration, local), `bot/reminder.py:89` (read, local), `bot/reminder.py:103` (insert, local), `docs/codex/ARCHITECTURE.md:18` (update, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: `/reminder_now`.
 
@@ -492,22 +774,40 @@
 
 ## `shared_lesson_words`
 
-- local: `app/routes.py`:781.
+- local: `app/routes.py`:812.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `parent_word_id` INTEGER NOT NULL, `child_word_id` INTEGER NOT NULL UNIQUE, `created_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/routes.py:778` (read, local), `app/routes.py:781` (migration, local), `app/routes.py:794` (read, local), `app/routes.py:798` (read, local), `app/routes.py:833` (insert, local), `app/routes.py:2424` (read, local), `app/routes.py:2435` (delete, local), `app/routes.py:2475` (insert, local), `app/routes.py:2735` (read, local), `app/routes.py:2744` (read, local), `app/routes.py:3915` (read, local), `app/routes.py:3925` (read, local), `app/routes.py:3955` (update, local), `tests/test_family_accounts.py:790` (read, local), `tests/test_family_accounts.py:818` (read, local), `tests/test_family_accounts.py:822` (read, local), `tests/test_family_accounts.py:885` (read, local).
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:780.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `parent_word_id` INTEGER NOT NULL, `child_word_id` INTEGER NOT NULL UNIQUE, `created_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:10963.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `parent_word_id` INTEGER NOT NULL, `child_word_id` INTEGER NOT NULL UNIQUE, `created_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:800.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `parent_user_id` TEXT NOT NULL, `child_user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `parent_word_id` INTEGER NOT NULL, `child_word_id` INTEGER NOT NULL UNIQUE, `created_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- Чтение/запись/миграции: `app/routes.py:809` (read, local), `app/routes.py:812` (migration, local), `app/routes.py:825` (read, local), `app/routes.py:829` (read, local), `app/routes.py:864` (insert, local), `app/routes.py:2646` (read, local), `app/routes.py:2657` (delete, local), `app/routes.py:2697` (insert, local), `app/routes.py:2957` (read, local), `app/routes.py:2966` (read, local), `app/routes.py:4131` (read, local), `app/routes.py:4141` (read, local), `app/routes.py:4171` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:777` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:780` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:793` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:797` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:832` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:2375` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:2386` (delete, local), `output/deploy-ai-admin-20261022/app/routes.py:2426` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:2715` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:2724` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:3894` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:3904` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:3934` (update, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9667` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9668` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9678` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10960` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `shared_word_sets`
 
-- local: `app/routes.py`:1686.
+- local: `app/routes.py`:1884.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `token` TEXT NOT NULL UNIQUE, `owner_user_id` TEXT NOT NULL, `title` TEXT NOT NULL, `lesson` TEXT, `payload` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `expires_at` INTEGER, `import_count` INTEGER NOT NULL DEFAULT 0, `max_imports` INTEGER.
+- Индексы: `idx_shared_word_sets_token` (token).
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:1678.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `token` TEXT NOT NULL UNIQUE, `owner_user_id` TEXT NOT NULL, `title` TEXT NOT NULL, `lesson` TEXT, `payload` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `expires_at` INTEGER, `import_count` INTEGER NOT NULL DEFAULT 0, `max_imports` INTEGER.
+- Индексы: `idx_shared_word_sets_token` (token).
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:12035.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `token` TEXT NOT NULL UNIQUE, `owner_user_id` TEXT NOT NULL, `title` TEXT NOT NULL, `lesson` TEXT, `payload` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `expires_at` INTEGER, `import_count` INTEGER NOT NULL DEFAULT 0, `max_imports` INTEGER.
+- Индексы: `idx_shared_word_sets_token` (token).
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:1872.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `token` TEXT NOT NULL UNIQUE, `owner_user_id` TEXT NOT NULL, `title` TEXT NOT NULL, `lesson` TEXT, `payload` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `expires_at` INTEGER, `import_count` INTEGER NOT NULL DEFAULT 0, `max_imports` INTEGER.
 - Индексы: `idx_shared_word_sets_token` (token).
 - production: `/app/words.db sqlite_master`.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `token` TEXT NOT NULL UNIQUE, `owner_user_id` TEXT NOT NULL, `title` TEXT NOT NULL, `lesson` TEXT, `payload` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `expires_at` INTEGER, `import_count` INTEGER NOT NULL DEFAULT 0, `max_imports` INTEGER.
 - Индексы: `idx_shared_word_sets_token` (token).
-- Чтение/запись/миграции: `app/routes.py:1686` (migration, local), `app/routes.py:1701` (read, local), `app/routes.py:2162` (read, local), `app/routes.py:2276` (read, local), `app/routes.py:2280` (insert, local), `app/routes.py:2508` (read, local), `app/routes.py:2594` (update, local), `app/routes.py:4918` (read, local).
+- Чтение/запись/миграции: `app/routes.py:1884` (migration, local), `app/routes.py:1899` (read, local), `app/routes.py:2384` (read, local), `app/routes.py:2498` (read, local), `app/routes.py:2502` (insert, local), `app/routes.py:2730` (read, local), `app/routes.py:2816` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:1678` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:1693` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:2113` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:2227` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:2231` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:2459` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:2545` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:4897` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9686` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:12035` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:12050` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:12535` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:12649` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:12653` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:12881` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:12967` (update, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18457` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18813` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:1872` (migration, local), `output/google-play-preparation-20261021/sources/app/routes.py:1887` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:2372` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:2486` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:2490` (insert, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -543,25 +843,49 @@
 
 ## `user_daily_goals`
 
-- local: `app/routes.py`:515.
+- local: `app/routes.py`:543.
 - Колонки: `user_id` TEXT PRIMARY KEY, `goal_value` INTEGER NOT NULL, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:514.
+- Колонки: `user_id` TEXT PRIMARY KEY, `goal_value` INTEGER NOT NULL, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:10697.
+- Колонки: `user_id` TEXT PRIMARY KEY, `goal_value` INTEGER NOT NULL, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:534.
+- Колонки: `user_id` TEXT PRIMARY KEY, `goal_value` INTEGER NOT NULL, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_family_pairing_bot.py`:257.
+- Колонки: `user_id` TEXT PRIMARY KEY, `goal_value` INTEGER NOT NULL, `updated_at` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_family_universal.py`:78.
+- Колонки: `user_id` TEXT PRIMARY KEY, `goal_value` INTEGER NOT NULL, `updated_at` TEXT.
 - Индексы: не найдены в этом определении.
 - production: `/app/words.db sqlite_master`.
 - Колонки: `user_id` TEXT PRIMARY KEY, `goal_value` INTEGER NOT NULL, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/mcp_service.py:311` (insert, local), `app/routes.py:515` (migration, local), `app/routes.py:532` (read, local), `app/routes.py:4183` (insert, local).
+- Чтение/запись/миграции: `app/family_pairing.py:65` (read, local), `app/family_pairing.py:66` (delete, local), `app/mcp_service.py:316` (insert, local), `app/routes.py:543` (migration, local), `app/routes.py:560` (read, local), `app/routes.py:4399` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:514` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:531` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:4162` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9683` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10697` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10714` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:14548` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18499` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18817` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:534` (migration, local), `output/google-play-preparation-20261021/sources/app/routes.py:551` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:4385` (insert, local), `tests/test_family_pairing_bot.py:257` (migration, local), `tests/test_family_pairing_bot.py:263` (insert, local), `tests/test_family_pairing_bot.py:307` (read, local), `tests/test_family_universal.py:78` (migration, local), `tests/test_family_universal.py:79` (insert, local), `tests/test_family_universal.py:89` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `user_language_preferences`
 
-- local: `app/routes.py`:704.
+- local: `app/routes.py`:735.
+- Колонки: `user_id` TEXT NOT NULL, `priority` INTEGER NOT NULL, `lang_code` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
+- Индексы: `idx_user_language_preferences_user` (user_id, priority).
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:703.
+- Колонки: `user_id` TEXT NOT NULL, `priority` INTEGER NOT NULL, `lang_code` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
+- Индексы: `idx_user_language_preferences_user` (user_id, priority).
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:10886.
+- Колонки: `user_id` TEXT NOT NULL, `priority` INTEGER NOT NULL, `lang_code` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
+- Индексы: `idx_user_language_preferences_user` (user_id, priority).
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:723.
 - Колонки: `user_id` TEXT NOT NULL, `priority` INTEGER NOT NULL, `lang_code` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
 - Индексы: `idx_user_language_preferences_user` (user_id, priority).
 - production: `/app/words.db sqlite_master`.
 - Колонки: `user_id` TEXT NOT NULL, `priority` INTEGER NOT NULL, `lang_code` TEXT NOT NULL, `updated_at` INTEGER NOT NULL.
 - Индексы: `idx_user_language_preferences_user` (user_id, priority).
-- Чтение/запись/миграции: `app/content_service.py:337` (read, local), `app/content_service.py:339` (read, local), `app/mcp_service.py:284` (delete, local), `app/mcp_service.py:286` (insert, local), `app/mcp_service.py:1391` (read, local), `app/routes.py:704` (migration, local), `app/routes.py:715` (read, local), `app/routes.py:1631` (read, local), `app/routes.py:3662` (delete, local), `app/routes.py:3664` (insert, local), `app/routes.py:4911` (read, local), `docs/MCP_CONNECTOR.md:46` (read, local), `tests/test_content_pipeline.py:46` (insert, local), `tests/test_family_accounts.py:418` (insert, local), `tests/test_family_accounts.py:478` (insert, local), `tests/test_family_accounts.py:676` (insert, local), `tests/test_family_accounts.py:683` (insert, local), `tests/test_mcp_connector.py:71` (insert, local), `tests/test_mcp_lesson_flow.py:84` (insert, local).
+- Чтение/запись/миграции: `app/content_service.py:337` (read, local), `app/content_service.py:339` (read, local), `app/mcp_service.py:289` (delete, local), `app/mcp_service.py:291` (insert, local), `app/mcp_service.py:1399` (read, local), `app/routes.py:735` (migration, local), `app/routes.py:746` (read, local), `app/routes.py:1829` (read, local), `app/routes.py:3878` (delete, local), `app/routes.py:3880` (insert, local), `docs/MCP_CONNECTOR.md:49` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:337` (read, local), `output/deploy-ai-admin-20261022/app/content_service.py:339` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:703` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:714` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:1623` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:3641` (delete, local), `output/deploy-ai-admin-20261022/app/routes.py:3643` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:4890` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9684` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10886` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10897` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11980` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:14027` (delete, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:14029` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18514` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18818` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:723` (migration, local), `output/google-play-preparation-20261021/sources/app/routes.py:734` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:1817` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
@@ -570,71 +894,131 @@
 - local: `app/models.py`:20.
 - Колонки: `user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `hidden` INTEGER NOT NULL DEFAULT 0, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
-- local: `app/routes.py`:958.
+- local: `app/routes.py`:989.
+- Колонки: `user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `hidden` INTEGER NOT NULL DEFAULT 0, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:957.
+- Колонки: `user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `hidden` INTEGER NOT NULL DEFAULT 0, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:11140.
+- Колонки: `user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `hidden` INTEGER NOT NULL DEFAULT 0, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:977.
 - Колонки: `user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `hidden` INTEGER NOT NULL DEFAULT 0, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
 - production: `/app/words.db sqlite_master`.
 - Колонки: `user_id` TEXT NOT NULL, `lesson` TEXT NOT NULL, `hidden` INTEGER NOT NULL DEFAULT 0, `updated_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at_ts` INTEGER.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/mcp_service.py:578` (insert, local), `app/mcp_service.py:721` (delete, local), `app/mcp_service.py:736` (read, local), `app/mcp_service.py:742` (read, local), `app/mcp_service.py:750` (update, local), `app/mcp_service.py:920` (read, local), `app/mcp_service.py:921` (read, local), `app/mcp_service.py:1430` (read, local), `app/mcp_service.py:1467` (read, local), `app/mcp_service.py:1949` (read, local), `app/mcp_service.py:1954` (insert, local), `app/mcp_service.py:1981` (delete, local), `app/models.py:20` (migration, local), `app/models.py:28` (read, local), `app/models.py:30` (migration, local), `app/models.py:32` (update, local), `app/models.py:72` (read, local), `app/models.py:141` (insert, local), `app/routes.py:958` (migration, local), `app/routes.py:975` (read, local), `app/routes.py:995` (read, local), `app/routes.py:1003` (read, local), `app/routes.py:3874` (read, local), `app/routes.py:3884` (read, local), `app/routes.py:3965` (read, local), `app/routes.py:3970` (insert, local), `app/routes.py:3978` (delete, local), `app/routes.py:3999` (delete, local), `app/routes.py:4059` (delete, local), `app/routes.py:4418` (read, local).
+- Чтение/запись/миграции: `app/mcp_service.py:586` (insert, local), `app/mcp_service.py:729` (delete, local), `app/mcp_service.py:744` (read, local), `app/mcp_service.py:750` (read, local), `app/mcp_service.py:758` (update, local), `app/mcp_service.py:928` (read, local), `app/mcp_service.py:929` (read, local), `app/mcp_service.py:1438` (read, local), `app/mcp_service.py:1475` (read, local), `app/mcp_service.py:2037` (read, local), `app/mcp_service.py:2042` (insert, local), `app/mcp_service.py:2069` (delete, local), `app/models.py:20` (migration, local), `app/models.py:28` (read, local), `app/models.py:30` (migration, local), `app/models.py:32` (update, local), `app/models.py:72` (read, local), `app/models.py:141` (insert, local), `app/routes.py:989` (migration, local), `app/routes.py:1006` (read, local), `app/routes.py:1026` (read, local), `app/routes.py:1034` (read, local), `app/routes.py:4090` (read, local), `app/routes.py:4100` (read, local), `app/routes.py:4181` (read, local), `app/routes.py:4186` (insert, local), `app/routes.py:4194` (delete, local), `app/routes.py:4215` (delete, local), `app/routes.py:4275` (delete, local), `app/routes.py:4634` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `user_settings`
 
-- local: `app/routes.py`:728.
+- local: `app/routes.py`:759.
 - Колонки: `user_id` TEXT PRIMARY KEY, `detected_ui_language` TEXT, `ui_language_override` TEXT, `updated_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
 - local: `bot/onboarding.py`:489.
 - Колонки: `user_id` TEXT PRIMARY KEY, `detected_ui_language` TEXT, `ui_language_override` TEXT, `updated_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:727.
+- Колонки: `user_id` TEXT PRIMARY KEY, `detected_ui_language` TEXT, `ui_language_override` TEXT, `updated_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:10910.
+- Колонки: `user_id` TEXT PRIMARY KEY, `detected_ui_language` TEXT, `ui_language_override` TEXT, `updated_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:747.
+- Колонки: `user_id` TEXT PRIMARY KEY, `detected_ui_language` TEXT, `ui_language_override` TEXT, `updated_at` INTEGER NOT NULL.
+- Индексы: не найдены в этом определении.
 - production: `/app/words.db sqlite_master`.
 - Колонки: `user_id` TEXT PRIMARY KEY, `detected_ui_language` TEXT, `ui_language_override` TEXT, `updated_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/routes.py:728` (migration, local), `app/routes.py:1456` (insert, local), `app/routes.py:1474` (read, local), `app/routes.py:1511` (insert, local), `app/routes.py:4912` (read, local), `bot/onboarding.py:489` (migration, local), `bot/onboarding.py:504` (insert, local), `bot/onboarding.py:518` (read, local), `bot/onboarding.py:534` (insert, local), `tests/test_family_accounts.py:425` (insert, local), `tests/test_family_accounts.py:485` (insert, local), `tests/test_telegram_onboarding.py:87` (read, local).
+- Чтение/запись/миграции: `app/routes.py:759` (migration, local), `app/routes.py:1487` (insert, local), `app/routes.py:1505` (read, local), `app/routes.py:1542` (insert, local), `bot/i18n.py:20` (read, local), `bot/onboarding.py:489` (migration, local), `bot/onboarding.py:504` (insert, local), `bot/onboarding.py:518` (read, local), `bot/onboarding.py:534` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:727` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:1455` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:1473` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:1503` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:4891` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:9684` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:10910` (migration, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11638` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11656` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:11693` (insert, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18541` (read, local), `output/google-play-preparation-20261021/FULL_SOURCE.md:18820` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:747` (migration, local), `output/google-play-preparation-20261021/sources/app/routes.py:1475` (insert, local), `output/google-play-preparation-20261021/sources/app/routes.py:1493` (read, local), `output/google-play-preparation-20261021/sources/app/routes.py:1530` (insert, local), `tests/test_family_accounts.py:425` (insert, local), `tests/test_family_accounts.py:485` (insert, local), `tests/test_telegram_onboarding.py:87` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `user_subscriptions`
 
-- local: `app/routes.py`:1524.
+- local: `app/routes.py`:1555.
 - Колонки: `user_id` TEXT PRIMARY KEY, `status` TEXT NOT NULL DEFAULT 'trial', `trial_started_at` INTEGER NOT NULL, `trial_ends_at` INTEGER NOT NULL, `current_period_ends_at` INTEGER, `provider` TEXT, `provider_customer_id` TEXT, `provider_subscription_id` TEXT, `cancel_at_period_end` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL.
 - Индексы: `idx_user_subscriptions_status` (status, trial_ends_at, current_period_ends_at).
-- local: `tests/test_google_account_link.py`:66.
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:1516.
+- Колонки: `user_id` TEXT PRIMARY KEY, `status` TEXT NOT NULL DEFAULT 'trial', `trial_started_at` INTEGER NOT NULL, `trial_ends_at` INTEGER NOT NULL, `current_period_ends_at` INTEGER, `provider` TEXT, `provider_customer_id` TEXT, `provider_subscription_id` TEXT, `cancel_at_period_end` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL.
+- Индексы: `idx_user_subscriptions_status` (status, trial_ends_at, current_period_ends_at).
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:20499.
 - Колонки: `user_id` TEXT PRIMARY KEY, `status` TEXT NOT NULL DEFAULT 'trial'.
+- Индексы: `idx_user_subscriptions_status` (status, trial_ends_at, current_period_ends_at).
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:1543.
+- Колонки: `user_id` TEXT PRIMARY KEY, `status` TEXT NOT NULL DEFAULT 'trial', `trial_started_at` INTEGER NOT NULL, `trial_ends_at` INTEGER NOT NULL, `current_period_ends_at` INTEGER, `provider` TEXT, `provider_customer_id` TEXT, `provider_subscription_id` TEXT, `cancel_at_period_end` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL.
+- Индексы: `idx_user_subscriptions_status` (status, trial_ends_at, current_period_ends_at).
+- local: `output/google-play-preparation-20261021/sources/tests/test_google_account_link.py`:66.
+- Колонки: `user_id` TEXT PRIMARY KEY, `status` TEXT NOT NULL DEFAULT 'trial'.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_google_account_link.py`:68.
+- Колонки: `user_id` TEXT PRIMARY KEY, `status` TEXT NOT NULL DEFAULT 'trial'.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_plans.py`:277.
+- Колонки: `user_id` TEXT PRIMARY KEY, `status` TEXT NOT NULL DEFAULT 'trial', `trial_started_at` INTEGER NOT NULL, `trial_ends_at` INTEGER NOT NULL, `current_period_ends_at` INTEGER, `provider` TEXT, `provider_customer_id` TEXT, `provider_subscription_id` TEXT, `cancel_at_period_end` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL.
 - Индексы: не найдены в этом определении.
 - production: `/app/words.db sqlite_master`.
 - Колонки: `user_id` TEXT PRIMARY KEY, `status` TEXT NOT NULL DEFAULT 'trial', `trial_started_at` INTEGER NOT NULL, `trial_ends_at` INTEGER NOT NULL, `current_period_ends_at` INTEGER, `provider` TEXT, `provider_customer_id` TEXT, `provider_subscription_id` TEXT, `cancel_at_period_end` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL.
 - Индексы: `idx_user_subscriptions_status` (status, trial_ends_at, current_period_ends_at).
-- Чтение/запись/миграции: `app/google_auth.py:261` (read, local), `app/google_auth.py:282` (read, local), `app/google_auth.py:286` (delete, local), `app/google_auth.py:290` (update, local), `app/mcp_service.py:1312` (read, local), `app/mcp_service.py:1314` (insert, local), `app/mcp_service.py:1320` (read, local), `app/mcp_service.py:1321` (update, local), `app/mcp_service.py:1337` (read, local), `app/mcp_service.py:1505` (read, local), `app/routes.py:1524` (migration, local), `app/routes.py:1539` (read, local), `app/routes.py:1568` (read, local), `app/routes.py:1575` (insert, local), `app/routes.py:1580` (read, local), `app/routes.py:2028` (read, local), `app/routes.py:4568` (read, local), `app/routes.py:4773` (insert, local), `app/routes.py:4802` (update, local), `app/routes.py:4913` (read, local), `tests/test_google_account_link.py:66` (migration, local), `tests/test_google_account_link.py:75` (insert, local), `tests/test_google_account_link.py:142` (insert, local), `tests/test_google_account_link.py:170` (read, local).
-- Связанные API файла-владельца: `/auth/google`, `/auth/google/callback`, `/api/auth/google/config`, `/api/auth/google/verify`, `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`.
+- Чтение/запись/миграции: `app/google_auth.py:269` (read, local), `app/google_auth.py:290` (read, local), `app/google_auth.py:294` (delete, local), `app/google_auth.py:298` (update, local), `app/google_play.py:148` (read, local), `app/google_play.py:169` (read, local), `app/google_play.py:203` (insert, local), `app/google_play.py:214` (update, local), `app/mcp_service.py:1320` (read, local), `app/mcp_service.py:1322` (insert, local), `app/mcp_service.py:1328` (read, local), `app/mcp_service.py:1329` (update, local), `app/mcp_service.py:1345` (read, local), `app/mcp_service.py:1513` (read, local), `app/routes.py:1555` (migration, local), `app/routes.py:1570` (read, local), `app/routes.py:1572` (read, local), `app/routes.py:1575` (migration, local), `app/routes.py:1605` (read, local), `app/routes.py:1612` (insert, local), `app/routes.py:1617` (read, local), `app/routes.py:1674` (read, local), `app/routes.py:2250` (read, local), `app/routes.py:4784` (read, local), `app/routes.py:4993` (insert, local), `app/routes.py:5023` (update, local), `output/deploy-ai-admin-20261022/app/routes.py:1516` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:1531` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:1560` (read, local), `output/deploy-ai-admin-20261022/app/routes.py:1567` (insert, local).
+- Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: нет прямой связи.
 
 ## `user_word_flags`
 
-- local: `app/routes.py`:458.
+- local: `app/routes.py`:486.
+- Колонки: `user_id` TEXT NOT NULL, `word_id` INTEGER NOT NULL, `difficult` INTEGER NOT NULL DEFAULT 1.
+- Индексы: не найдены в этом определении.
+- local: `output/deploy-ai-admin-20261022/app/routes.py`:457.
+- Колонки: `user_id` TEXT NOT NULL, `word_id` INTEGER NOT NULL, `difficult` INTEGER NOT NULL DEFAULT 1.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:10640.
+- Колонки: `user_id` TEXT NOT NULL, `word_id` INTEGER NOT NULL, `difficult` INTEGER NOT NULL DEFAULT 1.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/app/routes.py`:477.
 - Колонки: `user_id` TEXT NOT NULL, `word_id` INTEGER NOT NULL, `difficult` INTEGER NOT NULL DEFAULT 1.
 - Индексы: не найдены в этом определении.
 - production: `/app/words.db sqlite_master`.
 - Колонки: `user_id` TEXT NOT NULL, `word_id` INTEGER NOT NULL, `difficult` INTEGER NOT NULL DEFAULT 1.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `app/mcp_service.py:452` (read, local), `app/mcp_service.py:477` (read, local), `app/mcp_service.py:513` (read, local), `app/mcp_service.py:544` (read, local), `app/mcp_service.py:657` (delete, local), `app/mcp_service.py:684` (insert, local), `app/mcp_service.py:724` (delete, local), `app/mcp_service.py:1266` (read, local), `app/mcp_service.py:1430` (read, local), `app/mcp_service.py:1447` (update, local), `app/mcp_service.py:1523` (read, local), `app/mcp_service.py:1645` (read, local), `app/mcp_service.py:1984` (delete, local), `app/routes.py:458` (migration, local), `app/routes.py:892` (read, local), `app/routes.py:897` (migration, local), `app/routes.py:899` (migration, local), `app/routes.py:2795` (read, local), `app/routes.py:2817` (delete, local), `app/routes.py:3732` (read, local), `app/routes.py:4047` (delete, local), `app/routes.py:4110` (read, local), `app/routes.py:4211` (read, local), `app/routes.py:4236` (read, local), `app/routes.py:4258` (read, local), `app/routes.py:4300` (insert, local), `app/routes.py:4306` (insert, local), `app/routes.py:4871` (delete, local), `app/routes.py:4908` (read, local), `bot/upload.py:383` (insert, local).
+- Чтение/запись/миграции: `app/mcp_service.py:460` (read, local), `app/mcp_service.py:485` (read, local), `app/mcp_service.py:521` (read, local), `app/mcp_service.py:552` (read, local), `app/mcp_service.py:665` (delete, local), `app/mcp_service.py:692` (insert, local), `app/mcp_service.py:732` (delete, local), `app/mcp_service.py:1274` (read, local), `app/mcp_service.py:1438` (read, local), `app/mcp_service.py:1455` (update, local), `app/mcp_service.py:1531` (read, local), `app/mcp_service.py:1732` (read, local), `app/mcp_service.py:2072` (delete, local), `app/routes.py:486` (migration, local), `app/routes.py:923` (read, local), `app/routes.py:928` (migration, local), `app/routes.py:930` (migration, local), `app/routes.py:3017` (read, local), `app/routes.py:3039` (delete, local), `app/routes.py:3948` (read, local), `app/routes.py:4263` (delete, local), `app/routes.py:4326` (read, local), `app/routes.py:4427` (read, local), `app/routes.py:4452` (read, local), `app/routes.py:4474` (read, local), `app/routes.py:4516` (insert, local), `app/routes.py:4522` (insert, local), `bot/upload.py:388` (insert, local), `output/deploy-ai-admin-20261022/app/routes.py:457` (migration, local), `output/deploy-ai-admin-20261022/app/routes.py:891` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
-- Telegram handlers файла-владельца: `/upload_words`, `filters.Regex(upload_words_pattern)`, `filters.Regex(r"^(Добавить слова|Импортировать слова)$")`, `filters.Document.ALL & (~filters.COMMAND)`, `filters.Regex(r"(?i)^(импортировать как есть)$")`, `filters.Regex(r"(?i)^(отменить импорт)$")`.
+- Telegram handlers файла-владельца: `/upload_words`, `filters.Regex(upload_words_pattern)`, `filters.Regex(r"^(Добавить слова|Импортировать слова)$")`, `filters.Document.ALL & (~filters.COMMAND)`, `filters.Regex(confirm_pattern)`, `filters.Regex(cancel_pattern)`.
 
 ## `users`
 
-- local: `bot/auth.py`:66.
+- local: `bot/auth.py`:69.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'pending', `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
 - local: `bot/db.py`:136.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'pending', `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
-- local: `bot/reminder.py`:57.
+- local: `bot/reminder.py`:59.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'pending', `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:20673.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER DEFAULT 1, `account_type` TEXT DEFAULT 'standard', `created_at` TEXT DEFAULT CURRENT_TIMESTAMP.
+- Индексы: `u_users_google_id` (google_id).
+- local: `output/google-play-preparation-20261021/sources/tests/test_google_account_link.py`:41.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'standard', `auth_provider` TEXT DEFAULT 'telegram', `google_id` TEXT, `google_email` TEXT.
+- Индексы: `u_users_google_id` (google_id).
+- local: `output/google-play-preparation-20261021/sources/tests/test_play_release.py`:31.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER DEFAULT 1, `account_type` TEXT DEFAULT 'standard', `created_at` TEXT DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
 - local: `run.py`:56.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'pending', `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_account_linking.py`:33.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER, `auth_provider` TEXT, `account_type` TEXT, `created_at` TEXT DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_advertising.py`:59.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'pending', `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_android_auth.py`:28.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER, `auth_provider` TEXT, `account_type` TEXT.
 - Индексы: не найдены в этом определении.
 - local: `tests/test_content_pipeline.py`:35.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER DEFAULT 1, `account_type` TEXT DEFAULT 'standard'.
@@ -642,20 +1026,35 @@
 - local: `tests/test_db_migrations.py`:11.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
+- local: `tests/test_email_auth.py`:30.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER, `auth_provider` TEXT, `account_type` TEXT.
+- Индексы: не найдены в этом определении.
 - local: `tests/test_family_accounts.py`:124.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
-- local: `tests/test_family_pairing_bot.py`:154.
+- local: `tests/test_family_pairing_bot.py`:242.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `account_type` TEXT NOT NULL.
 - Индексы: не найдены в этом определении.
-- local: `tests/test_google_account_link.py`:41.
+- local: `tests/test_google_account_link.py`:43.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'standard', `auth_provider` TEXT DEFAULT 'telegram', `google_id` TEXT, `google_email` TEXT.
 - Индексы: `u_users_google_id` (google_id).
-- local: `tests/test_mcp_connector.py`:39.
+- local: `tests/test_mcp_connector.py`:44.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'standard', `google_id` TEXT, `google_email` TEXT.
 - Индексы: не найдены в этом определении.
-- local: `tests/test_mcp_lesson_flow.py`:52.
+- local: `tests/test_mcp_lesson_flow.py`:54.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'standard', `google_id` TEXT, `google_email` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_plans.py`:36.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'pending', `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_play_release.py`:31.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER DEFAULT 1, `account_type` TEXT DEFAULT 'standard', `created_at` TEXT DEFAULT CURRENT_TIMESTAMP.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_registration_notifications.py`:27.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER DEFAULT 1, `account_type` TEXT DEFAULT 'pending', `created_at` TEXT DEFAULT CURRENT_TIMESTAMP, `auth_provider` TEXT, `google_id` TEXT, `google_email` TEXT, `photo_url` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_telegram_native.py`:32.
+- Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER, `account_type` TEXT, `auth_provider` TEXT.
 - Индексы: не найдены в этом определении.
 - local: `tests/test_telegram_onboarding.py`:30.
 - Колонки: `user_id` TEXT PRIMARY KEY, `account_type` TEXT NOT NULL DEFAULT 'pending'.
@@ -666,16 +1065,16 @@
 - production: `/app/words.db sqlite_master`.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, `auth_provider` TEXT DEFAULT 'telegram', `google_id` TEXT, `account_type` TEXT NOT NULL DEFAULT 'standard'.
 - Индексы: `u_users_google_id` (google_id).
-- Чтение/запись/миграции: `app/account_types.py:24` (delete, local), `app/account_types.py:56` (delete, local), `app/account_types.py:80` (read, local), `app/account_types.py:81` (read, local), `app/account_types.py:84` (migration, local), `app/account_types.py:103` (update, local), `app/account_types.py:117` (update, local), `app/family_invites.py:95` (read, local), `app/family_pairing.py:25` (read, local), `app/family_pairing.py:43` (delete, local), `app/family_pairing.py:65` (read, local), `app/family_pairing.py:100` (delete, local), `app/family_pairing.py:123` (read, local), `app/family_pairing.py:163` (read, local), `app/family_pairing.py:193` (read, local), `app/family_pairing.py:226` (read, local), `app/family_pairing.py:271` (read, local), `app/family_pairing.py:289` (read, local), `app/family_pairing.py:315` (read, local), `app/family_pairing.py:344` (read, local), `app/family_pairing.py:377` (read, local), `app/google_auth.py:31` (read, local), `app/google_auth.py:35` (migration, local), `app/google_auth.py:38` (migration, local), `app/google_auth.py:40` (migration, local), `app/google_auth.py:42` (migration, local), `app/google_auth.py:45` (read, local), `app/google_auth.py:48` (update, local), `app/google_auth.py:52` (read, local), `app/google_auth.py:56` (read, local).
-- Связанные API файла-владельца: `/auth/google`, `/auth/google/callback`, `/api/auth/google/config`, `/api/auth/google/verify`, `/api/mcp/user`, `/api/mcp/user/revoke-all`, `/admin/mcp`, `/admin/mcp/revoke`, `/.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, `/api/internal/mcp/resolve`, `/api/internal/mcp/execute`, `/api/internal/mcp/health`, `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`.
+- Чтение/запись/миграции: `app/account_linking.py:34` (read, local), `app/account_linking.py:43` (read, local), `app/account_linking.py:44` (read, local), `app/account_privacy.py:48` (read, local), `app/account_privacy.py:84` (read, local), `app/account_types.py:24` (delete, local), `app/account_types.py:56` (delete, local), `app/account_types.py:80` (read, local), `app/account_types.py:81` (read, local), `app/account_types.py:84` (migration, local), `app/account_types.py:103` (update, local), `app/account_types.py:117` (update, local), `app/android_auth.py:55` (read, local), `app/android_auth.py:88` (read, local), `app/android_auth.py:128` (read, local), `app/android_auth.py:176` (read, local), `app/android_auth.py:328` (read, local), `app/email_auth.py:237` (read, local), `app/email_auth.py:317` (read, local), `app/email_auth.py:330` (insert, local), `app/email_auth.py:386` (read, local), `app/email_auth.py:409` (read, local), `app/family_invites.py:96` (read, local), `app/family_pairing.py:42` (read, local), `app/family_pairing.py:64` (update, local), `app/family_pairing.py:77` (delete, local), `app/family_pairing.py:99` (read, local), `app/family_pairing.py:134` (delete, local), `app/family_pairing.py:157` (read, local), `app/family_pairing.py:197` (read, local).
+- Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
 - Telegram handlers файла-владельца: `/start`, `/open`, `/family`, `r"^onboarding:(?:language|language_keep|language_change|account`, `r"^family_link:(?:confirm|cancel`, `r"^family_join:(?:confirm|cancel`, `filters.Regex(learn_words_pattern)`, `filters.TEXT & (~filters.COMMAND) & exclude_import_btns`, `/reminder_now`.
 
 ## `users_new`
 
-- local: `bot/auth.py`:85.
+- local: `bot/auth.py`:88.
 - Колонки: `user_id` TEXT PRIMARY KEY, `username` TEXT, `first_name` TEXT, `last_name` TEXT, `is_active` INTEGER NOT NULL DEFAULT 1, `account_type` TEXT NOT NULL DEFAULT 'standard', `created_at` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP.
 - Индексы: не найдены в этом определении.
-- Чтение/запись/миграции: `bot/auth.py:85` (migration, local), `bot/auth.py:111` (migration, local), `bot/auth.py:118` (migration, local), `bot/auth.py:123` (migration, local).
+- Чтение/запись/миграции: `bot/auth.py:88` (migration, local), `bot/auth.py:114` (migration, local), `bot/auth.py:121` (migration, local), `bot/auth.py:126` (migration, local).
 - Связанные API файла-владельца: проверять по handler.
 - Telegram handlers файла-владельца: `/start`, `/open`, `/family`, `r"^onboarding:(?:language|language_keep|language_change|account`, `r"^family_link:(?:confirm|cancel`, `r"^family_join:(?:confirm|cancel`, `filters.Regex(learn_words_pattern)`, `filters.TEXT & (~filters.COMMAND) & exclude_import_btns`.
 
@@ -684,24 +1083,45 @@
 - local: `db_init.py`:22.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT NOT NULL DEFAULT '', `status` TEXT NOT NULL DEFAULT 'user', `lesson` TEXT, `number` TEXT, `nl` TEXT, `en` TEXT, `ru` TEXT, `ex_nl` TEXT, `ex_en` TEXT, `ex_ru` TEXT, `audio_nl` TEXT, `audio_en` TEXT, `audio_ru` TEXT, `updated_at` INTEGER.
 - Индексы: `idx_words_lesson` (lesson), `idx_words_user_lesson` (user_id, lesson), `u_words_user_lesson_number` (user_id, lesson, number).
+- local: `output/google-play-preparation-20261021/FULL_SOURCE.md`:20675.
+- Колонки: `id` INTEGER PRIMARY KEY, `user_id` TEXT, `lesson` TEXT, `number` TEXT.
+- Индексы: `idx_words_lesson` (lesson), `idx_words_user_lesson` (user_id, lesson), `u_words_user_lesson_number` (user_id, lesson, number).
+- local: `output/google-play-preparation-20261021/sources/tests/test_google_account_link.py`:61.
+- Колонки: `id` INTEGER PRIMARY KEY, `user_id` TEXT NOT NULL, `lesson` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `output/google-play-preparation-20261021/sources/tests/test_play_release.py`:33.
+- Колонки: `id` INTEGER PRIMARY KEY, `user_id` TEXT, `lesson` TEXT, `number` TEXT.
+- Индексы: не найдены в этом определении.
 - local: `run.py`:67.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT NOT NULL DEFAULT '', `status` TEXT NOT NULL DEFAULT 'user', `lesson` TEXT, `number` TEXT, `nl` TEXT, `en` TEXT, `ru` TEXT, `ex_nl` TEXT, `ex_en` TEXT, `ex_ru` TEXT, `audio_nl` TEXT, `audio_en` TEXT, `audio_ru` TEXT, `updated_at` INTEGER.
 - Индексы: `idx_words_lesson` (lesson), `idx_words_user_lesson` (user_id, lesson), `u_words_user_lesson_number` (user_id, lesson, number).
+- local: `tests/test_account_linking.py`:38.
+- Колонки: `user_id` TEXT, `word` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_advertising.py`:65.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT, `lesson` TEXT, `number` TEXT.
+- Индексы: не найдены в этом определении.
 - local: `tests/test_content_pipeline.py`:30.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT, `status` TEXT DEFAULT 'user', `lesson` TEXT, `number` TEXT, `nl` TEXT, `en` TEXT, `ru` TEXT, `ex_nl` TEXT, `ex_en` TEXT, `ex_ru` TEXT, `audio_nl` TEXT, `audio_en` TEXT, `audio_ru` TEXT, `difficult` INTEGER DEFAULT 0, `updated_at` INTEGER.
 - Индексы: `u_words_user_lesson_number` (user_id,lesson,number).
 - local: `tests/test_family_accounts.py`:41.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT, `lesson` TEXT, `number` TEXT.
 - Индексы: не найдены в этом определении.
-- local: `tests/test_google_account_link.py`:61.
+- local: `tests/test_google_account_link.py`:63.
 - Колонки: `id` INTEGER PRIMARY KEY, `user_id` TEXT NOT NULL, `lesson` TEXT.
 - Индексы: не найдены в этом определении.
-- local: `tests/test_mcp_connector.py`:45.
+- local: `tests/test_mcp_connector.py`:50.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT NOT NULL, `status` TEXT NOT NULL DEFAULT 'user', `lesson` TEXT, `number` TEXT, `nl` TEXT, `en` TEXT, `ru` TEXT, `ex_nl` TEXT, `ex_en` TEXT, `ex_ru` TEXT, `audio_nl` TEXT, `audio_en` TEXT, `audio_ru` TEXT, `difficult` INTEGER DEFAULT 0, `updated_at` INTEGER.
 - Индексы: `u_words_user_lesson_number` (user_id,lesson,number).
-- local: `tests/test_mcp_lesson_flow.py`:58.
+- local: `tests/test_mcp_lesson_flow.py`:60.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT NOT NULL, `status` TEXT NOT NULL DEFAULT 'user', `lesson` TEXT, `number` TEXT, `nl` TEXT, `en` TEXT, `ru` TEXT, `ex_nl` TEXT, `ex_en` TEXT, `ex_ru` TEXT, `audio_nl` TEXT, `audio_en` TEXT, `audio_ru` TEXT, `difficult` INTEGER DEFAULT 0, `updated_at` INTEGER.
 - Индексы: `u_words_user_lesson_number` (user_id,lesson,number).
+- local: `tests/test_plans.py`:42.
+- Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` TEXT, `lesson` TEXT, `number` TEXT.
+- Индексы: не найдены в этом определении.
+- local: `tests/test_play_release.py`:33.
+- Колонки: `id` INTEGER PRIMARY KEY, `user_id` TEXT, `lesson` TEXT, `number` TEXT.
+- Индексы: не найдены в этом определении.
 - local: `tests/test_project_kb.py`:130.
 - Колонки: `id` INTEGER PRIMARY KEY, `nl` TEXT.
 - Индексы: не найдены в этом определении.
@@ -711,6 +1131,6 @@
 - production: `/app/words.db sqlite_master`.
 - Колонки: `id` INTEGER PRIMARY KEY AUTOINCREMENT, `lesson` TEXT, `number` TEXT, `nl` TEXT, `en` TEXT, `ru` TEXT, `ex_nl` TEXT, `ex_en` TEXT, `ex_ru` TEXT, `audio_nl` TEXT, `audio_en` TEXT, `audio_ru` TEXT, `difficult` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER, `user_id` TEXT, `status` TEXT NOT NULL DEFAULT 'user', `de` TEXT, `ex_de` TEXT, `audio_de` TEXT, `it` TEXT, `ex_it` TEXT, `audio_it` TEXT, `fr` TEXT, `ex_fr` TEXT, `audio_fr` TEXT.
 - Индексы: `idx_words_lesson` (lesson), `idx_words_user_lesson` (user_id, lesson), `u_words_user_lesson_number` (user_id, lesson, number).
-- Чтение/запись/миграции: `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:11` (read, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:78` (read, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:81` (read, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:84` (read, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:87` (read, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:90` (read, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:94` (insert, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:99` (update, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:103` (update, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:122` (delete, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:125` (delete, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:128` (read, local), `android/app/src/main/java/com/learnwords/app/data/db/AppDatabase.kt:226` (migration, local), `app/audio_gen.py:159` (read, local), `app/audio_gen.py:163` (migration, local), `app/audio_gen.py:165` (migration, local), `app/audio_gen.py:174` (read, local), `app/audio_gen.py:186` (read, local), `app/audio_gen.py:218` (read, local), `app/audio_gen.py:263` (update, local), `app/audio_gen.py:298` (read, local), `app/content_service.py:3` (read, local), `app/content_service.py:65` (read, local), `app/content_service.py:70` (migration, local), `app/content_service.py:73` (read, local), `app/content_service.py:84` (read, local), `app/content_service.py:85` (read, local), `app/content_service.py:89` (read, local), `app/content_service.py:92` (read, local), `app/content_service.py:94` (read, local).
+- Чтение/запись/миграции: `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:11` (read, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:78` (read, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:81` (read, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:84` (read, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:87` (read, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:90` (read, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:94` (insert, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:99` (update, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:103` (update, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:122` (delete, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:125` (delete, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:128` (read, local), `android/app/src/main/java/app/parallellingvo/data/db/AppDatabase.kt:226` (migration, local), `app/account_privacy.py:63` (read, local), `app/account_privacy.py:64` (read, local), `app/account_privacy.py:68` (delete, local), `app/account_privacy.py:84` (read, local), `app/audio_gen.py:159` (read, local), `app/audio_gen.py:163` (migration, local), `app/audio_gen.py:165` (migration, local), `app/audio_gen.py:174` (read, local), `app/audio_gen.py:186` (read, local), `app/audio_gen.py:218` (read, local), `app/audio_gen.py:263` (update, local), `app/audio_gen.py:298` (read, local), `app/content_service.py:3` (read, local), `app/content_service.py:65` (read, local), `app/content_service.py:70` (migration, local), `app/content_service.py:73` (read, local), `app/content_service.py:84` (read, local).
 - Связанные API файла-владельца: `/sw.js`, `/`, `/lessons`, `/lesson/<int:lesson_id>`, `/learn`, `/difficult`, `/upload`, `/word-database`, `/settings/mcp`, `/settings`, `/account-type`, `/.well-known/assetlinks.json`, `/family/connect`, `/family/link`, `/parent`, `/subscription`, `/admin/users`, `/share/<token>`, `/api/share/create`, `/api/share/source_lessons`, `/api/share/assign_child`, `/api/share/<token>/import`, `/api/import-words`, `/api/words`, `/api/words/<int:word_id>`, `/api/words/nl-list`, `/api/words/duplicates`, `/api/parse-file`, `/api/auth/login_android`, `/api/auth/login_android_token`.
-- Telegram handlers файла-владельца: `/upload_words`, `filters.Regex(upload_words_pattern)`, `filters.Regex(r"^(Добавить слова|Импортировать слова)$")`, `filters.Document.ALL & (~filters.COMMAND)`, `filters.Regex(r"(?i)^(импортировать как есть)$")`, `filters.Regex(r"(?i)^(отменить импорт)$")`.
+- Telegram handlers файла-владельца: `/upload_words`, `filters.Regex(upload_words_pattern)`, `filters.Regex(r"^(Добавить слова|Импортировать слова)$")`, `filters.Document.ALL & (~filters.COMMAND)`, `filters.Regex(confirm_pattern)`, `filters.Regex(cancel_pattern)`.

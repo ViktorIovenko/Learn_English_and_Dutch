@@ -5,80 +5,24 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginVertical="4dp"
-    app:cardCornerRadius="8dp" app:cardElevation="1dp">
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:padding="8dp">
-
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-                android:hint="NL" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                app:boxStrokeWidth="1dp">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_nl" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:textSize="14sp" android:padding="8dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-                android:layout_marginStart="4dp" android:hint="EN"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxStrokeWidth="1dp">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_en" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:textSize="14sp" android:padding="8dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-                android:layout_marginStart="4dp" android:hint="RU"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxStrokeWidth="1dp">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_ru" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:textSize="14sp" android:padding="8dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <ImageButton android:id="@+id/btn_delete" android:layout_width="36dp"
-                android:layout_height="36dp" android:layout_gravity="center_vertical"
-                android:src="@android:drawable/ic_menu_delete"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/delete" />
-        </LinearLayout>
-
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="4dp">
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-                android:hint="@string/example_nl" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                app:boxStrokeWidth="1dp">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_ex_nl" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:textSize="12sp" android:padding="6dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-                android:layout_marginStart="4dp" android:hint="@string/example_en"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxStrokeWidth="1dp">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_ex_en" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:textSize="12sp" android:padding="6dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-                android:layout_marginStart="4dp" android:hint="@string/example_ru"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" app:boxStrokeWidth="1dp">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_ex_ru" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:textSize="12sp" android:padding="6dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <View android:layout_width="36dp" android:layout_height="36dp" />
-        </LinearLayout>
-
+    app:cardCornerRadius="8dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp">
+        <LinearLayout
+            android:id="@+id/word_fields"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical" />
+        <ImageButton
+            android:id="@+id/btn_delete"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/delete" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

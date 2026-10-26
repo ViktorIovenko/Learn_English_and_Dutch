@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_link_google">Прив’язати Google</string>
+    <string name="account_email_password_confirm">Повторіть пароль</string>
+    <string name="account_email_password_hint">Від 12 до 128 символів.</string>
+    <string name="account_email_send">Надіслати лист</string>
+    <string name="account_email_sent">Якщо адреса підходить, лист уже в дорозі. Перевірте вхідні та папку «Спам».</string>
+    <string name="account_email_password_mismatch">Паролі не збігаються.</string>
+    <string name="account_link_conflict">Цей спосіб входу вже прив’язаний до акаунта.</string>
+</resources>

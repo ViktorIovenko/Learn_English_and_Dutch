@@ -1,6 +1,7 @@
 # app/routes.py
 from __future__ import annotations
 import json
+import logging
 import time
 import secrets
 import html
@@ -8,7 +9,7 @@ from contextlib import closing
 from io import BytesIO
 from urllib.parse import urlencode
 from urllib import request as urlrequest
-from flask import Blueprint, request, jsonify, render_template, session, send_file, send_from_directory, current_app, redirect, url_for
+from flask import Blueprint, has_request_context, request, jsonify, render_template, session, send_file, send_from_directory, current_app, redirect, url_for
 import sqlite3
 from typing import Any, List, Dict
 from pathlib import Path
@@ -23,6 +24,7 @@ from app.family_tokens import (
 )
 from app.family_pairing import (
     MAX_PARENTS_PER_CHILD,
+    children_limit_reached,
     create_invite_code,
     create_pairing_code,
     invite_code_details,
@@ -45,6 +47,7 @@ from app.translation_usage import (
     reset_translation_usage,
 )
 from app import ai_platform
+from app import plans
 
 web = Blueprint("web", __name__)
 
@@ -227,12 +230,27 @@ def _admin_ids() -> tuple[int, ...]:
 
 
 def _is_admin_user_id(user_id: str | int | None) -> bool:
+    """Admin = numeric Telegram ID from ADMIN_IDS or Google email from ADMIN_EMAILS."""
     if user_id is None:
         return False
-    try:
-        return int(str(user_id)) in set(_admin_ids())
-    except Exception:
+    uid = str(user_id).strip()
+    if not uid:
         return False
+    try:
+        if int(uid) in set(_admin_ids()):
+            return True
+    except (TypeError, ValueError):
+        pass
+    emails = set(getattr(Config, "ADMIN_EMAILS", ()) or ())
+    if not emails:
+        return False
+    try:
+        with _conn() as c:
+            row = c.execute("SELECT google_email FROM users WHERE user_id=?", (uid,)).fetchone()
+    except sqlite3.Error:
+        return False
+    email = str((row[0] if row else "") or "").strip().lower()
+    return bool(email) and email in emails
 
 
 def _request_user_id() -> str:
@@ -290,6 +308,8 @@ def _load_user_to_session(user_id: str) -> bool:
     session["tg_first_name"] = (row["first_name"] if row else "") or ""
     session["tg_last_name"] = (row["last_name"] if row else "") or ""
     session["is_auth"] = True
+    from app.auth_links import bind_email_session
+    bind_email_session(uid)
     return True
 
 
@@ -334,9 +354,11 @@ def _notify_admins_new_user(user: dict[str, Any]) -> None:
             str(user.get("last_name") or "").strip(),
         ] if part
     ).strip() or "без имени"
-    username_text = f"@{username}" if username else "без username"
+    provider = str(user.get("auth_provider") or "telegram")
+    username_text = (f"@{username}" if provider == "telegram" else username) if username else "—"
     text = (
         "👤 Новый пользователь\n"
+        f"Регистрация: {html.escape(provider)}\n"
         f"ID: <code>{html.escape(user_id)}</code>\n"
         f"Имя: {html.escape(full_name)}\n"
         f"Username: {html.escape(username_text)}"
@@ -349,13 +371,19 @@ def _notify_admins_new_user(user: dict[str, Any]) -> None:
             "parse_mode": "HTML",
         }).encode("utf-8")
         try:
-            urlrequest.urlopen(api_url, data=payload, timeout=4).read()
-        except Exception:
-            current_app.logger.exception("Failed to notify admin %s about new user %s", admin_id, user_id)
+            with urlrequest.urlopen(api_url, data=payload, timeout=4) as response:
+                result = json.load(response)
+            if not result.get("ok"):
+                logging.getLogger(__name__).warning("New-user notification rejected for admin %s", admin_id)
+        except Exception as error:
+            logging.getLogger(__name__).warning(
+                "New-user notification failed for admin %s (%s)", admin_id, type(error).__name__
+            )
 
 
 def _upsert_user(user: dict[str, Any]) -> bool:
-    user_id = str(user.get("id") or "").strip()
+    from app.account_linking import telegram_account_id
+    user_id = telegram_account_id(str(user.get("id") or "").strip())
     if not user_id or not _has_telegram_identity(user):
         return False
     photo_url = str(user.get("photo_url") or "").strip()
@@ -628,13 +656,16 @@ def _notify_parents_child_goal(user_id: str, timezone_offset_minutes: int) -> in
             WHERE l.child_user_id = ? AND COALESCE(u.is_active, 1) = 1
         """, (uid,)).fetchall()
     child_name = _format_user_name(child) if child else uid
-    text = f"🏆 Ребёнок {child_name or uid} выполнил дневную цель — {goal} слов!"
+    from bot.i18n import user_language, text as notification_text
     api_url = f"https://api.telegram.org/bot{token}/sendMessage"
     delete_url = f"https://api.telegram.org/bot{token}/deleteMessage"
     sent = 0
     for parent in parents:
         parent_id = str(parent["user_id"] or "").strip()
-        if not parent_id.isdigit():
+        text = notification_text(user_language(Config.DB_PATH, parent_id), "goal", name=child_name or uid, count=goal)
+        from app.account_linking import telegram_chat_id
+        chat_id = telegram_chat_id(parent_id)
+        if chat_id is None:
             continue
         with _conn() as c:
             previous = c.execute("""
@@ -655,7 +686,7 @@ def _notify_parents_child_goal(user_id: str, timezone_offset_minutes: int) -> in
             reserved = cursor.rowcount > 0
         if not reserved:
             continue
-        payload = urlencode({"chat_id": parent_id, "text": text}).encode("utf-8")
+        payload = urlencode({"chat_id": str(chat_id), "text": text}).encode("utf-8")
         try:
             with urlrequest.urlopen(api_url, data=payload, timeout=4) as response:
                 result = json.loads(response.read().decode("utf-8"))
@@ -674,7 +705,7 @@ def _notify_parents_child_goal(user_id: str, timezone_offset_minutes: int) -> in
             sent += 1
             if previous_message_id and previous_message_id != message_id:
                 delete_payload = urlencode({
-                    "chat_id": parent_id,
+                    "chat_id": str(chat_id),
                     "message_id": str(previous_message_id),
                 }).encode("utf-8")
                 try:
@@ -1538,6 +1569,10 @@ def _ensure_subscription_schema() -> None:
             CREATE INDEX IF NOT EXISTS idx_user_subscriptions_status
             ON user_subscriptions(status, trial_ends_at, current_period_ends_at);
         """)
+        columns = {row[1] for row in c.execute("PRAGMA table_info(user_subscriptions)")}
+        if "plan" not in columns:
+            # Paid tier of an active subscription: NULL/'premium' or 'family'.
+            c.execute("ALTER TABLE user_subscriptions ADD COLUMN plan TEXT")
         c.commit()
 
 
@@ -1558,6 +1593,8 @@ def _get_subscription(user_id: str | None) -> Dict[str, Any]:
             "days_left": 0,
             "is_admin": True,
             "is_unlimited": True,
+            "paid_access": True,
+            "plan": plans.PLAN_ADMIN,
         }
     _ensure_subscription_schema()
     now_ms = int(time.time() * 1000)
@@ -1609,7 +1646,14 @@ def _get_subscription(user_id: str | None) -> Dict[str, Any]:
         "configured": True,
         "status": effective_status,
         "raw_status": status,
-        "access": access,
+        # Every registered user may use the app on Free; paid_access tells
+        # whether a trial or paid period is currently running.
+        "access": True,
+        "paid_access": access,
+        "plan": plans.plan_from_subscription({
+            "status": effective_status,
+            "plan": row["plan"] if "plan" in row.keys() else None,
+        }),
         "trial_started_at": int(row["trial_started_at"] or 0),
         "trial_ends_at": trial_ends_at,
         "current_period_ends_at": period_ends_at,
@@ -1618,6 +1662,160 @@ def _get_subscription(user_id: str | None) -> Dict[str, Any]:
         "days_left": days_left,
         "is_unlimited": is_unlimited,
     }
+
+
+def _stored_subscription_state(user_id: str) -> tuple[str, str | None]:
+    """Read-only effective status and paid tier ("none" without a row)."""
+    _ensure_subscription_schema()
+    now_ms = int(time.time() * 1000)
+    with _conn() as c:
+        row = c.execute(
+            "SELECT status, trial_ends_at, current_period_ends_at, plan "
+            "FROM user_subscriptions WHERE user_id=?",
+            (str(user_id),),
+        ).fetchone()
+    if not row:
+        return "none", None
+    status = row["status"] or "trial"
+    period_ends_at = row["current_period_ends_at"]
+    if status == "trial" and int(row["trial_ends_at"] or 0) <= now_ms:
+        status = "trial_expired"
+    elif status == "active" and period_ends_at is not None and int(period_ends_at) <= now_ms:
+        status = "expired"
+    return status, row["plan"]
+
+
+def _stored_plan(user_id: str) -> str:
+    """Read-only tariff of one user (never creates a trial row)."""
+    if _is_admin_user_id(user_id):
+        return plans.PLAN_ADMIN
+    status, paid_tier = _stored_subscription_state(user_id)
+    if status == "none":
+        return plans.PLAN_FREE
+    return plans.plan_from_subscription({"status": status, "plan": paid_tier})
+
+
+def _real_plan(user_id: str | None) -> str:
+    """Effective tariff: own subscription, or Family inherited from a parent."""
+    uid = str(user_id or "").strip()
+    if not uid:
+        return plans.PLAN_FREE
+    plan = _stored_plan(uid)
+    if plan in (plans.PLAN_FAMILY, plans.PLAN_ADMIN):
+        return plan
+    try:
+        with _conn() as c:
+            parents = [str(r[0]) for r in c.execute(
+                "SELECT parent_user_id FROM parent_child_links WHERE child_user_id=?",
+                (uid,),
+            )]
+    except sqlite3.OperationalError:
+        parents = []
+    # Children of a Family parent get Premium features without own payment.
+    if any(_stored_plan(parent) in (plans.PLAN_FAMILY, plans.PLAN_ADMIN) for parent in parents):
+        return plans.PLAN_FAMILY
+    return plan
+
+
+def _preview_plan_for(user_id: str | None) -> str:
+    """Admin preview is kept in the admin's own session cookie only."""
+    if not has_request_context():
+        return ""  # MCP internals, bot and background jobs never preview.
+    admin_uid = _session_admin_user_id()
+    if not admin_uid or str(user_id or "") != admin_uid:
+        return ""
+    return plans.preview_plan(session, True)
+
+
+def _plan_state(user_id: str | None) -> Dict[str, Any]:
+    preview = _preview_plan_for(user_id)
+    return plans.entitlements(
+        _real_plan(user_id),
+        preview=preview,
+        preview_ads=bool(session.get(plans.PREVIEW_ADS_SESSION_KEY)) if preview else False,
+    )
+
+
+def _ui_is_admin(user_id: str | None) -> bool:
+    """Admin UI is hidden while the admin previews a regular tariff."""
+    return _is_admin_user_id(user_id) and not _preview_plan_for(user_id)
+
+
+def _plan_denied(user_id: str | None, feature: str, required_plan: str):
+    """Server-side tariff check; None when allowed."""
+    state = _plan_state(user_id)
+    if not state["enforced"] or state["features"].get(feature):
+        return None
+    return jsonify({
+        "ok": False,
+        "error": "upgrade_required",
+        "feature": feature,
+        "required_plan": required_plan,
+        "plan": state["plan"],
+        "preview": state["preview"],
+    }), 402
+
+
+def _paid_ai_allowed(user_id: str | None) -> bool:
+    """Paid model calls need the global switch and, when enforced, the tariff."""
+    if not Config.PAID_AI_ENABLED:
+        return False
+    state = _plan_state(user_id)
+    return bool(state["features"].get("ai_paid") or not state["enforced"])
+
+
+def _client_subscription(user_id: str) -> Dict[str, Any]:
+    """Subscription as clients see it; simulated in admin preview, no DB writes."""
+    preview = _preview_plan_for(user_id)
+    if preview:
+        return {
+            "configured": True,
+            "status": "free" if preview == plans.PLAN_FREE else "active",
+            "raw_status": "preview",
+            "access": True,
+            "paid_access": preview != plans.PLAN_FREE,
+            "plan": preview,
+            "preview": True,
+            "trial_started_at": 0,
+            "trial_ends_at": 0,
+            "current_period_ends_at": None,
+            "cancel_at_period_end": False,
+            "provider": "preview",
+            "days_left": 0,
+            "is_unlimited": False,
+        }
+    subscription = _get_subscription(user_id)
+    if subscription.get("configured"):
+        subscription["plan"] = _real_plan(user_id)
+    return subscription
+
+
+def _ads_viewer():
+    """Read-only viewer for app.advertising.
+
+    Web / Mini App: the browser session. Android: the signed Bearer token
+    (channel "app"); the spoofable legacy X-User-Id header is never used.
+    """
+    from app.advertising import Viewer
+    uid = _session_user_id()
+    channel = "session"
+    if not uid:
+        uid = _bearer_user_id() or ""
+        channel = "app"
+    if not uid or not _user_exists(uid):
+        return None
+    is_admin = _is_admin_user_id(uid)
+    status = "admin" if is_admin else _stored_subscription_state(uid)[0]
+    return Viewer(
+        user_id=uid,
+        is_admin=is_admin,
+        preview_plan=plans.preview_plan(session, True) if is_admin and channel == "session" else "",
+        real_plan=_real_plan(uid),
+        subscription_status=status,
+        account_type=_account_context(uid)["account_type"],
+        ui_language=_get_ui_language(uid)["ui_language"],
+        channel=channel,
+    )
 
 
 def _get_user_languages(user_id: str | None) -> List[Dict[str, Any]]:
@@ -1804,7 +2002,7 @@ def home():
         "index.html",
         title="Уроки",
         display_name=_display_name_for_request(),
-        is_admin=_is_admin_user_id(admin_user_id),
+        is_admin=_ui_is_admin(admin_user_id),
         admin_user_id=admin_user_id,
         show_auth_gate=True,
     )
@@ -1817,7 +2015,7 @@ def lessons_alias():
         "index.html",
         title="Уроки",
         display_name=_display_name_for_request(),
-        is_admin=_is_admin_user_id(admin_user_id),
+        is_admin=_ui_is_admin(admin_user_id),
         admin_user_id=admin_user_id,
         show_auth_gate=True,
     )
@@ -1860,7 +2058,7 @@ def upload_page():
         title="Загрузка слов",
         public_url=Config.PUBLIC_BASE_URL,
         hide_timer=True,
-        is_admin=_is_admin_user_id(user_id),
+        is_admin=_ui_is_admin(user_id),
         admin_user_id=user_id,
         upload_access_pending=access_pending,
         upload_access_denied=access_denied,
@@ -1916,7 +2114,30 @@ def android_app_links():
 def family_link_page():
     code = str(request.args.get("code") or "").strip()
     if code or not request.args.get("token"):
-        response = current_app.make_response(render_template("family_invite.html", title="Family", hide_timer=True, family_bot_username=Config.BOT_USERNAME or ""))
+        # Signed-out visitors (camera QR scan opens a plain browser) get the
+        # login gate plus one-tap hand-offs to Telegram and the Android app.
+        kind = "invite" if request.args.get("kind") == "invite" else "family"
+        valid_code = bool(code) and len(code) <= 48 and all(ch.isalnum() or ch in "-_" for ch in code)
+        bot_username = _telegram_bot_username()
+        family_telegram_url = ""
+        family_android_url = ""
+        if valid_code:
+            if bot_username:
+                family_telegram_url = f"https://t.me/{bot_username}?start={kind}_{code}"
+            page_url = Config.APP_BASE_URL.rstrip("/") + "/family/connect?" + urlencode({"code": code, "kind": kind})
+            family_android_url = (
+                "intent://" + page_url.split("://", 1)[1]
+                + "#Intent;scheme=https;package=com.learnwords.app;end"
+            )
+        response = current_app.make_response(render_template(
+            "family_invite.html",
+            title="Family",
+            hide_timer=True,
+            show_auth_gate=True,
+            family_bot_username=bot_username,
+            family_telegram_url=family_telegram_url,
+            family_android_url=family_android_url,
+        ))
         response.headers["Cache-Control"] = "no-store"
         response.headers["Referrer-Policy"] = "no-referrer"
         return response
@@ -2609,7 +2830,7 @@ def api_import_words():
         lessons = [{"lesson":data["lesson"],"words":data.get("words",[])}]
     from app.content_service import import_words
     try:
-        result = import_words(Config.DB_PATH,user_id,lessons,source="app",idempotency_key=data.get("idempotency_key"))
+        result = import_words(Config.DB_PATH,user_id,lessons,source="app",idempotency_key=data.get("idempotency_key"),allow_provider=_paid_ai_allowed(user_id))
     except ValueError as exc:
         return jsonify({"ok":False,"error":str(exc)}),(409 if str(exc)=="idempotency_conflict" else 400)
     return jsonify(result)
@@ -3031,6 +3252,8 @@ def login_webapp():
     if not v or not isinstance(v.get("user"), dict):
         return jsonify({"ok": False, "error": "invalid_init_data"}), 401
     user = v["user"]
+    from app.account_linking import telegram_account_id
+    account_id = telegram_account_id(user.get("id") or "")
     if not _has_telegram_identity(user):
         return jsonify({"ok": False, "error": "telegram_name_or_username_required"}), 403
     if _upsert_user(user):
@@ -3038,11 +3261,11 @@ def login_webapp():
     with _conn() as c:
         c.execute(
             "INSERT OR IGNORE INTO auth_identities (provider, external_id, user_id) VALUES ('telegram', ?, ?)",
-            (str(user.get("id") or ""), str(user.get("id") or "")),
+            (str(user.get("id") or ""), account_id),
         )
         c.commit()
-    _update_detected_ui_language(str(user.get("id") or ""), user.get("language_code"))
-    session["tg_user_id"]    = str(user.get("id") or "")
+    _update_detected_ui_language(account_id, user.get("language_code"))
+    session["tg_user_id"]    = account_id
     session["tg_username"]   = user.get("username") or ""
     session["tg_first_name"] = user.get("first_name") or ""
     session["tg_last_name"]  = user.get("last_name") or ""
@@ -3060,7 +3283,7 @@ def api_me():
     if session.get("is_auth"):
         uid = str(session.get("tg_user_id") or "")
         language_preferences = _get_user_languages(uid)
-        subscription = _get_subscription(uid)
+        subscription = _client_subscription(uid)
         return jsonify({
             "ok": True, "auth": True,
             "user_id": uid,
@@ -3070,14 +3293,15 @@ def api_me():
             "languages_configured": 3 <= len(language_preferences) <= 5,
             "language_preferences": language_preferences,
             "subscription": subscription,
-            "is_admin": _is_admin_user_id(uid),
+            "is_admin": _ui_is_admin(uid),
+            "plan_state": _plan_state(uid),
             **_account_context(uid),
             **_get_ui_language(uid),
         })
     uid = _bearer_user_id() or (request.headers.get("X-User-Id") if Config.ALLOW_LEGACY_UID_AUTH else None)
     if uid:
         language_preferences = _get_user_languages(str(uid))
-        subscription = _get_subscription(str(uid))
+        subscription = _client_subscription(str(uid))
         with _conn() as c:
             row = c.execute("SELECT username, first_name, last_name FROM users WHERE user_id=?",
                             (str(uid),)).fetchone()
@@ -3091,7 +3315,8 @@ def api_me():
                 "languages_configured": 3 <= len(language_preferences) <= 5,
                 "language_preferences": language_preferences,
                 "subscription": subscription,
-                "is_admin": _is_admin_user_id(uid),
+                "is_admin": _ui_is_admin(uid),
+                "plan_state": _plan_state(uid),
                 **_account_context(str(uid)),
                 **_get_ui_language(str(uid)),
             })
@@ -3158,6 +3383,9 @@ def api_family_dashboard():
     user_id = _current_user_id()
     if not user_id or not _user_exists(user_id):
         return jsonify({"ok": False, "error": "auth_required"}), 401
+    denied = _plan_denied(user_id, "family", plans.PLAN_FAMILY)
+    if denied:
+        return denied
     account = _account_context(str(user_id))
     if not account["is_parent"]:
         return jsonify({"ok": False, "error": "parent_account_required"}), 403
@@ -3184,6 +3412,9 @@ def api_family_child_lesson_words(child_user_id: str):
     parent_user_id = _current_user_id()
     if not parent_user_id or not _user_exists(parent_user_id):
         return jsonify({"ok": False, "error": "auth_required"}), 401
+    denied = _plan_denied(parent_user_id, "family", plans.PLAN_FAMILY)
+    if denied:
+        return denied
     if not _account_context(str(parent_user_id))["is_parent"]:
         return jsonify({"ok": False, "error": "parent_account_required"}), 403
 
@@ -3239,6 +3470,9 @@ def api_family_set_priority_lesson(child_user_id: str):
     parent_user_id = _current_user_id()
     if not parent_user_id or not _user_exists(parent_user_id):
         return jsonify({"ok": False, "error": "auth_required"}), 401
+    denied = _plan_denied(parent_user_id, "family", plans.PLAN_FAMILY)
+    if denied:
+        return denied
     _ensure_family_schema()
     child_id = str(child_user_id or "").strip()
     with _conn() as c:
@@ -3352,6 +3586,13 @@ def api_family_invitation():
             data = {"code": create_pairing_code(Config.DB_PATH, child_id), "kind": "family"}
         except ValueError:
             return jsonify({"ok": False, "error": "child_account_not_found"}), 400
+    if request.path.endswith("/accept"):
+        # A parent accepting a child's code starts using the Family panel.
+        resolved = preview_invitation(user_id, data.get("code"), data.get("kind", ""))
+        if resolved.get("ok") and resolved.get("kind") == "family":
+            denied = _plan_denied(user_id, "family", plans.PLAN_FAMILY)
+            if denied:
+                return denied
     handler = accept_invitation if request.path.endswith("/accept") else preview_invitation
     result = handler(user_id, data.get("code"), data.get("kind", ""))
     return jsonify(result), 200 if result.get("ok") else 400
@@ -3385,6 +3626,9 @@ def api_family_pairing_qr():
 
 
 def _invite_payload(user_id: str) -> tuple[Dict[str, Any] | None, tuple | None]:
+    denied = _plan_denied(user_id, "family", plans.PLAN_FAMILY)
+    if denied:
+        return None, denied
     account = _account_context(user_id)
     if account["account_type"] != "standard":
         return None, (jsonify({"ok": False, "error": "parent_account_required"}), 403)
@@ -3449,7 +3693,7 @@ def api_family_join():
     _ensure_family_schema()
     result = link_child_with_invite_code(Config.DB_PATH, str(child_user_id), code)
     if not result.get("ok"):
-        status = 409 if result.get("error") == "parent_limit_reached" else 400
+        status = 409 if result.get("error") in {"parent_limit_reached", "children_limit_reached"} else 400
         return jsonify(result), status
     return jsonify({**result, **_account_context(str(child_user_id))})
 
@@ -3459,6 +3703,9 @@ def api_family_link():
     parent_user_id = _current_user_id()
     if not parent_user_id or not _user_exists(parent_user_id):
         return jsonify({"ok": False, "error": "auth_required"}), 401
+    denied = _plan_denied(parent_user_id, "family", plans.PLAN_FAMILY)
+    if denied:
+        return denied
     parent_account = _account_context(str(parent_user_id))
     if parent_account["account_type"] == "pending":
         return jsonify({"ok": False, "error": "account_type_required"}), 409
@@ -3499,6 +3746,8 @@ def api_family_link():
         ).fetchone()[0])
         if not existing and parents_count >= MAX_PARENTS_PER_CHILD:
             return jsonify({"ok": False, "error": "parent_limit_reached"}), 409
+        if not existing and children_limit_reached(c, str(parent_user_id)):
+            return jsonify({"ok": False, "error": "children_limit_reached"}), 409
         c.execute("""
             INSERT INTO parent_child_links (parent_user_id, child_user_id)
             VALUES (?, ?)
@@ -3539,73 +3788,39 @@ def api_subscription_get():
     user_id = _current_user_id()
     if not user_id:
         return jsonify({"ok": False, "error": "unauthorized"}), 401
-    return jsonify({"ok": True, "subscription": _get_subscription(user_id)})
+    return jsonify({"ok": True, "subscription": _client_subscription(user_id), "plan_state": _plan_state(user_id)})
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ⚠️  ЗАГЛУШКА Google Play Billing — /api/subscription/verify_purchase
-#
-# Что нужно сделать для продакшена:
-# 1. Включить Google Play Android Developer API:
-#    https://console.cloud.google.com/ → APIs & Services → Enable APIs
-#    → "Google Play Android Developer API"
-#
-# 2. Создать Service Account (сервисный аккаунт):
-#    Google Play Console → Настройки → API-доступ → Создать сервисный аккаунт
-#    → Скачать JSON-ключ → добавить в .env как GOOGLE_SERVICE_ACCOUNT_JSON
-#
-# 3. Установить библиотеку:
-#    pip install google-auth google-api-python-client
-#
-# 4. Заменить заглушку ниже реальной верификацией через googleapiclient:
-#    service = build('androidpublisher', 'v3', credentials=creds)
-#    result = service.purchases().subscriptions().get(
-#        packageName=package_name, subscriptionId=product_id,
-#        token=purchase_token).execute()
-#    expiry_ms = int(result['expiryTimeMillis'])
-# ─────────────────────────────────────────────────────────────────────────────
+@web.get("/api/subscription/google-play-config")
+def api_google_play_config():
+    from app.google_play import products, account_id, PlayError
+    user_id = _bearer_user_id()
+    if not user_id:
+        return jsonify(ok=False, error="unauthorized"), 401
+    try:
+        catalog = products()
+        import os
+        enabled = os.getenv("GOOGLE_PLAY_PURCHASES_ENABLED", "0") == "1"
+        return jsonify(ok=True, product_ids=list(catalog) if enabled else [], account_id=account_id(user_id))
+    except PlayError as exc:
+        return jsonify(ok=False, error=exc.code), exc.status
+
+
 @web.post("/api/subscription/verify_purchase")
 def api_verify_purchase():
-    user_id = _current_user_id()
+    from app.google_play import verify, PlayError
+    user_id = _bearer_user_id()
     if not user_id:
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-
-    data = request.get_json(silent=True) or {}
-    purchase_token = data.get("purchase_token", "")
-    product_id     = data.get("product_id", "")
-    package_name   = data.get("package_name", "")
-
-    if not purchase_token or not product_id:
-        return jsonify({"ok": False, "error": "missing fields"}), 400
-
-    # Fail closed until Google Play Developer API verification is configured.
-    # Never grant subscription access based only on a client-supplied token.
-    return jsonify({
-        "ok": False,
-        "error": "google_play_verification_not_configured"
-    }), 503
-
-    # ── Реальная верификация (раскомментировать после настройки) ─────────────
-    # try:
-    #     import google.oauth2.service_account as sa
-    #     from googleapiclient.discovery import build
-    #     import os, json
-    #     key_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
-    #     creds = sa.Credentials.from_service_account_info(
-    #         json.loads(key_json),
-    #         scopes=["https://www.googleapis.com/auth/androidpublisher"]
-    #     )
-    #     service = build("androidpublisher", "v3", credentials=creds)
-    #     result = service.purchases().subscriptions().get(
-    #         packageName=package_name,
-    #         subscriptionId=product_id,
-    #         token=purchase_token
-    #     ).execute()
-    #     expiry_ms = int(result["expiryTimeMillis"])
-    #     # ... активировать подписку в БД ...
-    #     return jsonify({"ok": True, "status": "active", "expires_at": expiry_ms})
-    # except Exception as e:
-    #     return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify(ok=False, error="unauthorized"), 401
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(ok=False, error="invalid_request"), 400
+    try:
+        result = verify(user_id, data.get("purchase_token"), data.get("product_id"), data.get("package_name"))
+        result["subscription"] = _client_subscription(user_id)
+        return jsonify(result)
+    except PlayError as exc:
+        return jsonify(ok=False, error=exc.code), exc.status
 
 
 @web.get("/api/language-options")
@@ -4764,6 +4979,10 @@ def api_admin_grant_access():
     if not target_uid:
         return jsonify({"ok": False, "error": "user_id required"}), 400
 
+    plan = str(data.get("plan") or plans.PLAN_PREMIUM).strip().lower()
+    if plan not in (plans.PLAN_PREMIUM, plans.PLAN_FAMILY):
+        return jsonify({"ok": False, "error": "invalid_plan"}), 400
+
     now_ms = int(time.time() * 1000)
     forever_ms = now_ms + 100 * 365 * 24 * 60 * 60 * 1000
 
@@ -4773,16 +4992,17 @@ def api_admin_grant_access():
         c.execute("""
             INSERT INTO user_subscriptions
                 (user_id, status, trial_started_at, trial_ends_at,
-                 current_period_ends_at, provider, updated_at)
-            VALUES (?, 'active', ?, ?, ?, 'manual', ?)
+                 current_period_ends_at, provider, updated_at, plan)
+            VALUES (?, 'active', ?, ?, ?, 'manual', ?, ?)
             ON CONFLICT(user_id) DO UPDATE SET
                 status = 'active',
                 current_period_ends_at = excluded.current_period_ends_at,
                 provider = 'manual',
-                updated_at = excluded.updated_at
-        """, (target_uid, now_ms, now_ms, forever_ms, now_ms))
+                updated_at = excluded.updated_at,
+                plan = excluded.plan
+        """, (target_uid, now_ms, now_ms, forever_ms, now_ms, plan))
         c.commit()
-    return jsonify({"ok": True, "user_id": target_uid, "expires_at": forever_ms})
+    return jsonify({"ok": True, "user_id": target_uid, "expires_at": forever_ms, "plan": plan})
 
 
 @web.post("/api/admin/revoke_access")
@@ -4804,6 +5024,7 @@ def api_admin_revoke_access():
             SET status = 'trial',
                 current_period_ends_at = NULL,
                 provider = NULL,
+                plan = NULL,
                 updated_at = ?
             WHERE user_id = ?
         """, (now_ms, target_uid))
@@ -4856,84 +5077,64 @@ def api_admin_delete_user():
     if _is_admin_user_id(target_uid):
         return jsonify({"ok": False, "error": "admin users are managed through ADMIN_IDS"}), 400
 
-    _ensure_schema()
-    _ensure_subscription_schema()
-    with _conn() as c:
-        row = c.execute("SELECT 1 FROM users WHERE user_id=?", (target_uid,)).fetchone()
-        if not row:
-            return jsonify({"ok": False, "error": "user not found"}), 404
-
-        word_ids = [
-            int(r["id"])
-            for r in c.execute("SELECT id FROM words WHERE user_id=?", (target_uid,)).fetchall()
-        ]
-        if word_ids:
-            marks = ",".join("?" * len(word_ids))
-            c.execute(f"DELETE FROM user_word_flags WHERE word_id IN ({marks})", word_ids)
-
-        try:
-            c.execute(
-                "DELETE FROM family_lesson_assignments "
-                "WHERE parent_user_id=? OR child_user_id=?",
-                (target_uid, target_uid),
-            )
-        except sqlite3.OperationalError:
-            pass
-        try:
-            c.execute(
-                "DELETE FROM parent_child_links "
-                "WHERE parent_user_id=? OR child_user_id=?",
-                (target_uid, target_uid),
-            )
-        except sqlite3.OperationalError:
-            pass
-        try:
-            c.execute(
-                "DELETE FROM child_lesson_priorities "
-                "WHERE child_user_id=? OR parent_user_id=?",
-                (target_uid, target_uid),
-            )
-        except sqlite3.OperationalError:
-            pass
-        try:
-            c.execute(
-                "DELETE FROM child_lesson_priority_history "
-                "WHERE child_user_id=? OR parent_user_id=?",
-                (target_uid, target_uid),
-            )
-        except sqlite3.OperationalError:
-            pass
-
-        deletes = [
-            ("words", "user_id"),
-            ("user_word_flags", "user_id"),
-            ("user_lessons", "user_id"),
-            ("progress_events", "user_id"),
-            ("user_language_preferences", "user_id"),
-            ("user_settings", "user_id"),
-            ("user_subscriptions", "user_id"),
-            ("google_tts_usage_monthly", "user_id"),
-            ("google_tts_budget_monthly", "user_id"),
-            ("translation_token_usage", "user_id"),
-            ("reminder_state", "user_id"),
-            ("shared_word_sets", "owner_user_id"),
-            ("users", "user_id"),
-        ]
-        for table, column in deletes:
-            try:
-                c.execute(f"DELETE FROM {table} WHERE {column}=?", (target_uid,))
-            except sqlite3.OperationalError:
-                pass
-        try:
-            c.execute(
-                "DELETE FROM google_tts_limits WHERE scope = ?",
-                (f"user:{target_uid}",),
-            )
-        except sqlite3.OperationalError:
-            pass
-        c.commit()
+    from app.account_privacy import erase
+    if not erase(target_uid):
+        return jsonify({"ok": False, "error": "user not found"}), 404
 
     return jsonify({"ok": True, "user_id": target_uid})
+
+
+# ─── Предпросмотр тарифов (только сессия админа, без записи в БД) ───────────
+
+def _ads_mode() -> str:
+    from app.advertising import store as ads_store
+    try:
+        return ads_store.get_settings()["mode"]
+    except sqlite3.Error:
+        return ads_store.MODE_OFF
+
+
+def _plan_preview_payload(admin_uid: str) -> Dict[str, Any]:
+    return {
+        "ok": True,
+        "preview": plans.preview_plan(session, True) or None,
+        "show_ads": bool(session.get(plans.PREVIEW_ADS_SESSION_KEY)),
+        "plan_state": _plan_state(admin_uid),
+        "plans": {key: plans.PLANS[key] for key in plans.PREVIEW_PLANS},
+        "max_family_children": plans.MAX_FAMILY_CHILDREN,
+        "settings": {
+            "paid_ai_enabled": bool(Config.PAID_AI_ENABLED),
+            "ads_enabled": bool(Config.ADS_ENABLED),
+            "ads_mode": _ads_mode(),
+            "enforce_plan_limits": bool(Config.ENFORCE_PLAN_LIMITS),
+        },
+    }
+
+
+@web.get("/api/admin/plan-preview")
+def api_admin_plan_preview_get():
+    admin_uid = _session_admin_user_id()
+    if not admin_uid:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    return jsonify(_plan_preview_payload(admin_uid))
+
+
+@web.post("/api/admin/plan-preview")
+def api_admin_plan_preview_set():
+    # Real admin rights come from ADMIN_IDS and are never affected by preview.
+    admin_uid = _session_admin_user_id()
+    if not admin_uid:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    data = request.get_json(silent=True) or {}
+    plan = str(data.get("plan") or "").strip().lower()
+    show_ads = data.get("show_ads")
+    if plan in ("", "exit", "off", "none"):
+        plans.set_preview(session, "")
+    elif plan in plans.PREVIEW_PLANS:
+        plans.set_preview(session, plan, None if show_ads is None else bool(show_ads))
+    else:
+        return jsonify({"ok": False, "error": "invalid_plan"}), 400
+    return jsonify(_plan_preview_payload(admin_uid))
 
 
 # ─── AI: облачная генерация слов через AI Platform ─────────────────────────
@@ -4945,7 +5146,12 @@ def api_ai_status():
     user_id = _current_user_id()
     if not user_id:
         return jsonify({"ok": False, "error": "Not authenticated"}), 401
-    return jsonify({"ok": True, "cloud_available": ai_platform.is_configured()})
+    allowed = _paid_ai_allowed(user_id)
+    return jsonify({
+        "ok": True,
+        "cloud_available": bool(allowed and ai_platform.is_configured()),
+        "paid_ai_enabled": allowed,
+    })
 
 
 @web.post("/api/translate/word")
@@ -4966,7 +5172,8 @@ def api_translate_word():
         item, usage = ai_platform.translate_word(
             word,from_lang,data.get("level", ""),known_ru,supplied=data.get("supplied"),
             languages=data.get("languages") or [entry["code"] for entry in _get_user_languages(str(user_id))] or ["nl","en","ru"],
-            sense=str(data.get("sense") or ""),context=str(data.get("context") or ""),examples=data.get("examples",True) is not False)
+            sense=str(data.get("sense") or ""),context=str(data.get("context") or ""),examples=data.get("examples",True) is not False,
+            allow_provider=_paid_ai_allowed(user_id))
     except ai_platform.AiPlatformError as exc:
         _record_translation_request_usage(
             user_id,
@@ -4998,9 +5205,12 @@ def api_generate_topic():
 
     try:
         words, usage = ai_platform.suggest_topic_words(
-            topic, lang, level, count, existing_words
+            topic, lang, level, count, existing_words,
+            allow_provider=_paid_ai_allowed(user_id),
         )
     except ai_platform.AiPlatformError as exc:
+        if not _paid_ai_allowed(user_id):
+            return jsonify({"ok": False, "error": "paid_ai_disabled"}), 403
         _record_translation_request_usage(
             user_id,
             successful=False,
@@ -5031,7 +5241,8 @@ def api_translate_language():
     try:
         result, usage = ai_platform.translate_language(
             source_word, source_sentence, source_lang_name, target_lang_name,
-            supplied=data.get("supplied"),sense=str(data.get("sense") or ""),context=str(data.get("context") or "")
+            supplied=data.get("supplied"),sense=str(data.get("sense") or ""),context=str(data.get("context") or ""),
+            allow_provider=_paid_ai_allowed(user_id),
         )
     except ai_platform.AiPlatformError as exc:
         _record_translation_request_usage(
@@ -5133,6 +5344,24 @@ def init_app(app):
     from app.google_auth import google_bp, init_google_oauth
     app.register_blueprint(google_bp)
     init_google_oauth(app)
+    from app.email_auth import email_bp, ensure_email_auth_schema
+    ensure_email_auth_schema()
+    app.register_blueprint(email_bp)
+    from app.android_auth import android_auth_bp, ensure_android_auth_schema
+    ensure_android_auth_schema()
+    app.register_blueprint(android_auth_bp)
     from app.telegram_oauth import telegram_oauth_bp, init_telegram_oauth
     app.register_blueprint(telegram_oauth_bp)
     init_telegram_oauth(app)
+    from app.advertising import init_advertising
+    init_advertising(app, _ads_viewer)
+
+
+from app.account_privacy import register as register_account_privacy
+register_account_privacy(web)
+
+from app.google_play import register as register_google_play
+register_google_play(web)
+
+from app.ai_gateway import register as register_ai_gateway
+register_ai_gateway(web)

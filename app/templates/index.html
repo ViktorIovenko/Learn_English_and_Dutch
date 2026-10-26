@@ -102,12 +102,13 @@
     <a class="dashboard-nav-item dashboard-nav-primary" href="{{ url_for('web.difficult_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">★</span>{{ t("nav.difficult") }}</a>
     <a class="dashboard-nav-item" href="{{ url_for('web.word_database_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">▤</span>База слов</a>
     <a class="dashboard-nav-item" href="/upload"><span class="dashboard-nav-icon" aria-hidden="true">＋</span>{{ t("index.add_words") }}</a>
-    <a class="dashboard-nav-item" href="{{ url_for('web.parent_dashboard_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">♧</span>{{ t("nav.parent") }}</a>
+    <a class="dashboard-nav-item" href="{{ url_for('web.parent_dashboard_page') }}" data-family-feature><span class="dashboard-nav-icon" aria-hidden="true">♧</span>{{ t("nav.parent") }}</a>
     <a class="dashboard-nav-item" href="{{ url_for('web.settings_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">⚙</span>{{ t("nav.settings") }}</a>
     {% if is_admin %}
       <a class="dashboard-nav-item dashboard-nav-admin" href="{{ url_for('web.admin_users_page') }}"><span class="dashboard-nav-icon" aria-hidden="true">◇</span>{{ t("nav.admin") }}</a>
     {% endif %}
 </nav>
+{% with ad_placement="dashboard_top", ad_page="dashboard" %}{% include "_ad_slot.html" %}{% endwith %}
 
 <div id="helloLine" class="hello-line" style="margin:6px 0 10px 0;color:#64748b;">
   {% if display_name %}
@@ -116,6 +117,9 @@
 </div>
 
 <div id="lessons" class="grid"></div>
+{# ads.js moves this slot between lesson cards once they are rendered #}
+{% with ad_placement="dashboard_between", ad_page="dashboard" %}{% include "_ad_slot.html" %}{% endwith %}
+{% with ad_placement="dashboard_bottom", ad_page="dashboard" %}{% include "_ad_slot.html" %}{% endwith %}
 {% endblock %}
 
 

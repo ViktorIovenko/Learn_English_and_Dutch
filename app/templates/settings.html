@@ -32,7 +32,20 @@
 .subscription-features li::before{content:"✓";color:#16a34a;font-weight:800;margin-right:8px;}
 .subscription-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;}
 .subscription-section{margin-top:14px;}
+.subscription-more{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:10px;}
+.subscription-more>summary{cursor:pointer;font-size:14px;font-weight:700;color:#4A0EA3;list-style:none;display:flex;align-items:center;gap:6px;}
+.subscription-more>summary::-webkit-details-marker{display:none;}
+.subscription-more>summary::after{content:"▾";transition:transform .15s;}
+.subscription-more[open]>summary::after{transform:rotate(180deg);}
 .subscription-section h4{margin:0 0 8px;font-size:14px;}
+.plan-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+.plan-card{border:1px solid #e2e8f0;border-radius:12px;padding:12px;background:#fff;display:flex;flex-direction:column;gap:6px;}
+.plan-card.current{border-color:#7c3aed;box-shadow:0 0 0 2px #ede9fe;}
+.plan-card-name{font-weight:800;font-size:16px;color:#0f172a;}
+.plan-card-price{font-weight:700;color:#5D12C7;}
+.plan-card-tag{align-self:flex-start;font-size:11px;font-weight:800;border-radius:999px;padding:2px 8px;background:#ede9fe;color:#5b21b6;}
+.plan-card ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:13px;color:#334155;}
+.plan-card li::before{content:"✓";color:#16a34a;font-weight:800;margin-right:6px;}
 .mcp-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .mcp-switch{position:relative;display:inline-block;width:48px;height:28px;flex:0 0 auto;margin-top:2px}
 .mcp-switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0}
@@ -107,7 +120,7 @@
     </div>
   </div>
 
-  <div class="settings-panel" id="subscription-panel" data-legacy-i18n>
+  <div class="settings-panel subscription-panel" id="subscription-panel" data-legacy-i18n>
     <div class="subscription-hero">
       <div>
         <h3 style="margin:0 0 4px;font-size:16px">{{ t("subscription.title") }}</h3>
@@ -131,6 +144,8 @@
         <div id="sub-end-value" class="subscription-value">—</div>
       </div>
     </div>
+    <details class="subscription-more" id="subscription-more">
+    <summary>{{ t("plan.more") }}</summary>
     <div class="subscription-section">
       <h4 id="sub-included-title"></h4>
       <ul class="subscription-features" id="sub-features"></ul>
@@ -139,6 +154,10 @@
       <h4 id="sub-details-title"></h4>
       <ul class="subscription-list" id="sub-details"></ul>
     </div>
+    <div class="subscription-section">
+      <h4>{{ t("plan.title") }}</h4>
+      <div class="plan-cards" id="plan-cards"></div>
+    </div>
     <div class="subscription-section" id="sub-payments">
       <div class="subscription-actions" style="margin-top:0">
         <button type="button" disabled>{{ t("subscription.subscribe") }}</button>
@@ -146,6 +165,7 @@
       </div>
       <p class="subscription-note">{{ t("subscription.plan_note") }}</p>
     </div>
+    </details>
   </div>
 
   <div class="settings-panel">
@@ -174,7 +194,7 @@
     </div>
   </div>
 
-  <div class="settings-panel" id="family-panel">
+  <div class="settings-panel" id="family-panel" data-family-feature>
     <h3 style="margin:0 0 4px;font-size:16px">{{ t("family.title") }}</h3>
     <div id="family-content" class="family-box">
       <p class="settings-note">{{ t("common.loading") }}</p>
@@ -206,14 +226,27 @@
       <a class="ghost-btn mcp-open-btn" href="{{ url_for('web.mcp_connector_page') }}">{{ t("mcp.open") }} →</a>
     </div>
   </div>
+  {% if ads_consent_ui %}
+  {# Shown only in LIVE mode to users who may get partner offers (Free). #}
+  <div class="settings-panel" id="ads-consent-panel">
+    <h3 style="margin:0 0 4px;font-size:16px">{{ ads_consent_text.title }}</h3>
+    <p class="settings-note">{{ ads_consent_text.text }}</p>
+    <div class="settings-actions">
+      <button type="button" class="ghost-btn" data-ads-consent="granted">{{ ads_consent_text.accept }}</button>
+      <button type="button" class="ghost-btn" data-ads-consent="denied">{{ ads_consent_text.decline }}</button>
+    </div>
+    <span id="ads-consent-state" class="settings-status" role="status"></span>
+  </div>
+  {% endif %}
 </div>
+{% with ad_placement="secondary_bottom", ad_page="secondary" %}{% include "_ad_slot.html" %}{% endwith %}
 <dialog id="family-code-dialog" class="family-invite-dialog" aria-labelledby="family-dialog-title">
   {% include "_family_invite_form.html" %}
 </dialog>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='family_invite.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='family_invite.js') }}?v=4"></script>
 <script>
 (function(){
   const OPTIONS = {{ language_options | tojson }};
@@ -845,24 +878,58 @@
     // Admins and grants ending more than ten years out count as unlimited.
     const unlimited = Boolean(sub.is_unlimited || sub.is_admin);
     const trial = sub.status === "trial";
-    const active = sub.access && !trial;
+    const T = (key, params) => window.I18N.t(key, params);
+    const PLAN_NAMES = {free: "Free", premium: "Premium", family: "Family"};
+    const plan = PLAN_NAMES[sub.plan] ? sub.plan : (sub.paid_access ? "premium" : "free");
+    const onFree = !unlimited && plan === "free";
+    const active = Boolean(sub.paid_access) && !trial;
     const badge = $("sub-badge");
     badge.hidden = false;
-    badge.className = "subscription-badge " + (unlimited ? "unlimited" : trial ? "warn" : sub.access ? "ok" : "err");
-    badge.textContent = unlimited ? "∞ " + L.unlimited : (L["st_" + sub.status] || sub.status || "—");
-    $("subscription-main").classList.toggle("is-unlimited", unlimited);
-    $("sub-plan").textContent = unlimited ? L.unlimited_title : trial ? L.trial_title : active ? L.paid_title : L.expired_title;
-    $("sub-explain").textContent = unlimited ? L.unlimited_note : trial ? L.trial_note : active ? L.paid_note : L.expired_note;
-    $("sub-status-value").textContent = unlimited ? L.unlimited : (L["st_" + sub.status] || sub.status || "—");
-    $("sub-days-value").textContent = unlimited ? "∞" : sub.access ? String(sub.days_left ?? 0) : "—";
+    badge.className = "subscription-badge " + (unlimited ? "unlimited" : trial ? "warn" : "ok");
+    badge.textContent = (sub.preview ? "Preview · " : "") + (unlimited ? "∞ " + L.unlimited : onFree ? "Free" : (L["st_" + sub.status] || sub.status || "—"));
+    $("subscription-panel").classList.toggle("is-unlimited", unlimited);
+    $("sub-plan").textContent = unlimited ? L.unlimited_title : trial ? L.trial_title + " · Premium" : PLAN_NAMES[plan];
+    $("sub-explain").textContent = unlimited ? L.unlimited_note : trial ? L.trial_note : onFree ? T("plan.free_note") : L.paid_note;
+    $("sub-status-value").textContent = unlimited ? L.unlimited : onFree ? "Free" : (L["st_" + sub.status] || sub.status || "—");
+    $("sub-days-value").textContent = unlimited ? "∞" : (active || trial) && sub.days_left ? String(sub.days_left) : "—";
     $("sub-end-label").textContent = trial ? L.trial_end : L.until;
     $("sub-end-value").textContent = unlimited ? L.forever : fmtDate(trial ? sub.trial_ends_at : sub.current_period_ends_at || (sub.access ? 0 : sub.trial_ends_at));
 
     const features = $("sub-features");
     features.replaceChildren();
-    [L.f_lessons, L.f_import, L.f_sync, L.f_family].forEach(text => {
+    const PLAN_FEATURES = {
+      free: ["plan.f_learning", "plan.f_manual", "plan.f_ads"],
+      premium: ["plan.f_learning", "plan.f_manual", "plan.f_no_ads", "plan.f_ai", "plan.f_limits"],
+      family: ["plan.f_learning", "plan.f_manual", "plan.f_no_ads", "plan.f_ai", "plan.f_limits", "plan.f_family"],
+    };
+    const included = unlimited ? PLAN_FEATURES.family.filter(key => key !== "plan.f_limits") : PLAN_FEATURES[plan];
+    [...included.map(key => T(key)), L.f_sync].forEach(text => {
       const li = document.createElement("li"); li.textContent = text; features.append(li);
     });
+    const aiPaused = window.PLAN_STATE ? !window.PLAN_STATE.paid_ai_globally_enabled : true;
+
+    const cards = $("plan-cards");
+    cards.replaceChildren();
+    ["free", "premium", "family"].forEach(code => {
+      const card = document.createElement("div");
+      card.className = "plan-card" + (!unlimited && code === plan ? " current" : "");
+      const name = document.createElement("div"); name.className = "plan-card-name"; name.textContent = PLAN_NAMES[code];
+      const price = document.createElement("div"); price.className = "plan-card-price"; price.textContent = T("plan.price_" + code);
+      const list = document.createElement("ul");
+      PLAN_FEATURES[code].forEach(key => { const li = document.createElement("li"); li.textContent = T(key); list.append(li); });
+      card.append(name, price, list);
+      if (!unlimited && code === plan) {
+        const tag = document.createElement("span"); tag.className = "plan-card-tag"; tag.textContent = T("plan.current"); card.prepend(tag);
+      } else if (code !== "free" && !unlimited) {
+        const soon = document.createElement("button"); soon.type = "button"; soon.disabled = true; soon.textContent = T("plan.soon"); card.append(soon);
+      }
+      cards.append(card);
+    });
+    if (aiPaused) {
+      const note = document.createElement("p"); note.className = "subscription-note"; note.textContent = T("plan.ai_paused"); cards.after(note);
+      note.dataset.aiPausedNote = "1";
+      cards.parentElement.querySelectorAll("[data-ai-paused-note]").forEach(el => { if (el !== note) el.remove(); });
+    }
 
     const details = $("sub-details");
     details.replaceChildren();
@@ -879,6 +946,7 @@
 
   apiFetch("/api/subscription").then(r => r.json()).then(data => {
     if (!data.ok) throw new Error(data.error || "error");
+    if (data.plan_state) window.PLAN_STATE = data.plan_state;
     render(data.subscription || {});
   }).catch(e => {
     $("sub-plan").textContent = "—";

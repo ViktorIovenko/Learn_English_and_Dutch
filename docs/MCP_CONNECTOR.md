@@ -25,7 +25,10 @@ Access tokens are opaque random values. Only their SHA-256 hashes are stored. Au
 - `family.read`: linked children and their progress/lessons.
 - `family.write`: assignments, archive, priority lesson and difficult words for a linked child.
 - `learning.files`: reserved permission for ChatGPT file import; write still also requires `learning.write`.
-- `subscriptions.admin`: subscription inventory and manual grant/revoke. It is shown/granted only to a configured `ADMIN_IDS` user and is checked again on every operation.
+- `subscriptions.admin`: subscription inventory and manual grant/revoke.
+- `ads.admin`: advertising mode, placements, creatives (`ads_admin_state_get`, `ads_settings_update`, `ads_placements_update`, `ads_creative_set_enabled`, `ads_import_preview`). Changes are written to the admin audit log; LIVE keeps the `ADS_LIVE_ALLOWED` + Awin + `confirm="LIVE"` guards.
+
+Admin scopes (`subscriptions.admin`, `users.admin`, `analytics.admin`, `ads.admin`) are shown/granted only to a configured administrator and re-checked on every operation. Administrators come only from env: `ADMIN_IDS` (numeric Telegram IDs) and `ADMIN_EMAILS` (Google sign-in email); at most 2 entries per list are used. Telegram usernames are not accepted.
 
 Default consent is `learning.read`. Additional scopes must be requested and selected explicitly.
 

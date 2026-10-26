@@ -88,6 +88,8 @@ def _extract_json(raw: str):
 
 
 def _call_runtime_chat(api_key: str, message: str, context: dict | None = None) -> RuntimeChatResult:
+    if not getattr(Config, "PAID_AI_ENABLED", False):
+        raise AiPlatformError("paid_ai_disabled")
     if not Config.AI_PLATFORM_BASE_URL:
         raise AiPlatformError("AI_PLATFORM_BASE_URL не настроен")
     if not api_key:
@@ -132,35 +134,35 @@ def _call_runtime_chat(api_key: str, message: str, context: dict | None = None) 
     )
 
 
-def translate_word(word, from_lang, level="", known_ru=None, *, supplied=None, languages=None, sense="", context="", examples=True):
+def translate_word(word, from_lang, level="", known_ru=None, *, supplied=None, languages=None, sense="", context="", examples=True, allow_provider=True):
     from app.content_service import resolve_word
     values = dict(supplied or {})
     if known_ru:
         values["ru"] = known_ru
     try:
-        result = resolve_word(word, from_lang, languages or ("nl", "en", "ru"), level, values, sense, context, examples)
+        result = resolve_word(word, from_lang, languages or ("nl", "en", "ru"), level, values, sense, context, examples, allow_provider)
     except (ValueError, RuntimeError) as exc:
         raise AiPlatformError(str(exc)) from exc
     return result, replace(TokenUsage.from_payload(result.get("usage")),provider_calls=result["provider_calls"])
 
 
-def translate_language(source_word, source_sentence, source_lang_name, target_lang_name, *, supplied=None, sense="", context=""):
+def translate_language(source_word, source_sentence, source_lang_name, target_lang_name, *, supplied=None, sense="", context="", allow_provider=True):
     from app.content_service import translate_language as resolve
     try:
-        result = resolve(source_word, source_sentence, source_lang_name, target_lang_name, supplied, sense, context)
+        result = resolve(source_word, source_sentence, source_lang_name, target_lang_name, supplied, sense, context, allow_provider)
     except (ValueError, RuntimeError) as exc:
         raise AiPlatformError(str(exc)) from exc
     return result, replace(TokenUsage.from_payload(result.get("usage")),provider_calls=result["provider_calls"])
 
 
-def suggest_topic_words(topic, lang, level, count, existing_words):
+def suggest_topic_words(topic, lang, level, count, existing_words, *, allow_provider=True):
     from app.content_service import ensure_schema, _request
     from app.content_db import transaction
     from app.content_providers import language_code
     request = {"topic": str(topic).strip(), "language": language_code(lang), "level": level, "count": max(1,min(50,count))}
     with transaction(Config.DB_PATH) as conn:
         ensure_schema(conn)
-        result, calls = _request(conn, "suggest_words", request)
+        result, calls = _request(conn, "suggest_words", request, allow_provider)
     if not result:
         raise AiPlatformError("Подбор темы недоступен: внешний сервис ещё не подключён")
     words = result.get("words", [])

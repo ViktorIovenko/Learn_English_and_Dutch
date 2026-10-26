@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "LearnWordsApp"
-include ':app'
+rootProject.name = "ParallelLingvo"
+include ':app', ':telegram-login'

@@ -1,0 +1,102 @@
+﻿<!doctype html>
+<html lang="{{ language }}">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer"><meta name="color-scheme" content="light">
+  <title>ParallelLingvo — {{ text.login }}</title>
+  <style>
+    *{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:28px 18px;background:radial-gradient(ellipse at 15% 15%,#e9ddff,transparent 55%),radial-gradient(ellipse at 90% 90%,#edf6d9,transparent 45%),#f8f6fc;color:#292036;font:15px/1.5 system-ui,-apple-system,sans-serif}main{width:100%;max-width:460px;background:#fff;border:1px solid #eee7f7;border-radius:28px;padding:32px;box-shadow:0 24px 80px #3b1c7012}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-size:22px;font-weight:750;letter-spacing:-1px;color:#5d12c7;text-decoration:none}.brand i{font-style:normal;color:#86b442}select{max-width:125px;border:1px solid #e5dcef;border-radius:9px;padding:7px;background:#fff;color:#62556f;font:inherit;font-size:12px}.mark{display:grid;place-items:center;width:52px;height:52px;margin-top:32px;border-radius:16px;background:#f1e9fc;color:#5d12c7;font-size:25px}h1{font-size:26px;line-height:1.2;letter-spacing:-.7px;margin:20px 0 12px}.tabs{display:flex;padding:4px;background:#f7f3fc;border-radius:12px;margin:24px 0}.tabs button{flex:1;border:0;background:transparent;padding:10px 4px;color:#756584;font:inherit;font-size:13px;cursor:pointer;border-radius:9px}.tabs button[aria-selected=true]{background:#fff;color:#5d12c7;box-shadow:0 2px 5px #3921570d}label{display:block;margin-top:18px;font-weight:600;font-size:13px}input{width:100%;padding:13px 14px;margin-top:7px;border:1px solid #e1d7ec;border-radius:11px;font:inherit;color:#292036;background:#fff}input:focus,select:focus{outline:3px solid #eee3ff;border-color:#8c5fc8}.primary{display:block;width:100%;padding:14px;border:0;border-radius:12px;background:#5d12c7;color:white;font:inherit;font-weight:650;cursor:pointer;margin-top:24px}.primary:hover{background:#4c0fa5}.primary:disabled{opacity:.55;cursor:wait}.text-button{border:0;padding:0;background:none;color:#7143a8;font:inherit;font-size:13px;cursor:pointer}.helper{margin:8px 0;color:#8a7d96;font-size:12px}#forgot{display:block;margin:14px 0 0 auto}#status{font-size:13px;color:#62536e;line-height:1.6;margin:16px 0 0}#status:empty{display:none}#status[data-error=true]{color:#ae3154}.foot{border-top:1px solid #f0eaf6;margin:28px 0 0;padding-top:20px;text-align:center;color:#9989a6;font-size:12px}.foot a{color:#9989a6;text-decoration:none}@media(max-width:420px){main{padding:26px 22px}.brand{font-size:20px}}
+  </style>
+</head>
+<body><main>
+  <div class="top"><a class="brand" href="https://parallellingvo.app">ParallelLingvo<i>.</i></a>
+    <select id="language" aria-label="Language">{% for code, name in languages.items() %}<option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+  </div>
+  <div class="mark" aria-hidden="true">{% if complete %}&#10003;{% else %}&#9993;{% endif %}</div>
+  <h1 id="heading">{{ text.setup_title if complete else text.login }}</h1>
+  <div class="tabs" id="tabs" {% if complete or linking %}hidden{% endif %}>
+    <button type="button" data-mode="login" aria-selected="true">{{ text.login }}</button><button type="button" data-mode="setup" aria-selected="false">{{ text.signup }}</button>
+  </div>
+  <form id="accountForm" {% if complete %}hidden{% endif %}>
+    <label for="email">Email</label><input id="email" type="email" autocomplete="email" maxlength="254" required>
+    <div id="loginFields"><label for="loginPassword">{{ text.password }}</label><input id="loginPassword" type="password" autocomplete="current-password" maxlength="128" required></div>
+    <button id="forgot" class="text-button" type="button">{{ text.forgot }}</button>
+    <button id="submit" class="primary" type="submit">{{ text.login }}</button>
+  </form>
+  <form id="passwordForm" hidden>
+    <label for="password">{{ text.password }}</label><input id="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+    <p class="helper">{{ text.requirements }}</p>
+    <label for="confirmation">{{ text.confirm }}</label><input id="confirmation" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+    <button id="save" class="primary" type="submit">{{ text.save }}</button>
+  </form>
+  <p id="status" role="status" aria-live="polite"></p>
+  <button id="confirmEmail" class="primary" type="button" hidden>{{ text.link }}</button>
+  <button id="newLink" type="button" class="text-button" hidden style="margin-top:18px">{{ text.send }}</button>
+  <p class="foot"><a href="https://parallellingvo.app">parallellingvo.app</a></p>
+  <script>
+    const text = {{ text | tojson }}, language = {{ language | tojson }}, complete = {{ complete | tojson }};
+    const accountForm = document.getElementById('accountForm'), passwordForm = document.getElementById('passwordForm');
+    const statusBox = document.getElementById('status'), submitButton = document.getElementById('submit'), saveButton = document.getElementById('save');
+    const loginFields = document.getElementById('loginFields'), loginPassword = document.getElementById('loginPassword');
+    const linking = {{ linking | default(false) | tojson }};
+    let mode = 'login', nextSend = 0;
+    const token = new URLSearchParams(location.hash.slice(1)).get('token') || '';
+    function status(message, error = false) {statusBox.textContent = message; statusBox.dataset.error = String(error);}
+    function changeMode(value) {
+      mode = value; status(''); document.getElementById('heading').textContent = linking ? text.link : text[value === 'setup' ? 'signup' : value];
+      loginFields.hidden = value !== 'login'; loginPassword.required = value === 'login'; loginPassword.disabled = value !== 'login';
+      document.getElementById('forgot').hidden = value !== 'login';
+      submitButton.textContent = value === 'login' ? text.login : text.send;
+      document.querySelectorAll('[data-mode]').forEach(button => button.setAttribute('aria-selected', String(button.dataset.mode === value)));
+    }
+    async function post(path, body) {
+      const response = await fetch('/api/auth/email/' + path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...body, language})});
+      let result; try {result = await response.json();} catch (_) {throw new Error(text.email_unavailable);}
+      if (!response.ok || !result.ok) throw new Error(text[result.error] || text.email_unavailable);
+      return result;
+    }
+    document.getElementById('language').addEventListener('change', event => {const url = new URL(location.href); url.searchParams.set('lang', event.target.value); location.assign(url.href);});
+    document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => changeMode(button.dataset.mode)));
+    document.getElementById('forgot').addEventListener('click', () => changeMode('reset'));
+    document.getElementById('newLink').addEventListener('click', () => {const url = new URL('/auth/email',location.origin);url.searchParams.set('lang',language);location.assign(url.href);});
+    accountForm.addEventListener('submit', async event => {
+      event.preventDefault(); if (mode !== 'login' && Date.now() < nextSend) {status(text.rate_limited, true); return;}
+      submitButton.disabled = true; status('');
+      try {
+        const result = await post(mode === 'login' ? 'login' : 'request', {email:document.getElementById('email').value, password:loginPassword.value, mode});
+        if (mode === 'login') location.assign(result.next);
+        else {nextSend = Date.now() + result.resend_after * 1000; status(text.sent);}
+      } catch(error) {status(error.message, true);} finally {submitButton.disabled = false;}
+    });
+    passwordForm.addEventListener('submit', async event => {
+      event.preventDefault(); const password = document.getElementById('password').value, confirmation = document.getElementById('confirmation').value;
+      if (password !== confirmation) {status(text.password_mismatch, true); return;}
+      saveButton.disabled = true; status('');
+      try {
+        const result = await post('password', {token, password, password_confirmation:confirmation});
+        history.replaceState(null, '', location.pathname + location.search); location.assign(result.next);
+      } catch(error) {status(error.message, true); saveButton.disabled = false;}
+    });
+    document.getElementById('confirmEmail').addEventListener('click', async event => {
+      event.target.disabled = true;
+      try {
+        const result = await post('confirm', {token});
+        history.replaceState(null, '', location.pathname + location.search);
+        location.assign(result.next);
+      } catch(error) {status(error.message, true); event.target.disabled = false;}
+    });
+    if (!complete) changeMode({{ initial_mode | default('login') | tojson }});
+    if (complete) {
+      post('link', {token}).then(result => {
+        if (result.purpose === 'native_link') {
+          document.getElementById('heading').textContent = text.link;
+          status(text.native_link_body + ' ' + result.email);
+          document.getElementById('confirmEmail').hidden = false;
+          return;
+        }
+        document.getElementById('heading').textContent = result.purpose === 'link' ? text.link : (result.purpose === 'reset' ? text.reset_title : text.setup_title);
+        passwordForm.hidden = false; document.getElementById('password').focus();
+      }).catch(error => {status(error.message, true); document.getElementById('newLink').hidden = false;});
+    }
+  </script>
+</main></body></html>

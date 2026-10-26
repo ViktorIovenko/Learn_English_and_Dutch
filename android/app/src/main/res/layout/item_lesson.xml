@@ -66,15 +66,13 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="15">
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_hide"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <CheckBox
+                android:id="@+id/checkbox_learned"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_gravity="center"
                 android:minWidth="0dp"
-                android:text="@string/hide"
-                android:textSize="11sp" />
+                android:contentDescription="@string/lesson_learned" />
             <CheckBox
                 android:id="@+id/checkbox_delete"
                 android:layout_width="wrap_content"

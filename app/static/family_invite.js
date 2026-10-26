@@ -17,6 +17,7 @@
   let controller = null;
   let generation = 0;
   const tr = (key, args) => window.I18N.t(key, args);
+  const permissionsText = document.getElementById('family-permissions').textContent;
   const remember = () => { if (!dialog) sessionStorage.setItem('family_pending_url', location.pathname + location.search); };
   function setBusy(value) {
     busy = value;
@@ -70,7 +71,9 @@
     }
   }
   function errorText(error) {
-    return tr(error === 'parent_limit_reached' ? 'family.parent_limit' :
+    return tr(error === 'unlink_children_required' ? 'family.unlink_children_first' :
+      error === 'parent_limit_reached' ? 'family.parent_limit' :
+      error === 'children_limit_reached' ? 'family.children_limit' :
       error === 'too_many_attempts' ? 'family.too_many_attempts' :
       ['parent_account_required', 'child_account_required', 'parent_cannot_be_child', 'child_cannot_be_parent'].includes(error) ? 'family.wrong_account' : 'family.invalid');
   }
@@ -97,7 +100,9 @@
       if (!dialog) history.replaceState(null, '', '/family/connect?' + new URLSearchParams(invitation));
       remember();
       document.getElementById('family-preview').textContent = tr('family.confirm_accounts', {account: data.account_name, name: data.display_name});
-      document.getElementById('family-permissions').hidden = false;
+      const permissions = document.getElementById('family-permissions');
+      permissions.textContent = data.becomes_child ? tr('family.becomes_child') : data.becomes_parent ? tr('family.becomes_parent') : permissionsText;
+      permissions.hidden = false;
       confirmation.hidden = false;
       form.hidden = true;
       accept.hidden = false;
@@ -137,7 +142,8 @@
   });
   cancel.addEventListener('click', dismiss);
   closeButton.addEventListener('click', dismiss);
-  document.addEventListener('hello-name-ready', () => {
+  // auth-ready fires after any successful sign-in, even for accounts without a display name.
+  document.addEventListener('auth-ready', () => {
     if (dialog || invitation) return;
     if (busy) retryAfterAuth = true;
     else preview();

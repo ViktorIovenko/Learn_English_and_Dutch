@@ -21,6 +21,14 @@ def language_code(value):
 
 
 def adapter(operation):
+    # Global kill switch for paid AI: with it off, only stored translations,
+    # examples and the free gTTS backend are used (Web, MCP, bot, imports).
+    if not getattr(Config, "PAID_AI_ENABLED", False):
+        return None
+    from app.ai_gateway import configured_adapter
+    managed = configured_adapter(operation)
+    if managed is not None:
+        return managed or None
     setting = {"translate_word": "CONTENT_TRANSLATION_PROVIDER_MODULE", "translate_sentence": "CONTENT_TRANSLATION_PROVIDER_MODULE",
                "generate_examples": "CONTENT_EXAMPLE_PROVIDER_MODULE", "suggest_words": "CONTENT_TOPIC_PROVIDER_MODULE"}.get(operation, "CONTENT_PROVIDER_MODULE")
     module = getattr(Config, setting, "") or getattr(Config, "CONTENT_PROVIDER_MODULE", "")
@@ -41,5 +49,5 @@ class GttsProvider:
 
 
 def tts_provider():
-    module = getattr(Config, "CONTENT_TTS_PROVIDER_MODULE", "")
+    module = getattr(Config, "CONTENT_TTS_PROVIDER_MODULE", "") if getattr(Config, "PAID_AI_ENABLED", False) else ""
     return importlib.import_module(module).provider if module else GttsProvider()

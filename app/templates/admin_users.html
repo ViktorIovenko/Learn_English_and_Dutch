@@ -158,10 +158,83 @@ main.container {
     </script>
   {% else %}
     <div id="admin-flash" class="admin-flash"></div>
+    <div class="admin-card plan-preview-card" id="plan-preview-card">
+      <h3 style="margin:0 0 6px;font-size:16px">Preview subscription</h3>
+      <p class="plan-preview-hint">Показывает приложение так, как его видит пользователь выбранного тарифа. Действует только в этой сессии браузера: реальные права, подписка, платежи и данные не меняются, другие пользователи не затронуты.</p>
+      <div class="plan-preview-buttons" role="group" aria-label="Preview subscription">
+        <button type="button" class="small-btn" data-plan-preview="free">Free</button>
+        <button type="button" class="small-btn" data-plan-preview="premium">Premium</button>
+        <button type="button" class="small-btn" data-plan-preview="family">Family</button>
+        <button type="button" class="small-btn" data-plan-preview="exit">Exit Preview</button>
+      </div>
+      <input type="checkbox" id="plan-preview-ads" checked hidden>
+      <div id="plan-preview-status" class="plan-preview-status">Загрузка…</div>
+      <div class="admin-table-wrap"><table class="admin-table plan-matrix" id="plan-matrix"></table></div>
+    </div>
+    <style>
+      .plan-preview-card{margin-bottom:12px;}
+      .plan-preview-hint{margin:0 0 10px;color:#64748b;font-size:13px;line-height:1.45;}
+      .plan-preview-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+      .plan-preview-buttons .is-current{background:#7c2d12;color:#fff;border-color:#7c2d12;}
+      .plan-preview-ads{display:flex;gap:6px;align-items:center;font-size:13px;color:#334155;margin-bottom:8px;}
+      .plan-preview-status{font-size:13px;color:#334155;margin-bottom:8px;}
+      .plan-matrix{min-width:0;font-size:13px;}
+      .plan-matrix td,.plan-matrix th{text-align:center;}
+      .plan-matrix td:first-child,.plan-matrix th:first-child{text-align:left;}
+    </style>
+    <script>
+    (function(){
+      const status = document.getElementById("plan-preview-status");
+      const ads = document.getElementById("plan-preview-ads");
+      const matrix = document.getElementById("plan-matrix");
+      const yes = v => v === true ? "✓" : v === false ? "—" : String(v);
+      const ROWS = [
+        ["price_eur", "Цена, €/мес"], ["learning", "Обучение"], ["manual_words", "Ручное добавление слов"],
+        ["exercises", "Упражнения"], ["mcp", "MCP"], ["ads", "Реклама"], ["ai_paid", "Платные ИИ-функции"],
+        ["family", "Семейная панель"], ["max_children", "Детей максимум"],
+      ];
+      function render(data){
+        const preview = data.preview || "";
+        document.querySelectorAll("[data-plan-preview]").forEach(btn => {
+          btn.classList.toggle("is-current", (btn.dataset.planPreview === "exit" ? "" : btn.dataset.planPreview) === preview);
+        });
+        ads.checked = preview ? !!data.show_ads : ads.checked;
+        const st = data.settings || {};
+        status.textContent = (preview ? "Активен предпросмотр: " + preview.toUpperCase() : "Обычный режим администратора")
+          + " · Платный ИИ: " + (st.paid_ai_enabled ? "включён" : "выключен глобально")
+          + " · Реклама: " + String(st.ads_mode || "off").toUpperCase() + " (вкладка «Реклама»)"
+          + " · Ограничения тарифов для пользователей: " + (st.enforce_plan_limits ? "применяются" : "не применяются (только в предпросмотре)");
+        const codes = Object.keys(data.plans || {});
+        matrix.innerHTML = "<thead><tr><th></th>" + codes.map(c => "<th>" + c.toUpperCase() + "</th>").join("") + "</tr></thead><tbody>"
+          + ROWS.map(([key, label]) => "<tr><td>" + label + "</td>" + codes.map(c => "<td>" + yes(data.plans[c][key]) + "</td>").join("") + "</tr>").join("")
+          + "</tbody>";
+      }
+      async function call(method, body){
+        const resp = await fetch("/api/admin/plan-preview", {
+          method, credentials: "same-origin",
+          headers: body ? {"Content-Type": "application/json"} : {},
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.ok) throw new Error(data.error || "preview_failed");
+        return data;
+      }
+      document.querySelectorAll("[data-plan-preview]").forEach(btn => btn.addEventListener("click", async () => {
+        try {
+          const plan = btn.dataset.planPreview;
+          render(await call("POST", {plan, show_ads: ads.checked}));
+          if (plan !== "exit") window.location.href = "/";
+        } catch (e) { status.textContent = "Ошибка: " + e.message; }
+      }));
+      call("GET").then(render).catch(e => { status.textContent = "Ошибка: " + e.message; });
+    })();
+    </script>
     <div class="admin-tabs" role="tablist" aria-label="Разделы админки">
       <button type="button" class="admin-tab is-active" data-admin-tab="general">Общее</button>
       <button type="button" class="admin-tab" data-admin-tab="subscriptions">Подписки</button>
       <button type="button" class="admin-tab" data-admin-tab="costs">Затраты и лимиты</button>
+      <a class="admin-tab" href="/admin/ads" style="text-decoration:none">Реклама</a>
+      <a class="admin-tab" href="/admin/ai" style="text-decoration:none">ИИ</a>
     </div>
 
     <section class="admin-panel is-active" data-admin-panel="general">

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plan_title">Abonnementen</string>
+    <string name="plan_current">Jouw abonnement</string>
+    <string name="plan_price_free">€0</string>
+    <string name="plan_price_premium">€4,99 / maand</string>
+    <string name="plan_price_family">€9,99 / maand</string>
+    <string name="plan_f_learning">Gratis leren en oefenen</string>
+    <string name="plan_f_manual">Woorden en lessen handmatig toevoegen</string>
+    <string name="plan_f_ads">Met advertenties</string>
+    <string name="plan_f_no_ads">Geen advertenties</string>
+    <string name="plan_f_ai">Uitgebreide AI-functies</string>
+    <string name="plan_f_limits">Hogere limieten</string>
+    <string name="plan_f_family">Ouder plus maximaal 4 kinderen, gezinsdashboard</string>
+    <string name="plan_free_note">Gratis abonnement: leren, oefenen en handmatig woorden toevoegen. Je voortgang blijft altijd bewaard.</string>
+    <string name="plan_upgrade_family">Het gezinsdashboard hoort bij het Family-abonnement.</string>
+    <string name="plan_ai_paused">AI-functies zijn tijdelijk uitgeschakeld. Opgeslagen vertalingen, voorbeelden en audio blijven werken.</string>
+    <string name="plan_unlimited">Volledige toegang</string>
+    <string name="plan_no_expiry">Geen einddatum</string>
+    <string name="plan_valid_until">Toegang tot: %1$s</string>
+    <string name="plan_price_note">Referentieprijzen voor webabonnementen. De Google Play-aankoopprijs staat hieronder zodra betalen beschikbaar is.</string>
+    <string name="plan_ai_upgrade">Nieuwe AI-aanvragen vereisen Premium of Family. Opgeslagen inhoud en handmatige invoer blijven gratis.</string>
+    <string name="settings_subscribe">Abonnement afsluiten</string>
+</resources>

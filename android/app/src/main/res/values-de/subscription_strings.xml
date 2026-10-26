@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plan_title">Tarife</string>
+    <string name="plan_current">Dein Tarif</string>
+    <string name="plan_price_free">€0</string>
+    <string name="plan_price_premium">4,99 € / Monat</string>
+    <string name="plan_price_family">9,99 € / Monat</string>
+    <string name="plan_f_learning">Kostenloses Lernen und Üben</string>
+    <string name="plan_f_manual">Wörter und Lektionen manuell hinzufügen</string>
+    <string name="plan_f_ads">Mit Werbung</string>
+    <string name="plan_f_no_ads">Ohne Werbung</string>
+    <string name="plan_f_ai">Erweiterte KI-Funktionen</string>
+    <string name="plan_f_limits">Höhere Limits</string>
+    <string name="plan_f_family">Elternteil plus bis zu 4 Kinder, Familien-Dashboard</string>
+    <string name="plan_free_note">Kostenloser Tarif: Lernen, Übungen und manuelles Hinzufügen von Wörtern. Dein Fortschritt bleibt immer erhalten.</string>
+    <string name="plan_upgrade_family">Das Familien-Dashboard ist im Family-Tarif enthalten.</string>
+    <string name="plan_ai_paused">KI-Funktionen sind vorübergehend deaktiviert. Gespeicherte Übersetzungen, Beispiele und Audio funktionieren weiter.</string>
+    <string name="plan_unlimited">Voller Zugriff</string>
+    <string name="plan_no_expiry">Ohne Ablaufdatum</string>
+    <string name="plan_valid_until">Zugriff bis: %1$s</string>
+    <string name="plan_price_note">Webpreise zur Orientierung. Der Google Play-Kaufpreis erscheint unten, sobald Zahlungen verfügbar sind.</string>
+    <string name="plan_ai_upgrade">Neue KI-Anfragen erfordern Premium oder Family. Gespeicherte Inhalte und manuelle Eingabe bleiben kostenlos.</string>
+    <string name="settings_subscribe">Abonnement abschließen</string>
+</resources>

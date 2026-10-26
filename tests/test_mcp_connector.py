@@ -11,6 +11,7 @@ from flask import Flask
 
 from config import Config
 from app import routes
+from app.auth_links import create_auth_token
 from app.mcp_api import mcp_api
 from app.mcp_service import McpServiceError, ensure_mcp_schema, execute
 
@@ -23,6 +24,8 @@ class McpConnectorTest(unittest.TestCase):
             "DB_PATH": Config.DB_PATH,
             "SECRET_KEY": Config.SECRET_KEY,
             "ADMIN_IDS": Config.ADMIN_IDS,
+            "ADMIN_EMAILS": Config.ADMIN_EMAILS,
+            "ADS_LIVE_ALLOWED": Config.ADS_LIVE_ALLOWED,
             "MCP_INTERNAL_TOKEN": Config.MCP_INTERNAL_TOKEN,
             "MCP_PUBLIC_URL": Config.MCP_PUBLIC_URL,
             "MCP_ISSUER_URL": Config.MCP_ISSUER_URL,
@@ -30,6 +33,8 @@ class McpConnectorTest(unittest.TestCase):
         Config.DB_PATH = self.db_path
         Config.SECRET_KEY = "mcp-test-secret"
         Config.ADMIN_IDS = (999,)
+        Config.ADMIN_EMAILS = ()
+        Config.ADS_LIVE_ALLOWED = False
         Config.MCP_INTERNAL_TOKEN = "internal-test-token"
         Config.MCP_PUBLIC_URL = "https://learn.iovenko.eu/mcp"
         Config.MCP_ISSUER_URL = "https://learn.iovenko.eu"
@@ -104,6 +109,20 @@ class McpConnectorTest(unittest.TestCase):
         with self.client.session_transaction() as session:
             session["tg_user_id"] = user_id
             session["is_auth"] = True
+
+    def test_android_status_reads_google_identity_with_signed_token(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("UPDATE users SET google_id='google-alice',google_email='alice@example.test' WHERE user_id='alice'")
+        response = self.client.get("/api/mcp/user", headers={
+            "Authorization": "Bearer " + create_auth_token("alice"),
+            "X-User-Id": "bob",
+            "X-Client": "android",
+        })
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"linked": True, "email": "alice@example.test"}, response.json["google_account"])
+        for headers in ({"X-User-Id": "alice"}, {"Authorization": "Bearer invalid"},
+                        {"Authorization": "Bearer " + create_auth_token("missing")}):
+            self.assertEqual(401, self.client.get("/api/mcp/user", headers=headers).status_code)
 
     def test_oauth_pkce_code_is_single_use_and_token_resolves_user(self):
         registered = self.client.post("/oauth/register", json={
@@ -242,6 +261,56 @@ class McpConnectorTest(unittest.TestCase):
         self.assertTrue(granted["granted"])
         audit = execute("admin_audit_log_list", "999", ["subscriptions.admin"], {"limit": 10})
         self.assertEqual("subscription_manual_grant", audit["items"][0]["action"])
+
+    def test_admins_come_only_from_env_ids_or_google_emails_capped_at_two(self):
+        import config as config_module
+        self.assertEqual((1, 2), config_module._parse_admin_ids("1, 2;3"))
+        self.assertEqual(("a@x.io", "b@y.io"), config_module._parse_admin_emails("A@x.io, @tg_user, b@y.io c@z.io"))
+        self.assertFalse(routes._is_admin_user_id("alice"))
+        Config.ADMIN_EMAILS = ("boss@example.com",)
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("UPDATE users SET google_email='Boss@Example.com' WHERE user_id='alice'")
+            conn.commit()
+        self.assertTrue(routes._is_admin_user_id("alice"))
+        self.assertFalse(routes._is_admin_user_id("bob"))
+        self.assertTrue(routes._is_admin_user_id("999"))
+        self.assertTrue(execute("ads_admin_state_get", "alice", ["ads.admin"], {})["placements"])
+
+    def test_ads_admin_tools_are_superuser_only_guarded_and_audited(self):
+        from app.advertising import policy, store
+        store.reset_schema_cache()
+        with self.assertRaises(McpServiceError) as denied:
+            execute("ads_admin_state_get", "alice", ["ads.admin"], {})
+        self.assertEqual("ADMIN_REQUIRED", denied.exception.code)
+        with self.assertRaises(McpServiceError) as scope:
+            execute("ads_admin_state_get", "999", ["users.admin"], {})
+        self.assertEqual("INSUFFICIENT_SCOPE", scope.exception.code)
+
+        state = execute("ads_admin_state_get", "999", ["ads.admin"], {})
+        self.assertEqual("off", state["settings"]["mode"])
+        self.assertIn(False, [p["enabled"] for p in state["placements"]])
+
+        placements = execute("ads_placements_update", "999", ["ads.admin"], {"keys": [], "enabled": True})
+        self.assertTrue(all(p["enabled"] for p in placements["placements"]))
+        with self.assertRaises(McpServiceError) as unknown:
+            execute("ads_placements_update", "999", ["ads.admin"], {"keys": ["nope"], "enabled": True})
+        self.assertEqual("UNKNOWN_PLACEMENT", unknown.exception.code)
+
+        updated = execute("ads_settings_update", "999", ["ads.admin"], {"max_per_page": 9, "admin_demo_always": True})
+        self.assertEqual(4, updated["settings"]["max_per_page"])
+        self.assertEqual("off", updated["settings"]["mode"])
+        with self.assertRaises(McpServiceError) as live:
+            execute("ads_settings_update", "999", ["ads.admin"], {"mode": "live", "confirm": "LIVE"})
+        self.assertEqual("LIVE_NOT_ALLOWED_BY_ENV", live.exception.code)
+
+        settings = store.get_settings()
+        admin = policy.Viewer(user_id="999", is_admin=True)
+        user = policy.Viewer(user_id="alice", subscription_status="trial_expired")
+        self.assertEqual("demo", policy.decide(admin, settings, platform="android", consent="unknown", live_allowed=False).serve)
+        self.assertEqual("none", policy.decide(user, settings, platform="web", consent="granted", live_allowed=False).serve)
+
+        audit = execute("admin_audit_log_list", "999", ["subscriptions.admin"], {"limit": 10})
+        self.assertEqual(["ads_settings_update", "ads_placements_update"], [i["action"] for i in audit["items"][:2]])
 
     def test_words_add_is_idempotent(self):
         params = {

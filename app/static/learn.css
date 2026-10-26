@@ -57,6 +57,10 @@
 .letter-btn:hover, .letter:hover{ background:#e0ecff; border-color:#2563eb; transform:scale(1.05); }
 .letter.clickable{ cursor:pointer; }
 .letter{ touch-action:none; }
+/* Долгое нажатие пальцем не должно выделять текст или открывать меню — иначе перетаскивание обрывается */
+.letter, .letter-btn, #answer-slots .slot{
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:none;
+}
 
 .builder-controls{ margin-top:10px; }
 .controls-row{ display:flex; margin:8px 0; gap:10px; }
@@ -160,6 +164,17 @@
   .letter-btn, .letter{ width:48px; height:48px; font-size:20px; }
 }
 
+/* ── Телефоны и Telegram Mini App: две большие кнопки, урок отдельной строкой ── */
+@media (max-width:480px){
+  .topbar{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .topbar .spacer{ display:none; }
+  .topbar > a.pill-btn{ min-height:48px; font-size:16px; white-space:nowrap; min-width:0; }
+  .topbar > a.pill-btn:first-child{ grid-column:1; grid-row:1; }
+  #next-lesson-btn{ grid-column:2; grid-row:1; }
+  .lesson-pill{ grid-column:1 / -1; grid-row:2; justify-content:space-between; min-width:0; }
+  .lesson-pill-title{ overflow:hidden; text-overflow:ellipsis; min-width:0; }
+}
+
 /* ── Galaxy Fold внешний экран и схожие (~260–340px) ── */
 @media (max-width:380px){
   /* Сокращаем текст кнопок — всё на одной строке */
@@ -167,10 +182,8 @@
   .txt-short{ display:inline; }
 
   /* Топбар: одна строка, сжатые gap и padding */
-  .topbar{ gap:4px; flex-wrap:nowrap; }
-  .topbar .pill-btn{ white-space:nowrap; }
-  .lesson-pill{ flex:1; min-width:0; justify-content:center; }
-  .lesson-pill-title{ overflow:hidden; text-overflow:ellipsis; max-width:80px; }
+  .topbar{ gap:6px; }
+  .topbar > a.pill-btn{ font-size:15px; padding:8px 10px; }
 
   /* Кнопки навигации внизу */
   .nav-row{ gap:6px; }

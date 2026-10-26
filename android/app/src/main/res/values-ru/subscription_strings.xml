@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plan_title">Тарифы</string>
+    <string name="plan_current">Ваш тариф</string>
+    <string name="plan_price_free">€0</string>
+    <string name="plan_price_premium">€4,99 / мес</string>
+    <string name="plan_price_family">€9,99 / мес</string>
+    <string name="plan_f_learning">Бесплатное обучение и упражнения</string>
+    <string name="plan_f_manual">Ручное добавление слов и уроков</string>
+    <string name="plan_f_ads">С рекламой</string>
+    <string name="plan_f_no_ads">Без рекламы</string>
+    <string name="plan_f_ai">Расширенные ИИ-функции</string>
+    <string name="plan_f_limits">Увеличенные лимиты</string>
+    <string name="plan_f_family">Родитель и до 4 детей, семейная панель</string>
+    <string name="plan_free_note">Бесплатный тариф: обучение, упражнения и ручное добавление слов. Прогресс сохраняется всегда.</string>
+    <string name="plan_upgrade_family">Семейная панель доступна в тарифе Family.</string>
+    <string name="plan_ai_paused">ИИ-функции временно отключены. Сохранённые переводы, примеры и аудио продолжают работать.</string>
+    <string name="plan_unlimited">Полный доступ</string>
+    <string name="plan_no_expiry">Без ограничения срока</string>
+    <string name="plan_valid_until">Доступ до: %1$s</string>
+    <string name="plan_price_note">Справочные цены веб-тарифов. Цена покупки в Google Play указана ниже, если оплата доступна.</string>
+    <string name="plan_ai_upgrade">Для новых ИИ-запросов нужен Premium или Family. Сохранённый контент и ручное добавление доступны бесплатно.</string>
+    <string name="settings_subscribe">Оформить подписку</string>
+</resources>

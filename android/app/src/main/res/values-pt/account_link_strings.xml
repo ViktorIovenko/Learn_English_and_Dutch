@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_link_google">Associar Google</string>
+    <string name="account_email_password_confirm">Confirmar senha</string>
+    <string name="account_email_password_hint">Use de 12 a 128 caracteres.</string>
+    <string name="account_email_send">Enviar e-mail</string>
+    <string name="account_email_sent">Se este endereço for elegível, receberá um e-mail. Verifique também a pasta de spam.</string>
+    <string name="account_email_password_mismatch">As senhas não coincidem.</string>
+    <string name="account_link_conflict">Este método de início de sessão já está associado a uma conta.</string>
+</resources>

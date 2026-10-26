@@ -1,0 +1,294 @@
+package app.parallellingvo.ui.parent
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import androidx.core.view.doOnNextLayout
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
+import app.parallellingvo.MainActivity
+import app.parallellingvo.R
+import app.parallellingvo.data.api.ChildDashboardDto
+import app.parallellingvo.data.api.ChildPriorityHistoryDto
+import app.parallellingvo.databinding.FragmentParentDashboardBinding
+import app.parallellingvo.utils.navigateToTab
+import app.parallellingvo.utils.toast
+import java.text.DateFormat
+import java.util.Date
+import kotlinx.coroutines.launch
+
+class ParentDashboardFragment : Fragment() {
+    private var _binding: FragmentParentDashboardBinding? = null
+    private val binding get() = _binding!!
+    private val viewModel: ParentDashboardViewModel by viewModels()
+    private var ignoreSelections = false
+    private lateinit var childrenAdapter: ChildDashboardAdapter
+    private lateinit var historyAdapter: PriorityHistoryAdapter
+    private val periods = listOf(7, 30, 90)
+    private var priorityOptions: List<String> = emptyList()
+    private var priorityChildId: String? = null
+    private var renderedPriority: String? = null
+    private var priorityLabels: List<String> = emptyList()
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentParentDashboardBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.swipeRefresh.setOnRefreshListener { viewModel.refresh() }
+        childrenAdapter = ChildDashboardAdapter(
+            onSelect = { viewModel.selectChild(it.userId) },
+            onDisconnect = { confirmDisconnect(it) }
+        )
+        binding.rvChildren.adapter = childrenAdapter
+        historyAdapter = PriorityHistoryAdapter(::formatHistoryEntry)
+        binding.rvPriorityHistory.adapter = historyAdapter
+        androidx.recyclerview.widget.PagerSnapHelper().attachToRecyclerView(binding.rvPriorityHistory)
+        binding.rvPriorityHistory.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: androidx.recyclerview.widget.RecyclerView, newState: Int) {
+                if (newState == androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE) updateHistoryPage()
+            }
+        })
+        androidx.recyclerview.widget.PagerSnapHelper().attachToRecyclerView(binding.rvChildren)
+        binding.rvChildren.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: androidx.recyclerview.widget.RecyclerView, newState: Int) {
+                if (newState != androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE) return
+                val layoutManager = recyclerView.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager ?: return
+                val position = layoutManager.findFirstCompletelyVisibleItemPosition().takeIf { it >= 0 }
+                    ?: layoutManager.findFirstVisibleItemPosition()
+                val state = viewModel.uiState.value
+                state.children.getOrNull(position)?.let {
+                    if (it.userId != state.selectedChildId) viewModel.selectChild(it.userId)
+                }
+            }
+        })
+        binding.btnPrevChild.setOnClickListener { moveChild(-1) }
+        binding.btnNextChild.setOnClickListener { moveChild(1) }
+        binding.spinnerPeriod.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            listOf(getString(R.string.parent_period_7), getString(R.string.parent_period_30), getString(R.string.parent_period_90))
+        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        binding.spinnerPeriod.setSelection(periods.indexOf(viewModel.uiState.value.days).takeIf { it >= 0 } ?: 1, false)
+        binding.spinnerPeriod.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (!ignoreSelections && parent?.selectedItemPosition == position) {
+                    periods.getOrNull(position)?.let(viewModel::setDays)
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+        binding.btnSavePriority.setOnClickListener {
+            val state = viewModel.uiState.value
+            if (state.selectedChildId != priorityChildId) return@setOnClickListener
+            val index = binding.spinnerPriorityLesson.selectedItemPosition
+            val lesson = priorityOptions.getOrNull(index) ?: return@setOnClickListener
+            viewModel.setPriorityLesson(lesson)
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { render(it) }
+            }
+        }
+    }
+
+    private fun render(state: ParentDashboardUiState) {
+        binding.swipeRefresh.isRefreshing = state.isLoading
+        binding.progressBar.visibility = if (state.isLoading && state.children.isEmpty()) View.VISIBLE else View.GONE
+        if (state.accessRevoked) {
+            (activity as? MainActivity)?.setParentNavigationVisible(false)
+            if (findNavController().currentDestination?.id == R.id.parentDashboardFragment) {
+                findNavController().navigate(R.id.lessonsFragment)
+            }
+            return
+        }
+        state.error?.let {
+            requireContext().toast(it, long = true)
+            viewModel.clearError()
+        }
+        val selectedIndex = state.children.indexOfFirst { it.userId == state.selectedChildId }.coerceAtLeast(0)
+        childrenAdapter.submitList(state.children.map { ChildDashboardAdapter.Item(it, it.userId == state.selectedChildId) })
+        ignoreSelections = true
+        val periodIndex = periods.indexOf(state.days).takeIf { it >= 0 } ?: 1
+        if (binding.spinnerPeriod.selectedItemPosition != periodIndex) {
+            binding.spinnerPeriod.setSelection(periodIndex, false)
+        }
+        ignoreSelections = false
+
+        val multipleChildren = state.children.size > 1
+        binding.spinnerPeriod.isEnabled = state.children.isNotEmpty()
+        binding.childNavigation.visibility = if (multipleChildren) View.VISIBLE else View.GONE
+        binding.tvChildrenEmpty.visibility = if (!state.isLoading && state.children.isEmpty()) View.VISIBLE else View.GONE
+        binding.btnPrevChild.visibility = if (multipleChildren) View.VISIBLE else View.INVISIBLE
+        binding.btnNextChild.visibility = if (multipleChildren) View.VISIBLE else View.INVISIBLE
+        binding.btnPrevChild.isEnabled = selectedIndex > 0
+        binding.btnNextChild.isEnabled = selectedIndex < state.children.size - 1
+        binding.btnPrevChild.alpha = if (binding.btnPrevChild.isEnabled) 1f else 0.3f
+        binding.btnNextChild.alpha = if (binding.btnNextChild.isEnabled) 1f else 0.3f
+        binding.tvChildCounter.text = if (multipleChildren) {
+            getString(R.string.parent_child_counter, selectedIndex + 1, state.children.size)
+        } else ""
+        val layoutManager = binding.rvChildren.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager
+        if (layoutManager?.findFirstVisibleItemPosition() != selectedIndex) {
+            binding.rvChildren.scrollToPosition(selectedIndex)
+        }
+
+        val child = state.children.getOrNull(selectedIndex)
+        binding.content.visibility = if (child == null) View.GONE else View.VISIBLE
+        if (child != null) renderChild(child)
+    }
+
+    private fun renderChild(child: ChildDashboardDto) {
+        val summary = child.summary
+        val options = mutableListOf("")
+        val labels = mutableListOf(getString(R.string.parent_priority_none))
+        child.availableLessons.forEach { lesson ->
+            options.add(lesson.lesson)
+            labels.add(if (lesson.lessonIndex > 0) "${lesson.lessonIndex}. ${lesson.lessonTitle.ifBlank { lesson.lesson }}"
+                else lesson.lessonTitle.ifBlank { lesson.lesson })
+        }
+        if (child.priorityLesson.isNotBlank() && child.priorityLesson !in options) {
+            options.add(child.priorityLesson)
+            labels.add(child.priorityLesson)
+        }
+        if (priorityChildId != child.userId || renderedPriority != child.priorityLesson ||
+            priorityOptions != options || priorityLabels != labels || binding.spinnerPriorityLesson.adapter == null) {
+            priorityChildId = child.userId
+            renderedPriority = child.priorityLesson
+            priorityOptions = options.toList()
+            priorityLabels = labels.toList()
+            binding.spinnerPriorityLesson.adapter = ArrayAdapter(
+                requireContext(), android.R.layout.simple_spinner_item, labels
+            ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+            binding.spinnerPriorityLesson.setSelection(options.indexOf(child.priorityLesson).coerceAtLeast(0), false)
+        }
+        binding.tvPriorityStatus.text = if (child.priorityLesson.isBlank()) {
+            getString(R.string.parent_priority_not_set)
+        } else {
+            getString(R.string.parent_priority_current, child.priorityLesson)
+        }
+        val historyChanged = historyAdapter.setHistory(child.userId, child.priorityHistory)
+        binding.tvPriorityHistory.visibility = if (child.priorityHistory.isEmpty()) View.VISIBLE else View.GONE
+        binding.tvPriorityHistory.setText(R.string.parent_priority_history_empty)
+        binding.rvPriorityHistory.visibility = if (child.priorityHistory.isEmpty()) View.GONE else View.VISIBLE
+        if (historyChanged) {
+            binding.rvPriorityHistory.doOnNextLayout { if (_binding != null) updateHistoryPage() }
+            binding.rvPriorityHistory.scrollToPosition(0)
+            binding.rvPriorityHistory.requestLayout()
+        }
+        binding.tvPriorityHistoryPage.visibility = if (historyAdapter.itemCount > 1) View.VISIBLE else View.GONE
+        val status = when (summary.todayStatusMilestone) {
+            5 -> getString(R.string.child_status_5)
+            10 -> getString(R.string.child_status_10)
+            15 -> getString(R.string.child_status_15)
+            20 -> getString(R.string.child_status_20)
+            25 -> getString(R.string.child_status_25)
+            else -> ""
+        }
+        binding.valueTodayProgress.text = buildString {
+            append("${summary.todayWords} / ${summary.dailyGoal}")
+            if (status.isNotBlank()) append(" · $status")
+        }
+        binding.valueStudiedToday.text = getString(
+            if (summary.studiedToday) R.string.common_yes else R.string.common_no
+        )
+        binding.valueTimeToday.text = formatLearningTime(summary.todayLearningSeconds)
+        binding.valueWords.text = summary.wordsCount.toString()
+        binding.valueLessons.text = summary.lessonsCount.toString()
+        binding.valueLearningDays.text = summary.learningDays.toString()
+        binding.valueLearningStreak.text = getString(R.string.learning_streak_value, summary.learningStreakDays)
+        binding.valueActiveLessons.text = summary.activeLessons.toString()
+        binding.valueCorrect.text = summary.correctAnswers.toString()
+        binding.valueSuccess.text = getString(R.string.parent_percent, summary.successRate)
+        binding.learningChart.setData(child.daily)
+        binding.tvLastActivity.text = if (summary.lastActivityTs > 0) {
+            getString(R.string.parent_last_activity_value, DateFormat.getDateTimeInstance().format(Date(summary.lastActivityTs)))
+        } else {
+            getString(R.string.parent_no_activity)
+        }
+        val latest = child.latestProgress
+        binding.tvLatestProgress.text = if (latest == null) {
+            getString(R.string.parent_no_progress)
+        } else {
+            getString(R.string.parent_latest_value, latest.lesson.ifBlank { "—" }, latest.passed, latest.total)
+        }
+    }
+
+    private fun formatHistoryEntry(item: ChildPriorityHistoryDto): String {
+        val started = DateFormat.getDateTimeInstance().format(Date(item.startedAt))
+        val ended = if (item.isActive || item.endedAt == null) getString(R.string.parent_priority_now)
+            else DateFormat.getDateTimeInstance().format(Date(item.endedAt))
+        return getString(R.string.parent_priority_history_item,
+            item.lesson, started, ended, formatLearningTime(item.durationSeconds))
+    }
+
+    private fun updateHistoryPage() {
+        val b = _binding ?: return
+        val recycler = b.rvPriorityHistory
+        val manager = recycler.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager ?: return
+        val page = manager.findFirstCompletelyVisibleItemPosition().takeIf { it >= 0 }
+            ?: manager.findFirstVisibleItemPosition().coerceAtLeast(0)
+        b.tvPriorityHistoryPage.text = if (historyAdapter.itemCount > 1) {
+            getString(R.string.parent_child_counter, page + 1, historyAdapter.itemCount)
+        } else ""
+        val view = manager.findViewByPosition(page) ?: return
+        if (recycler.width <= 0) return
+        view.measure(View.MeasureSpec.makeMeasureSpec(recycler.width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+        if (view.measuredHeight > 0 && recycler.layoutParams.height != view.measuredHeight) {
+            recycler.layoutParams = recycler.layoutParams.apply { height = view.measuredHeight }
+        }
+    }
+
+    private fun moveChild(delta: Int) {
+        val state = viewModel.uiState.value
+        val currentIndex = state.children.indexOfFirst { it.userId == state.selectedChildId }
+        val newIndex = currentIndex + delta
+        val target = state.children.getOrNull(newIndex) ?: return
+        viewModel.selectChild(target.userId)
+        binding.rvChildren.smoothScrollToPosition(newIndex)
+    }
+
+    private fun formatLearningTime(seconds: Int): String {
+        if (seconds <= 0) return getString(R.string.parent_zero_minutes)
+        if (seconds < 60) return getString(R.string.parent_less_than_minute)
+        val minutes = (seconds / 60.0).toInt().coerceAtLeast(1)
+        if (minutes < 60) return getString(R.string.parent_minutes, minutes)
+        val hours = minutes / 60
+        val rest = minutes % 60
+        return if (rest > 0) getString(R.string.parent_hours_minutes, hours, rest)
+        else getString(R.string.parent_hours, hours)
+    }
+
+    private fun confirmDisconnect(child: ChildDashboardDto) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.parent_disconnect)
+            .setMessage(getString(R.string.parent_disconnect_confirm, child.displayName))
+            .setPositiveButton(R.string.parent_disconnect) { _, _ ->
+                viewModel.unlinkChild(child.userId)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.refresh()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+}

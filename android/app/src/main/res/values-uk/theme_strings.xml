@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="theme_title">Оформлення</string>
+    <string name="theme_system">Як в Android</string>
+    <string name="theme_light">Світла</string>
+    <string name="theme_dark">Темна</string>
+    <string name="theme_current">Тема: %1$s</string>
+</resources>

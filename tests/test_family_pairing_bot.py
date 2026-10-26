@@ -4,12 +4,13 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from config import Config
 from bot import auth as bot_auth
 from app.account_types import migrate_account_types
 from app.family_pairing import (
+    create_invite_code,
     create_pairing_code,
     link_parent_with_pairing_code,
     linked_parents,
@@ -225,6 +226,113 @@ class TelegramFamilyConfirmationTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(0, conn.execute(
                 "SELECT COUNT(*) FROM parent_child_links"
             ).fetchone()[0])
+
+
+
+class TelegramInviteAccountTypeTest(unittest.IsolatedAsyncioTestCase):
+    """A parent's invite opened in the bot decides the account type itself."""
+
+    async def asyncSetUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = str(Path(self.temp_dir.name) / "invite.db")
+        self.original_db_path = Config.DB_PATH
+        Config.DB_PATH = self.db_path
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            conn.execute("""
+                CREATE TABLE users (
+                    user_id TEXT PRIMARY KEY,
+                    username TEXT,
+                    first_name TEXT,
+                    last_name TEXT,
+                    account_type TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE parent_child_links (
+                    parent_user_id TEXT NOT NULL,
+                    child_user_id TEXT NOT NULL,
+                    PRIMARY KEY (parent_user_id, child_user_id)
+                )
+            """)
+            conn.execute("CREATE TABLE user_daily_goals (user_id TEXT PRIMARY KEY, goal_value INTEGER NOT NULL, updated_at TEXT)")
+            conn.executemany(
+                "INSERT INTO users VALUES (?, '', ?, '', ?)",
+                [("parent", "Parent", "standard"), ("adult", "Adult", "standard"),
+                 ("newbie", "Newbie", "pending")],
+            )
+            conn.execute("INSERT INTO user_daily_goals VALUES ('adult', 10, '')")
+            conn.commit()
+        self.code = create_invite_code(self.db_path, "parent")
+        self.chat = SimpleNamespace(id=1, send_message=AsyncMock())
+
+    async def asyncTearDown(self):
+        Config.DB_PATH = self.original_db_path
+        self.temp_dir.cleanup()
+
+    def _update(self, user_id):
+        return SimpleNamespace(
+            effective_user=SimpleNamespace(id=user_id, language_code="ru"),
+            effective_chat=self.chat,
+            callback_query=None,
+        )
+
+    def _context(self):
+        return SimpleNamespace(
+            user_data={"pending_family_code": self.code, "pending_family_kind": "invite"},
+            args=[],
+        )
+
+    def _account_type(self, user_id):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            return conn.execute("SELECT account_type FROM users WHERE user_id=?", (user_id,)).fetchone()[0]
+
+    async def _confirm(self, update, context):
+        update.callback_query = SimpleNamespace(
+            data=f"family_join:confirm:{self.code}",
+            answer=AsyncMock(),
+            edit_message_text=AsyncMock(),
+        )
+        with patch.object(bot_auth, "show_menu_with_keyboard", AsyncMock()) as menu,                 patch.object(bot_auth, "_send_fresh_app_link", AsyncMock()) as app_link:
+            await bot_auth.family_join_callback(update, context)
+        return update.callback_query, menu, app_link
+
+    async def test_adult_without_children_is_offered_and_becomes_child(self):
+        update, context = self._update("adult"), self._context()
+        self.assertTrue(await bot_auth._show_pending_family_confirmation(update, context))
+        text = self.chat.send_message.await_args.args[0]
+        self.assertIn("детским", text)
+        query, menu, _ = await self._confirm(update, context)
+        self.assertEqual("child", self._account_type("adult"))
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            self.assertIsNone(conn.execute("SELECT 1 FROM user_daily_goals WHERE user_id='adult'").fetchone())
+            self.assertTrue(conn.execute("SELECT 1 FROM parent_child_links WHERE child_user_id='adult'").fetchone())
+        menu.assert_not_awaited()  # already onboarded: no extra messages
+
+    async def test_parent_with_children_is_refused(self):
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            conn.execute("INSERT INTO parent_child_links VALUES ('adult', 'someone')")
+            conn.commit()
+        update, context = self._update("adult"), self._context()
+        self.assertFalse(await bot_auth._show_pending_family_confirmation(update, context))
+        self.assertIn("Отвяжите детей", self.chat.send_message.await_args.args[0])
+        self.assertEqual("standard", self._account_type("adult"))
+
+    async def test_new_account_skips_account_type_question(self):
+        update, context = self._update("newbie"), self._context()
+        with patch.object(bot_auth, "selected_ui_language", return_value="ru"):
+            self.assertFalse(await bot_auth._show_onboarding_step(update, context))
+        self.assertTrue(await bot_auth._show_pending_family_confirmation(update, context))
+        query, menu, app_link = await self._confirm(update, context)
+        self.assertEqual("child", self._account_type("newbie"))
+        menu.assert_awaited()
+        app_link.assert_awaited()
+
+    async def test_new_account_without_invite_still_gets_account_type_question(self):
+        update = self._update("newbie")
+        context = SimpleNamespace(user_data={}, args=[])
+        with patch.object(bot_auth, "selected_ui_language", return_value="ru"),                 patch.object(bot_auth, "_replace_or_send_onboarding_message", AsyncMock()) as ask:
+            self.assertTrue(await bot_auth._show_onboarding_step(update, context))
+        ask.assert_awaited()
 
 
 if __name__ == "__main__":

@@ -2,6 +2,27 @@
 
 Android приложение на Kotlin для изучения слов (NL/EN/RU и другие языки).
 
+## Нативный вход через Telegram
+
+Кнопка Telegram и привязка Telegram в настройках используют исходный SDK Telegram
+из модуля `telegram-login` (версия и MIT-лицензия указаны внутри модуля).
+Автоматический переход в браузер отключён. Если Telegram недоступен, пользователь
+может повторить попытку или выбрать email/Google. PKCE verifier и полученный токен
+сохраняются в зашифрованной текущей попытке, включая восстановление процесса.
+Сервер проверяет подпись, issuer, audience, срок токена и соответствие попытке;
+для нового пользователя применяется существующая регистрация со статусом `pending`.
+
+Перед проверкой на телефоне в BotFather → Bot Settings → Login Widget необходимо
+зарегистрировать Android package `app.parallellingvo` и SHA-256 сертификата подписи.
+Публичный client ID по умолчанию — `8903357617`; его можно заменить переменной сборки
+`TELEGRAM_CLIENT_ID`, согласованной с серверным `TELEGRAM_OIDC_CLIENT_ID`.
+Callback: `https://app4151474097-login.tg.dev/tglogin` (Android App Link).
+Адрес Native App выдан BotFather отдельно и не вычисляется из OAuth Client ID.
+Для локальной debug-подписи SHA-256:
+`A7:57:D6:DD:EB:90:0E:DC:0E:AD:7B:3F:99:E9:5A:2E:83:59:99:E0:1B:BC:16:9E:16:E8:16:EA:7F:CE:84:ED`.
+Для Google Play требуется сертификат App Signing из Play Console, а не upload key.
+GitHub Packages credentials не нужны: исходники SDK включены в проект.
+
 ## Функционал
 
 - **Список уроков** — просмотр, скрытие, удаление уроков
@@ -32,10 +53,14 @@ Android приложение на Kotlin для изучения слов (NL/EN
 
 ### 1. Укажи URL сервера
 
+Идентификатор приложения (`applicationId`): `app.parallellingvo`. Внутренний namespace исходников: `app.parallellingvo`.
+
 В `app/build.gradle`:
 ```groovy
-buildConfigField "String", "BASE_URL", '"https://your-server.com/"'
+buildConfigField "String", "BASE_URL", '"https://app.parallellingvo.app/"'
 ```
+
+Сохранённый адрес прежнего сервера автоматически заменяется на актуальный при чтении и сохранении настроек. Ссылки на аудио со старым доменом также переводятся на новый сервер.
 
 ### 2. Бэкенд: добавь поддержку Android-аутентификации
 
@@ -65,9 +90,9 @@ APK будет в `app/build/outputs/apk/debug/app-debug.apk`
 ```
 android/
 ├── app/src/main/
-│   ├── java/com/learnwords/app/
+│   ├── java/app/parallellingvo/
 │   │   ├── MainActivity.kt
-│   │   ├── LearnWordsApp.kt
+│   │   ├── ParallelLingvoApp.kt
 │   │   ├── data/
 │   │   │   ├── api/         # Retrofit + модели API
 │   │   │   ├── db/          # Room DB + сущности + DAO

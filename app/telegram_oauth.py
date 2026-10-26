@@ -18,7 +18,7 @@ import logging
 from urllib.parse import urlencode, urlparse
 from flask import Blueprint, redirect, session, request, Response
 from authlib.integrations.flask_client import OAuth
-from app.auth_links import create_auth_token
+from app.auth_links import create_auth_token, verify_auth_token
 from config import Config
 
 log = logging.getLogger(__name__)
@@ -71,6 +71,10 @@ def _origin_from_referrer(referrer: str | None) -> str | None:
 def _android_deep_link(token: str = "", error: str = "") -> str:
     """learnwords://auth?... — consumed by MainActivity.handleTelegramAuthIntent,
     the same deep link the bot's /android-auth link produces (see bot/auth.py)."""
+    flow = session.pop("telegram_android_flow", "")
+    if flow:
+        from app.android_auth import complete_android_flow
+        return complete_android_flow(flow, verify_auth_token(token) if token else "", "telegram", error)
     params = {"server": Config.PUBLIC_BASE_URL.rstrip("/")}
     if token:
         params["auth"] = token
@@ -128,6 +132,14 @@ def login():
     # callback below can hand a token back to the app via the learnwords://auth
     # deep link instead of setting a browser session cookie.
     session["telegram_android"] = request.args.get("android") == "1"
+    flow = request.args.get("flow", "") if session["telegram_android"] else ""
+    if flow:
+        from app.android_auth import valid_android_flow
+        if not valid_android_flow(flow, "telegram"):
+            return "Invalid authentication attempt", 400
+    session["telegram_android_flow"] = flow
+    from app.android_auth import link_owner
+    session["telegram_linking"] = bool(flow and link_owner(flow, "telegram"))
     redirect_uri = f"{Config.APP_BASE_URL.rstrip('/')}/auth/telegram/callback"
     return _oauth.telegram.authorize_redirect(redirect_uri)
 
@@ -198,20 +210,29 @@ def callback():
             return _popup_close_response(False, next_url=next_url, error="telegram_name_or_username_required", target_origin=popup_origin)
         return redirect(error_url)
 
+    flow = session.get("telegram_android_flow", "")
+    if session.pop("telegram_linking", False):
+        from app.android_auth import link_owner, complete_link_flow
+        if not link_owner(flow, "telegram"):
+            return redirect(_android_deep_link(error="invalid_auth_link"))
+        return redirect(complete_link_flow(flow, "telegram", {"external_id": telegram_id}))
+
+    from app.account_linking import telegram_account_id
+    account_id = telegram_account_id(telegram_id)
     if _upsert_user(user):
         _notify_admins_new_user(user)
 
     with _conn() as c:
         c.execute(
             "INSERT OR IGNORE INTO auth_identities (provider, external_id, user_id) VALUES ('telegram', ?, ?)",
-            (telegram_id, telegram_id),
+            (telegram_id, account_id),
         )
         c.commit()
 
     if android:
-        return redirect(_android_deep_link(token=create_auth_token(telegram_id)))
+        return redirect(_android_deep_link(token=create_auth_token(account_id)))
 
-    session["tg_user_id"] = telegram_id
+    session["tg_user_id"] = account_id
     session["tg_username"] = preferred_username
     session["tg_first_name"] = given_name
     session["tg_last_name"] = family_name

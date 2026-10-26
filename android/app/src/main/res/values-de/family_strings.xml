@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="family_parent_qr_note">Scanne diesen QR-Code mit dem Handy des Kindes und bestätige die Verbindung in dessen Konto.</string>
+    <string name="parent_children_empty">Noch keine Kinder verbunden. Den QR-Code findest du unter Familienverbindung in den Einstellungen.</string>
+</resources>

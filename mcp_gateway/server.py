@@ -712,6 +712,61 @@ async def admin_audit_log_list(limit: Annotated[int, Field(ge=1, le=100)] = 50, 
     return await _call("admin_audit_log_list", {"limit": limit, "cursor": cursor})
 
 
+@mcp.tool(title="Get advertising settings", annotations=READ)
+async def ads_admin_state_get() -> dict[str, Any]:
+    """Superuser-only ad state: mode, limits, placements, advertisers, creatives. Requires ads.admin consent."""
+    return await _call("ads_admin_state_get")
+
+
+@mcp.tool(title="Update advertising settings", annotations=WRITE)
+async def ads_settings_update(
+    mode: Literal["off", "preview", "live"] | None = None,
+    max_per_page: Annotated[int, Field(ge=0, le=4)] | None = None,
+    admin_demo_always: bool | None = None,
+    demo_creatives: bool | None = None,
+    live_platforms: list[Literal["web", "telegram", "android"]] | None = None,
+    lapsed_paid_as_free: bool | None = None,
+    preferred_topics: list[str] | None = None,
+    confirm: str = "",
+) -> dict[str, Any]:
+    """Superuser-only. Omitted fields stay unchanged. admin_demo_always=true shows mock-up banners in every
+    enabled slot to administrators only (also in mode off). mode=live additionally needs ADS_LIVE_ALLOWED,
+    Awin credentials and confirm="LIVE"; switch to live only on the owner's explicit request."""
+    params = {
+        "mode": mode, "max_per_page": max_per_page, "admin_demo_always": admin_demo_always,
+        "demo_creatives": demo_creatives, "live_platforms": live_platforms,
+        "lapsed_paid_as_free": lapsed_paid_as_free, "preferred_topics": preferred_topics, "confirm": confirm,
+    }
+    return await _call("ads_settings_update", {key: value for key, value in params.items() if value is not None})
+
+
+@mcp.tool(title="Enable or disable ad placements", annotations=WRITE)
+async def ads_placements_update(
+    keys: Annotated[list[str], Field(max_length=50)] | None = None,
+    enabled: bool | None = None,
+    priority: Annotated[int, Field(ge=0, le=1000)] | None = None,
+) -> dict[str, Any]:
+    """Superuser-only. Switch placements on/off or change priority; empty keys = all placements."""
+    params: dict[str, Any] = {"keys": keys or []}
+    if enabled is not None:
+        params["enabled"] = enabled
+    if priority is not None:
+        params["priority"] = priority
+    return await _call("ads_placements_update", params)
+
+
+@mcp.tool(title="Enable or disable an ad creative", annotations=WRITE)
+async def ads_creative_set_enabled(creative_id: int, enabled: bool) -> dict[str, Any]:
+    """Superuser-only. Turn one stored creative on or off."""
+    return await _call("ads_creative_set_enabled", {"creative_id": creative_id, "enabled": enabled})
+
+
+@mcp.tool(title="Import bundled Awin preview", annotations=WRITE)
+async def ads_import_preview() -> dict[str, Any]:
+    """Superuser-only. Load the bundled read-only Awin check (candidates and preview-only mock-up copy)."""
+    return await _call("ads_import_preview")
+
+
 @mcp.resource("learn://me")
 async def resource_me() -> dict[str, Any]:
     """Authenticated profile resource."""

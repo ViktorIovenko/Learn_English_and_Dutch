@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_link_google">Połącz Google</string>
+    <string name="account_email_password_confirm">Potwierdź hasło</string>
+    <string name="account_email_password_hint">Użyj od 12 do 128 znaków.</string>
+    <string name="account_email_send">Wyślij e-mail</string>
+    <string name="account_email_sent">Jeśli adres spełnia warunki, otrzymasz wiadomość. Sprawdź też folder spam.</string>
+    <string name="account_email_password_mismatch">Hasła nie są takie same.</string>
+    <string name="account_link_conflict">Ta metoda logowania jest już połączona z kontem.</string>
+</resources>

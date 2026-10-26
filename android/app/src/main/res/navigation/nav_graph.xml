@@ -3,11 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/lessonsFragment">
+    app:startDestination="@id/authFragment">
 
     <fragment
         android:id="@+id/authFragment"
-        android:name="com.learnwords.app.ui.auth.AuthFragment"
+        android:name="app.parallellingvo.ui.auth.AuthFragment"
         android:label="@string/login_title"
         tools:layout="@layout/fragment_auth">
         <action
@@ -29,7 +29,7 @@
 
     <fragment
         android:id="@+id/accountTypeFragment"
-        android:name="com.learnwords.app.ui.auth.AccountTypeFragment"
+        android:name="app.parallellingvo.ui.auth.AccountTypeFragment"
         android:label="@string/account_type_title"
         tools:layout="@layout/fragment_account_type">
         <action
@@ -41,7 +41,7 @@
 
     <fragment
         android:id="@+id/lessonsFragment"
-        android:name="com.learnwords.app.ui.lessons.LessonsFragment"
+        android:name="app.parallellingvo.ui.lessons.LessonsFragment"
         android:label="@string/lessons_title"
         tools:layout="@layout/fragment_lessons">
         <action
@@ -51,7 +51,7 @@
 
     <fragment
         android:id="@+id/learnFragment"
-        android:name="com.learnwords.app.ui.learn.LearnFragment"
+        android:name="app.parallellingvo.ui.learn.LearnFragment"
         android:label="@string/learn_title"
         tools:layout="@layout/fragment_learn">
         <argument
@@ -71,13 +71,13 @@
 
     <fragment
         android:id="@+id/uploadFragment"
-        android:name="com.learnwords.app.ui.upload.UploadFragment"
+        android:name="app.parallellingvo.ui.upload.UploadFragment"
         android:label="@string/nav_upload"
         tools:layout="@layout/fragment_upload" />
 
     <fragment
         android:id="@+id/difficultFragment"
-        android:name="com.learnwords.app.ui.learn.LearnFragment"
+        android:name="app.parallellingvo.ui.learn.LearnFragment"
         android:label="@string/nav_difficult"
         tools:layout="@layout/fragment_learn">
         <argument
@@ -92,7 +92,7 @@
 
     <fragment
         android:id="@+id/languageSettingsFragment"
-        android:name="com.learnwords.app.ui.settings.LanguageSettingsFragment"
+        android:name="app.parallellingvo.ui.settings.LanguageSettingsFragment"
         android:label="@string/languages_title"
         tools:layout="@layout/fragment_language_settings">
         <argument
@@ -102,27 +102,18 @@
         <action
             android:id="@+id/action_settings_to_subscription"
             app:destination="@id/subscriptionFragment" />
-        <action
-            android:id="@+id/action_settings_to_admin"
-            app:destination="@id/adminFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/subscriptionFragment"
-        android:name="com.learnwords.app.ui.subscription.SubscriptionFragment"
+        android:name="app.parallellingvo.ui.subscription.SubscriptionFragment"
         android:label="@string/subscription_title"
         tools:layout="@layout/fragment_subscription" />
 
     <fragment
         android:id="@+id/parentDashboardFragment"
-        android:name="com.learnwords.app.ui.parent.ParentDashboardFragment"
+        android:name="app.parallellingvo.ui.parent.ParentDashboardFragment"
         android:label="@string/parent_dashboard_title"
         tools:layout="@layout/fragment_parent_dashboard" />
-
-    <fragment
-        android:id="@+id/adminFragment"
-        android:name="com.learnwords.app.ui.admin.AdminFragment"
-        android:label="@string/admin_title"
-        tools:layout="@layout/fragment_admin" />
 
 </navigation>

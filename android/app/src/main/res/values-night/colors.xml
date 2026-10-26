@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="colorPrimary">#A5B4FC</color>
+    <color name="colorPrimaryDark">#111522</color>
+    <color name="colorPrimaryVariant">#C4B5FD</color>
+    <color name="colorSecondary">#F472B6</color>
+    <color name="colorOnPrimary">#172554</color>
+    <color name="colorOnSecondary">#371025</color>
+    <color name="colorGoogleButtonBorder">#586174</color>
+    <color name="colorStatusActive">#90CAF9</color>
+    <color name="colorStatusTrial">#FFB74D</color>
     <!-- Screen/surface base colors (matches app.parallellingvo.app dark theme) -->
     <color name="colorBackground">#141824</color>
     <color name="colorSurface">#1D2333</color>
@@ -9,9 +18,9 @@
     <color name="colorWrong">#F87171</color>
 
     <!-- Text shades -->
-    <color name="colorTextSecondary">#8B93A8</color>
-    <color name="colorTextTertiary">#8B93A8</color>
-    <color name="colorTextHint">#6B7280</color>
+    <color name="colorTextSecondary">#ABB4CA</color>
+    <color name="colorTextTertiary">#ABB4CA</color>
+    <color name="colorTextHint">#97A3B9</color>
     <color name="colorTextMedium">#C4B4D8</color>
 
     <!-- Surfaces / dividers -->

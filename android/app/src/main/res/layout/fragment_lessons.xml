@@ -7,7 +7,9 @@
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="@color/colorSurface"
+        app:elevation="0dp">
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
@@ -26,7 +28,7 @@
                     android:id="@+id/tv_today_summary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/colorOnBackground"
                     android:textStyle="bold"
                     android:textSize="16sp" />
 
@@ -38,7 +40,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:padding="4dp"
                     android:src="@drawable/ic_pause_24"
-                    app:tint="@android:color/white"
+                    app:tint="@color/colorOnBackground"
                     android:contentDescription="@string/pause"
                     android:visibility="gone" />
 
@@ -50,7 +52,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:padding="4dp"
                     android:src="@drawable/ic_restart_24"
-                    app:tint="@android:color/white"
+                    app:tint="@color/colorOnBackground"
                     android:contentDescription="@string/restart_timer"
                     android:visibility="gone" />
             </LinearLayout>
@@ -61,7 +63,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="end|center_vertical"
                 android:layout_marginEnd="16dp"
-                android:textColor="@android:color/white"
+                android:textColor="@color/colorOnBackground"
                 android:textStyle="bold"
                 android:textSize="16sp" />
         </com.google.android.material.appbar.MaterialToolbar>
@@ -83,6 +85,18 @@
                 android:layout_height="0dp"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/ad_container"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Free-plan banner (dashboard_bottom): its own row between the
+                 lesson list and the buttons, never over cards or controls.
+                 Hidden unless the server returns material. -->
+            <FrameLayout
+                android:id="@+id/ad_container"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
                 app:layout_constraintBottom_toTopOf="@id/action_bar"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />

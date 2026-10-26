@@ -89,8 +89,12 @@ class AiPlatformTokenUsageTests(unittest.TestCase):
         Config.AI_PLATFORM_BASE_URL = "https://ai.example.test"
         Config.AI_PLATFORM_API_KEY_TRANSLATE_WORD = "test-key"
         Config.AI_PLATFORM_API_KEY_SUGGEST_TOPIC_WORDS = "test-topic-key"
+        # These tests exercise the provider path behind the paid-AI switch.
+        self.old_paid_ai = Config.PAID_AI_ENABLED
+        Config.PAID_AI_ENABLED = True
 
     def tearDown(self):
+        Config.PAID_AI_ENABLED = self.old_paid_ai
         Config.AI_PLATFORM_BASE_URL = self.old_base_url
         Config.AI_PLATFORM_API_KEY_TRANSLATE_WORD = self.old_api_key
         Config.AI_PLATFORM_API_KEY_SUGGEST_TOPIC_WORDS = self.old_topic_api_key
@@ -170,6 +174,8 @@ class TranslationRoutesUsageTests(unittest.TestCase):
         self.db_path = Path(self.tmp.name) / "words.db"
         self.old_db_path = Config.DB_PATH
         Config.DB_PATH = str(self.db_path)
+        self.old_paid_ai = Config.PAID_AI_ENABLED
+        Config.PAID_AI_ENABLED = True
 
         app = Flask(__name__)
         app.secret_key = "test"
@@ -182,6 +188,7 @@ class TranslationRoutesUsageTests(unittest.TestCase):
 
     def tearDown(self):
         Config.DB_PATH = self.old_db_path
+        Config.PAID_AI_ENABLED = self.old_paid_ai
         self.client = None
         gc.collect()
         self.tmp.cleanup()

@@ -72,6 +72,7 @@
   </div>
 </div>
 </div>
+{% with ad_placement="secondary_bottom", ad_page="secondary" %}{% include "_ad_slot.html" %}{% endwith %}
 {% endblock %}
 {% block scripts %}
 <script defer src="{{ url_for('static', filename='word_database.js', v='20261005-inline-audio') }}"></script>

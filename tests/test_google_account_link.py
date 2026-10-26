@@ -2,12 +2,14 @@ import gc
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from flask import Flask, redirect
 
 from config import Config
 from app import google_auth
+from app.auth_links import create_auth_token
 
 
 class _FakeGoogleClient:
@@ -78,6 +80,7 @@ class GoogleAccountLinkTest(unittest.TestCase):
         google_auth._oauth = _FakeOAuth({
             "sub": "google-alice",
             "email": "alice@example.com",
+            "email_verified": True,
             "name": "Alice Example",
         })
         self.app = Flask(__name__)
@@ -99,6 +102,22 @@ class GoogleAccountLinkTest(unittest.TestCase):
             session["tg_user_id"] = user_id
             session["is_auth"] = True
 
+    def test_native_google_link_requires_owner_and_preserves_existing_account(self):
+        headers = {'Authorization':'Bearer '+create_auth_token('alice')}
+        self.assertEqual(401, self.client.post('/api/auth/google/link', json={'id_token':'test'}).status_code)
+        with patch('google.oauth2.id_token.verify_oauth2_token', return_value={
+                'sub':'native-google', 'email':'alice@example.com', 'email_verified':True}):
+            response = self.client.post('/api/auth/google/link', json={'id_token':'test'}, headers=headers)
+        self.assertEqual(200, response.status_code, response.json)
+        with sqlite3.connect(self.db_path) as c:
+            self.assertEqual('native-google', c.execute("SELECT google_id FROM users WHERE user_id='alice'").fetchone()[0])
+            self.assertEqual(1, c.execute("SELECT COUNT(*) FROM words WHERE user_id='alice'").fetchone()[0])
+        with patch('google.oauth2.id_token.verify_oauth2_token', return_value={
+                'sub':'native-google', 'email':'alice@example.com', 'email_verified':True}):
+            response = self.client.post('/api/auth/google/link', json={'id_token':'test'},
+                headers={'Authorization':'Bearer '+create_auth_token('bob')})
+        self.assertEqual(409, response.status_code)
+
     def test_link_flow_keeps_existing_telegram_user(self):
         self._login_telegram()
         started = self.client.get(
@@ -117,6 +136,16 @@ class GoogleAccountLinkTest(unittest.TestCase):
                 "SELECT google_id,google_email,auth_provider FROM users WHERE user_id='alice'"
             ).fetchone()
         self.assertEqual(("google-alice", "alice@example.com", "telegram"), row)
+
+    def test_unverified_google_email_is_not_saved_as_verified_identity(self):
+        google_auth._oauth.google.userinfo["email_verified"] = False
+        self._login_telegram()
+        self.client.get("/auth/google", query_string={"mode": "link"})
+        response = self.client.get("/auth/google/callback")
+        self.assertEqual(response.status_code, 302)
+        with sqlite3.connect(self.db_path) as conn:
+            self.assertEqual(conn.execute("SELECT google_email FROM users WHERE user_id='alice'").fetchone()[0], "")
+            self.assertEqual(conn.execute("SELECT email FROM auth_identities WHERE provider='google' AND user_id='alice'").fetchone()[0], "")
 
     def test_google_account_cannot_be_linked_to_two_users(self):
         self.assertEqual(
@@ -184,6 +213,26 @@ class GoogleAccountLinkTest(unittest.TestCase):
         response = self.client.get("/api/auth/google/config")
         self.assertEqual(200, response.status_code)
         self.assertEqual({"ok": True, "client_id": "test-client-id"}, response.get_json())
+
+    def test_android_google_login_returns_session_for_existing_identity(self):
+        from app.auth_links import verify_auth_token
+        self.assertEqual("linked", google_auth._link_google_user(
+            "alice", "google-alice", "alice@example.com"))
+        with patch("google.oauth2.id_token.verify_oauth2_token",
+                   return_value=google_auth._oauth.google.userinfo) as verify:
+            response = self.client.post("/api/auth/google/verify", json={"id_token": "test-id-token"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["user_id"], "alice")
+        self.assertTrue(response.json["ok"])
+        self.assertEqual(verify_auth_token(response.json["token"]), "alice")
+        self.assertEqual(verify.call_args.args[2], "test-client-id")
+        self.assertNotIn("Location", response.headers)
+
+    def test_android_google_rejects_invalid_token(self):
+        with patch("google.oauth2.id_token.verify_oauth2_token", side_effect=ValueError("invalid")):
+            response = self.client.post("/api/auth/google/verify", json={"id_token": "invalid"})
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn("token", response.json)
 
 
 if __name__ == "__main__":

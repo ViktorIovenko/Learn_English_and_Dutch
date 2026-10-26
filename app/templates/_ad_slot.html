@@ -1,0 +1,5 @@
+{# Empty, hidden ad placement. Filled only by static/ads.js from
+   /api/ads/page (server-side plan/consent decision). No ad network code,
+   script or external request lives in this template; an unfilled slot stays
+   hidden and takes no space. #}
+<aside class="ad-slot" data-ad-placement="{{ ad_placement|default('secondary_bottom') }}" data-ad-page="{{ ad_page|default('secondary') }}" hidden></aside>

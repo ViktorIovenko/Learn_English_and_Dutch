@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plan_title">Тарифи</string>
+    <string name="plan_current">Ваш тариф</string>
+    <string name="plan_price_free">€0</string>
+    <string name="plan_price_premium">€4,99 / міс</string>
+    <string name="plan_price_family">€9,99 / міс</string>
+    <string name="plan_f_learning">Безкоштовне навчання та вправи</string>
+    <string name="plan_f_manual">Ручне додавання слів і уроків</string>
+    <string name="plan_f_ads">З рекламою</string>
+    <string name="plan_f_no_ads">Без реклами</string>
+    <string name="plan_f_ai">Розширені ШІ-функції</string>
+    <string name="plan_f_limits">Збільшені ліміти</string>
+    <string name="plan_f_family">Батько чи мати й до 4 дітей, сімейна панель</string>
+    <string name="plan_free_note">Безкоштовний тариф: навчання, вправи та ручне додавання слів. Прогрес завжди зберігається.</string>
+    <string name="plan_upgrade_family">Сімейна панель входить до тарифу Family.</string>
+    <string name="plan_ai_paused">ШІ-функції тимчасово вимкнено. Збережені переклади, приклади й аудіо працюють.</string>
+    <string name="plan_unlimited">Повний доступ</string>
+    <string name="plan_no_expiry">Без обмеження строку</string>
+    <string name="plan_valid_until">Доступ до: %1$s</string>
+    <string name="plan_price_note">Довідкові ціни вебтарифів. Ціна покупки в Google Play наведена нижче, якщо оплата доступна.</string>
+    <string name="plan_ai_upgrade">Для нових ШІ-запитів потрібен Premium або Family. Збережений контент і ручне додавання доступні безкоштовно.</string>
+    <string name="settings_subscribe">Оформити підписку</string>
+</resources>

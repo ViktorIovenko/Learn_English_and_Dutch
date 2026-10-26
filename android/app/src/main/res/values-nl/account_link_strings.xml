@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_link_google">Google koppelen</string>
+    <string name="account_email_password_confirm">Herhaal wachtwoord</string>
+    <string name="account_email_password_hint">Gebruik 12–128 tekens.</string>
+    <string name="account_email_send">E-mail verzenden</string>
+    <string name="account_email_sent">Als dit adres in aanmerking komt, is er een e-mail onderweg. Controleer ook uw spammap.</string>
+    <string name="account_email_password_mismatch">De wachtwoorden komen niet overeen.</string>
+    <string name="account_link_conflict">Deze inlogmethode is al aan een account gekoppeld.</string>
+</resources>

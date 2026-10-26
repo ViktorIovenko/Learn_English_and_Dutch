@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="family_parent_qr_note">Scannez ce QR code avec le téléphone de l’enfant, puis confirmez la connexion dans son compte.</string>
+    <string name="parent_children_empty">Aucun enfant connecté. Le QR code se trouve dans Réglages, sous Connexion familiale.</string>
+</resources>

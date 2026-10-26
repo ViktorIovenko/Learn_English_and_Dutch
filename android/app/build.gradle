@@ -5,21 +5,46 @@ plugins {
 }
 
 android {
-    namespace 'com.learnwords.app'
+    namespace 'app.parallellingvo'
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.learnwords.app"
+        applicationId "app.parallellingvo"
+        // Public OAuth client ID. Client secrets belong only on the server.
+        def telegramClientId = System.getenv('TELEGRAM_CLIENT_ID') ?: '8903357617'
+        buildConfigField "String", "TELEGRAM_CLIENT_ID", '"' + telegramClientId + '"'
+        // Native App URL is generated separately by BotFather; it is not the client ID.
+        def telegramLoginHost = 'app4151474097-login.tg.dev'
+        buildConfigField "String", "TELEGRAM_LOGIN_HOST", '"' + telegramLoginHost + '"'
+        manifestPlaceholders = [telegramLoginHost: telegramLoginHost]
         minSdk 24
         targetSdk 36
-        versionCode 2
-        versionName "1.2"
+        versionCode = (System.getenv('PLAY_VERSION_CODE') ?: '2').toInteger()
+        versionName = System.getenv('PLAY_VERSION_NAME') ?: "1.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "BASE_URL", '"https://app.parallellingvo.app/"'
     }
 
+    def signingValues = ['PLAY_UPLOAD_STORE_FILE', 'PLAY_UPLOAD_STORE_PASSWORD',
+                         'PLAY_UPLOAD_KEY_ALIAS', 'PLAY_UPLOAD_KEY_PASSWORD'].collect { System.getenv(it) }
+    if (signingValues.any { it } && !signingValues.every { it }) {
+        throw new GradleException('Supply all four PLAY_UPLOAD_* signing variables, or none for an unsigned bundle.')
+    }
+    signingConfigs {
+        if (signingValues.every { it }) {
+            playUpload {
+                storeFile file(signingValues[0])
+                storePassword signingValues[1]
+                keyAlias signingValues[2]
+                keyPassword signingValues[3]
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (signingValues.every { it }) signingConfig signingConfigs.playUpload
+            debuggable false
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -91,9 +116,10 @@ dependencies {
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
 
     // Google Play Billing
-    implementation 'com.android.billingclient:billing-ktx:6.2.1'
+    implementation 'com.android.billingclient:billing-ktx:9.1.0'
 
     // Google account selection and ID-token sign-in
+    implementation project(':telegram-login')
     implementation 'com.google.android.gms:play-services-auth:21.2.0'
 
     testImplementation 'junit:junit:4.13.2'

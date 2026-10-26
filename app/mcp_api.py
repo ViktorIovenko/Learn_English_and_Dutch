@@ -13,14 +13,12 @@ from flask import Blueprint, current_app, jsonify, redirect, render_template, re
 
 from config import Config
 from app.mcp_service import (
+    ADMIN_SCOPES,
     ALL_SCOPES,
-    ANALYTICS_ADMIN_SCOPE,
     CONNECTOR_SCOPES,
     FAMILY_READ_SCOPE,
     FAMILY_WRITE_SCOPE,
     READ_SCOPE,
-    SUBSCRIPTIONS_ADMIN_SCOPE,
-    USERS_ADMIN_SCOPE,
     McpServiceError,
     _conn,
     ensure_mcp_schema,
@@ -126,6 +124,10 @@ def _resolve_access_token(raw_token: str, *, touch: bool = True) -> dict | None:
 @mcp_api.get("/api/mcp/user")
 def mcp_user_status():
     user_id = _current_user_id()
+    if not user_id:
+        from app.routes import _bearer_user_id, _user_exists
+        bearer_user = _bearer_user_id()
+        user_id = bearer_user if bearer_user and _user_exists(bearer_user) else ""
     if not user_id:
         return jsonify({"ok": False, "error": "authentication_required"}), 401
     ensure_mcp_schema()
@@ -446,7 +448,7 @@ def oauth_authorize():
     is_child = _account_context(user_id)["account_type"] == "child"
     requested_scopes = payload["requested_scopes"]
     if not is_admin:
-        requested_scopes = [scope for scope in requested_scopes if scope not in {SUBSCRIPTIONS_ADMIN_SCOPE, USERS_ADMIN_SCOPE, ANALYTICS_ADMIN_SCOPE}]
+        requested_scopes = [scope for scope in requested_scopes if scope not in ADMIN_SCOPES]
     if is_child:
         requested_scopes = [scope for scope in requested_scopes if scope not in {FAMILY_READ_SCOPE, FAMILY_WRITE_SCOPE}]
     if request.method == "GET":
@@ -469,7 +471,7 @@ def oauth_authorize():
     selected = [scope for scope in selected if scope in requested_scopes]
     selected = list(dict.fromkeys([*CONNECTOR_SCOPES, *selected]))
     if not is_admin:
-        selected = [scope for scope in selected if scope not in {SUBSCRIPTIONS_ADMIN_SCOPE, USERS_ADMIN_SCOPE, ANALYTICS_ADMIN_SCOPE}]
+        selected = [scope for scope in selected if scope not in ADMIN_SCOPES]
     if is_child:
         selected = [scope for scope in selected if scope not in {FAMILY_READ_SCOPE, FAMILY_WRITE_SCOPE}]
 

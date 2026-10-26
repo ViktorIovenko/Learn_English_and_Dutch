@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ParallelLingvo — Privacy Policy</title>
+<style>body{font:16px/1.65 system-ui;max-width:850px;margin:36px auto;padding:0 20px}a{color:#4a0ea3}h2{margin-top:32px}</style></head><body>
+{% if not approved %}<p><strong>DRAFT — owner review required. Not approved for publication.</strong></p>{% endif %}
+<h1>ParallelLingvo Privacy Policy</h1>
+<p>Controller: {{ operator or '[Owner must supply legal operator name]' }}. Contact:
+{% if contact %}<a href="mailto:{{ contact }}">{{ contact }}</a>{% else %}[Owner must supply privacy contact]{% endif %}.</p>
+<p>The controller is based in the Netherlands. Draft updated: 26 October 2026.
+The planned release covers Europe, the United States, Canada and Australia.</p>
+<p>This policy covers the ParallelLingvo Android app (app.parallellingvo), website and connected Telegram services.</p>
+<h2>Information we process</h2>
+<ul>
+<li>Account information: internal identifiers, profile name, username and, when supplied by your login provider, email address. Google and Telegram identities can be linked to the same account.</li>
+<li>Email login: email address, salted password hash, credential version, single-use setup/reset link hashes and hashed address/IP rate-limit records. We do not store plaintext passwords. Authentication/session tokens permit access to your account.</li>
+<li>Learning information: languages, lessons, vocabulary, examples, imported files during processing, exercise answers/progress, activity dates, learning goals, preferences and subscription status.</li>
+<li>Family information: chosen account type, parent/child links, invitations, lesson assignments and the child's learning summaries visible to linked parents.</li>
+<li>Purchases: product, purchase token (encrypted on our server), provider state and expiry, purchase/account binding and verification results. Google processes payments; our app does not collect your card number.</li>
+<li>Technical information: request IP and user-agent at infrastructure/providers, client type, device language, authentication failures, operational/audit records and aggregate usage counters. The app does not request location, contacts, microphone or broad photo-library access.</li>
+</ul>
+<h2>Purposes and legal grounds</h2>
+<p>We use account, learning and subscription data to provide the service and verify access (performance of our agreement); security and limited operational records protect accounts and service reliability (legitimate interests); optional advertising processing is subject to consent where required. Legal obligations may require limited records. Child-related processing and parental consent requirements must be assessed for the countries and ages supported.</p>
+<h2>Providers and sharing</h2>
+<p>Google and Telegram process authentication when you choose those methods. Google Play processes purchases and provides verification data. Hosting and email-delivery providers process service requests and transactional mail. Text-to-speech providers (Google TTS/gTTS, depending on server configuration) receive text for pronunciation. Optional AI/content providers receive vocabulary or prompts needed for the requested feature when enabled. We do not intentionally send login credentials or payment tokens to AI/content providers.</p>
+<p>MCP connections are optional and require authorization. A connected assistant receives only data allowed by the granted scopes; you can revoke access in settings. Sharing a lesson gives recipients access to the shared lesson content. Linked parents can view and manage the child's learning as described by the family flow.</p>
+<h2>Advertising</h2>
+<p>Eligible Free users may see Awin affiliate materials after consent. Banner requests to third-party hosts disclose network information such as IP address; clicking an affiliate link opens an external website that may use identifiers or cookies under its own policy. Our Android ad renderer does not attach app authorization, user ID or cookies to banner image requests. The server records consent and aggregate ad impressions/clicks. Child and pending profiles are excluded from live ads. Declining consent does not remove learning data or prevent basic learning.</p>
+<h2>Device permissions and local storage</h2>
+<p>Camera access is used for scanning family QR codes. Notifications are optional learning reminders. Network access synchronizes learning and purchases. Local learning data supports offline use; authentication secrets are encrypted with an Android Keystore key. Android application backup is disabled. These measures reduce risk but cannot guarantee absolute security.</p>
+<h2>Retention and deletion</h2>
+<p>Active account information is retained while you use the service. You can delete your account in Android Settings or at <a href="/account/delete">the account deletion page</a>. After confirmation we delete the live account, authentication identities, learning records, family links, consents and associated account records. Other people's accounts and independently retained copies of lessons/shared dictionary content are not deleted. Google Play billing must be cancelled separately; deleting the app or account does not cancel a subscription.</p>
+<p>Only purchase-token fingerprints without the account identifier or token, and keyed revocation fingerprints, remain to prevent reuse of deleted credentials/purchases. These are minimal pseudonymous security records, not a claim of full anonymisation. Existing infrastructure logs, backup copies and provider-held records are subject to their approved retention and applicable legal obligations. Shared pronunciation/dictionary caches can remain without an account association. Operator must establish and disclose exact backup/log/security-record retention and any legally required accounting retention before this draft is approved.</p>
+{% if not approved %}
+<p><strong>Retention verification, 26 October 2026:</strong> the application container currently has no explicit log size or time limit. Proxy container logs rotate at 20 MB per file with up to three files; this is a size limit, not a guaranteed number of days. No application backup job was identified in the inspected root crontab or system timers. This does not exclude provider snapshots, manual copies or other backup systems. Expiration of security fingerprints, backup erasure and provider retention remain unverified. These gaps must be resolved before this draft becomes a publication policy.</p>
+{% endif %}
+<h2>Your choices and rights</h2>
+<p>You can change learning settings, revoke MCP access, change advertising consent, manage Google Play subscriptions and request account deletion. Depending on your country, you may have rights to access, correct, export or erase data, object to processing, restrict processing or withdraw consent. Contact the controller above; we may need to verify ownership. You may complain to your local data-protection authority. Withdrawing consent does not invalidate earlier lawful processing.</p>
+<h2>Children and international processing</h2>
+<p>ParallelLingvo is intended for children and adults learning as a family. Linked parents can view the child's progress and manage family learning. Family linking is not verification of age, guardianship or parental consent. Parents can contact {{ contact }} to request review, correction or deletion of their child's information; we need to verify authority before disclosing or deleting another person's data.</p>
+<p>Specific age groups and the age-screening and verifiable parental-consent procedures must be completed before the planned child release. Data may be processed in countries where service providers operate; provider agreements, processing locations and applicable transfer safeguards must be confirmed before publication. This draft does not assert that these safeguards are already implemented.</p>
+<h2>Changes</h2>
+<p>We update this policy when processing changes and provide additional notice or obtain consent where required. The approved version and effective date will be recorded by the operator before publication.</p>
+</body></html>

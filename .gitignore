@@ -49,6 +49,9 @@ app/static/audio/
 
 # Android and Gradle
 android/.gradle/
+android/**/.gradle/
+android/**/build/
+android/.run/
 android/.idea/
 android/build/
 android/app/build/
@@ -70,6 +73,8 @@ Thumbs.db
 desktop.ini
 
 # Codex/local notes
+/.playwright-cli/
+/output/
 .knowledge/
 .codex/project_kb.sqlite
 Команды.txt

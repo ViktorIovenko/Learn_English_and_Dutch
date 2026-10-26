@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ParallelLingvo</string>
+    <string name="login_brand_name" translatable="false">Parallel Lingvo</string>
 
     <!-- Navigation -->
     <string name="nav_lessons">Lessons</string>
@@ -267,7 +268,7 @@
     <string name="purchase_error">Purchase error: %1$s</string>
     <string name="subscription_active">Subscription active</string>
     <string name="verification_error">Verification error: %1$s</string>
-    <string name="purchase_sync_failed">Purchase completed, but server sync failed. Try Refresh later.</string>
+    <string name="purchase_sync_failed">The server has not confirmed this subscription yet. Verification will retry when online. You can also refresh this screen.</string>
     <string name="subscription_success">Subscription purchased successfully!</string>
     <string name="trial_days_left">%d trial days left</string>
     <string name="google_play_connecting">Connecting to Google Play…</string>
@@ -317,8 +318,8 @@
     <string name="google_login_failed">Could not sign in with Google</string>
     <string name="child_evening_reminder_title">Today’s task is not finished</string>
     <string name="child_evening_reminder_text">You have completed %1$d of %2$d words. Open the app and finish today’s task.</string>
-    <string name="parent_disconnect">Disconnect</string>
-    <string name="parent_disconnect_confirm">Disconnect the child account %1$s?</string>
+    <string name="parent_disconnect">Unlink</string>
+    <string name="parent_disconnect_confirm">Are you sure you want to unlink your account from %1$s?</string>
     <string name="parent_words">Words in lessons</string>
     <string name="parent_lessons">Total lessons</string>
     <string name="parent_learning_days">Learning days</string>
@@ -393,4 +394,42 @@
     <string name="translation_usage_reset">Reset tokens</string>
     <string name="translation_usage_all_reset">All AI tokens were reset</string>
     <string name="translation_usage_user_reset">AI tokens reset for ID %1$s</string>
+    <string name="family_login_to_connect">Sign in to finish joining the family</string>
+    <string name="family_invite_title">Family invitation</string>
+    <string name="family_invite_confirm">Connect with %1$s?</string>
+    <string name="family_invite_accept">Connect</string>
+    <string name="family_becomes_child">Your account will become a child account: the parent will assign words and see your progress.</string>
+    <string name="family_becomes_parent">Your account will become an adult account: you will see the child\'s progress and assign words.</string>
+    <string name="family_error_wrong_account">Wrong account type: a parent\'s invite is for a child, a child\'s invite is for an adult.</string>
+    <string name="auth_email_address">Email</string>
+    <string name="auth_create_account">Create an account</string>
+    <string name="auth_forgot_password">Forgot password?</string>
+    <string name="auth_email_invalid">Incorrect email or password.</string>
+    <string name="auth_rate_limited">Too many attempts. Please try again later.</string>
+    <string name="auth_failed">Could not complete sign-in. Please try again.</string>
+    <string name="auth_expired">Your sign-in attempt expired. Please start again.</string>
+    <string name="play_not_configured">Google Play products are not configured yet.</string>
+    <string name="purchase_initiated">Opening Google Play checkout</string>
+    <string name="purchase_pending">Payment pending. Access will be granted after verification.</string>
+    <string name="purchase_received">Purchase received. Waiting for server verification.</string>
+    <string name="purchase_confirmed">Purchase confirmed by the server</string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="account_deletion_page">Account deletion website</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_confirmation">Permanently delete this account and its personal learning data? Other family accounts will remain. Cancel any Google Play subscription separately. This cannot be undone.</string>
+    <string name="delete_account_failed">Account deletion was not completed. Check the connection and try again.</string>
+    <string name="page_unavailable">The page could not be opened.</string>
+    <string name="account_signin_methods">Sign-in methods</string>
+    <string name="account_link_explanation">Link Telegram or email to sign in to the same account. Your progress is preserved.</string>
+    <string name="account_link_telegram">Link Telegram</string>
+    <string name="account_link_email">Link email</string>
+    <string name="account_linked">Linked</string>
+    <string name="account_not_linked">Not linked</string>
+    <string name="account_link_success">Sign-in method linked.</string>
+    <string name="account_link_failed">Unable to link. This sign-in method may belong to another account.</string>
+    <string name="telegram_unavailable">Could not open Telegram sign-in. Try again or choose another sign-in method.</string>
+    <string name="lesson_learned">Lesson learned</string>
+    <string name="translate_words_title">Translate words</string>
+    <string name="hint_word_list">Words or phrases, one per line</string>
+    <string name="word_preview_example">Example</string>
 </resources>

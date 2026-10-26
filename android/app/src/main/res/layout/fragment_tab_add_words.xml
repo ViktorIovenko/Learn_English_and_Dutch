@@ -13,17 +13,27 @@
             android:textColor="@color/colorInfoText" android:background="@color/colorInfoBackground"
             android:padding="12dp" android:layout_marginBottom="16dp" />
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="@string/hint_lesson_title" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_lesson" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="@string/translate_word_title" android:textStyle="bold" android:textSize="16sp" />
+            android:text="@string/translate_words_title" android:textStyle="bold" android:textSize="16sp" />
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:layout_marginTop="8dp">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-                android:hint="@string/hint_word" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:hint="@string/hint_word_list" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_word" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    android:id="@+id/et_word" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="textMultiLine|textCapSentences" android:minLines="4"
+                    android:gravity="top|start" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <Spinner android:id="@+id/spinner_from_lang"
@@ -39,19 +49,6 @@
 
         <View android:layout_width="match_parent" android:layout_height="1dp"
             android:background="@color/colorDivider" android:layout_marginVertical="16dp" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="@string/hint_lesson_title" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_lesson" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_add_row" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginTop="8dp"
-            android:text="@string/add_row"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_words" android:layout_width="match_parent"

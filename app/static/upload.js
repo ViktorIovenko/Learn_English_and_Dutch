@@ -135,6 +135,7 @@ async function _cloudSuggestTopicWords(topic, lang, level, count, existingWords)
     body: JSON.stringify({ topic, lang, level, count, existing_words: existingWords }),
   });
   const data = await resp.json();
+  if (data.error === 'paid_ai_disabled' && window.I18N && window.I18N.t) throw new Error(window.I18N.t('plan.ai_paused'));
   if (!data.ok) throw new Error(data.error || 'Ошибка облака');
   return data.words || [];
 }

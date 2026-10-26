@@ -489,13 +489,20 @@
     });
   }
 
+  // CSS zoom (Telegram Desktop) scales fixed positions, while pointer coordinates
+  // and getBoundingClientRect stay in viewport pixels.
+  function pageZoom(){
+    const zoom = parseFloat(getComputedStyle(document.documentElement).zoom);
+    return zoom > 0 ? zoom : 1;
+  }
+
   function createDragPreview(drag, event){
     const preview = drag.element.cloneNode(true);
     preview.classList.add("pointer-drag-preview");
     preview.removeAttribute("data-i");
     preview.removeAttribute("data-pos");
-    preview.style.width = `${drag.width}px`;
-    preview.style.height = `${drag.height}px`;
+    preview.style.width = `${drag.width / pageZoom()}px`;
+    preview.style.height = `${drag.height / pageZoom()}px`;
     preview.textContent = drag.element.textContent;
     document.body.appendChild(preview);
     drag.preview = preview;
@@ -504,8 +511,9 @@
 
   function updateDragPreview(drag, event){
     if (!drag.preview) return;
-    drag.preview.style.left = `${event.clientX - drag.offsetX}px`;
-    drag.preview.style.top = `${event.clientY - drag.offsetY}px`;
+    const zoom = pageZoom();
+    drag.preview.style.left = `${(event.clientX - drag.offsetX) / zoom}px`;
+    drag.preview.style.top = `${(event.clientY - drag.offsetY) / zoom}px`;
   }
 
   function slotAtPoint(event){
@@ -584,6 +592,19 @@
   });
 
   document.addEventListener("pointercancel", clearPointerDrag);
+
+  // While a letter is held, the finger must not scroll the page (Telegram webviews
+  // otherwise turn the gesture into a scroll and cancel the drag).
+  document.addEventListener("touchmove", event => {
+    if (pointerDrag) event.preventDefault();
+  }, { passive: false });
+
+  // Telegram Mini App: a vertical finger swipe collapses the app and steals the
+  // drag gesture, so swipe-to-collapse is off on the lesson page.
+  try {
+    const tgApp = window.Telegram?.WebApp;
+    if (tgApp?.initData && tgApp.isVersionAtLeast?.("7.7")) tgApp.disableVerticalSwipes();
+  } catch (e) {}
 
   function returnLetterAt(pos){
     const ch = answer[pos];

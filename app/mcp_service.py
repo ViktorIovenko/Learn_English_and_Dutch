@@ -21,6 +21,10 @@ FILES_SCOPE = "learning.files"
 SUBSCRIPTIONS_ADMIN_SCOPE = "subscriptions.admin"
 USERS_ADMIN_SCOPE = "users.admin"
 ANALYTICS_ADMIN_SCOPE = "analytics.admin"
+ADS_ADMIN_SCOPE = "ads.admin"
+# Offered/granted only to a configured administrator (ADMIN_IDS / ADMIN_EMAILS)
+# and re-checked on every call.
+ADMIN_SCOPES = (SUBSCRIPTIONS_ADMIN_SCOPE, USERS_ADMIN_SCOPE, ANALYTICS_ADMIN_SCOPE, ADS_ADMIN_SCOPE)
 ALL_SCOPES = (
     READ_SCOPE,
     WRITE_SCOPE,
@@ -30,6 +34,7 @@ ALL_SCOPES = (
     SUBSCRIPTIONS_ADMIN_SCOPE,
     USERS_ADMIN_SCOPE,
     ANALYTICS_ADMIN_SCOPE,
+    ADS_ADMIN_SCOPE,
 )
 
 MAX_PAGE_SIZE = 100
@@ -330,7 +335,8 @@ def _subscription_get(user_id: str, _params: dict[str, Any]) -> dict[str, Any]:
 
 def _ai_status(_user_id: str, _params: dict[str, Any]) -> dict[str, Any]:
     from app import ai_platform
-    return {"cloud_available": ai_platform.is_configured()}
+    allowed = _routes()._paid_ai_allowed(_user_id)
+    return {"cloud_available": bool(allowed and ai_platform.is_configured()), "paid_ai_enabled": allowed}
 
 
 def _translate_word(user_id: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -344,7 +350,7 @@ def _translate_word(user_id: str, params: dict[str, Any]) -> dict[str, Any]:
     if language not in _routes().LANGUAGE_CODES:
         raise McpServiceError("UNSUPPORTED_LANGUAGE", "from_lang is not supported")
     try:
-        result, usage = ai_platform.translate_word(word,language,params.get("level",""),known_ru,supplied=params.get("supplied"),languages=params.get("languages") or _requirements_for(user_id)["languages"],sense=str(params.get("sense") or ""),context=str(params.get("context") or ""))
+        result, usage = ai_platform.translate_word(word,language,params.get("level",""),known_ru,supplied=params.get("supplied"),languages=params.get("languages") or _requirements_for(user_id)["languages"],sense=str(params.get("sense") or ""),context=str(params.get("context") or ""),allow_provider=_routes()._paid_ai_allowed(user_id))
     except ai_platform.AiPlatformError as exc:
         _routes()._record_translation_request_usage(user_id, successful=False, usage=exc.usage)
         raise McpServiceError("AI_PROVIDER_ERROR", "translation provider failed", status=502)
@@ -369,8 +375,10 @@ def _generate_topic_words(user_id: str, params: dict[str, Any]) -> dict[str, Any
     if language not in _routes().LANGUAGE_CODES:
         raise McpServiceError("UNSUPPORTED_LANGUAGE", "language is not supported")
     try:
-        words, usage = ai_platform.suggest_topic_words(topic, language, level, count, existing)
+        words, usage = ai_platform.suggest_topic_words(topic, language, level, count, existing, allow_provider=_routes()._paid_ai_allowed(user_id))
     except ai_platform.AiPlatformError as exc:
+        if not _routes()._paid_ai_allowed(user_id):
+            raise McpServiceError("PAID_AI_DISABLED", "paid AI features are currently disabled", status=403)
         _routes()._record_translation_request_usage(user_id, successful=False, usage=exc.usage)
         raise McpServiceError("AI_PROVIDER_ERROR", "word generation provider failed", status=502)
     if getattr(usage,"provider_calls",1) or getattr(usage,"total_tokens",0):
@@ -387,7 +395,7 @@ def _translate_language(user_id: str, params: dict[str, Any]) -> dict[str, Any]:
     if not source_word or not target_name or len(source_word) > 500 or len(source_sentence) > 2000:
         raise McpServiceError("INVALID_TRANSLATION_INPUT", "source_word and target_language are required and bounded")
     try:
-        result, usage = ai_platform.translate_language(source_word,source_sentence,source_name,target_name,supplied=params.get("supplied"),sense=str(params.get("sense") or ""),context=str(params.get("context") or ""))
+        result, usage = ai_platform.translate_language(source_word,source_sentence,source_name,target_name,supplied=params.get("supplied"),sense=str(params.get("sense") or ""),context=str(params.get("context") or ""),allow_provider=_routes()._paid_ai_allowed(user_id))
     except ai_platform.AiPlatformError as exc:
         _routes()._record_translation_request_usage(user_id, successful=False, usage=exc.usage)
         raise McpServiceError("AI_PROVIDER_ERROR", "translation provider failed", status=502)
@@ -592,7 +600,7 @@ def _words_add(user_id: str, params: dict[str, Any]) -> dict[str, Any]:
     def add() -> dict[str, Any]:
         from app.content_service import import_words
         try:
-            result=import_words(Config.DB_PATH,user_id,[{"lesson":title,"words":words,"languages":_requirements_for(user_id)["languages"]}],source="mcp")
+            result=import_words(Config.DB_PATH,user_id,[{"lesson":title,"words":words,"languages":_requirements_for(user_id)["languages"]}],source="mcp",allow_provider=_routes()._paid_ai_allowed(user_id))
         except ValueError as exc:
             raise McpServiceError("WORD_VALIDATION_FAILED",str(exc)) from exc
         return {"lesson":title,"created":result["imported"],"updated":0,"skipped":0,"errors":[],"ids":result["ids"],"pending":result["pending"]}
@@ -603,7 +611,7 @@ def _insert_words(user_id: str, title: str, words: list[Any]) -> int:
     """All clients share one importer and one reusable content catalog."""
     from app.content_service import import_words
     try:
-        result=import_words(Config.DB_PATH,user_id,[{"lesson":title,"words":words,"languages":_requirements_for(user_id)["languages"]}],source="mcp")
+        result=import_words(Config.DB_PATH,user_id,[{"lesson":title,"words":words,"languages":_requirements_for(user_id)["languages"]}],source="mcp",allow_provider=_routes()._paid_ai_allowed(user_id))
     except ValueError as exc:
         raise McpServiceError("WORD_VALIDATION_FAILED",str(exc)) from exc
     return result["imported"]
@@ -1532,6 +1540,85 @@ def _admin_audit_log_list(_user_id: str, params: dict[str, Any]) -> dict[str, An
     return {"items": [{"id": int(row["id"]), "created_at": int(row["created_at"]), "admin_user_id": str(row["admin_user_id"]), "target_user_id": str(row["target_user_id"]), "action": str(row["action"]), "old_value": json.loads(row["old_value"]), "new_value": json.loads(row["new_value"]), "request_id": str(row["request_id"])} for row in page], "next_cursor": int(page[-1]["id"]) if len(rows) > limit else None}
 
 
+def _ads_call(action: Callable[[], Any]) -> Any:
+    from app.advertising import admin_ops
+    try:
+        return action()
+    except admin_ops.AdsAdminError as exc:
+        raise McpServiceError(exc.code.upper(), exc.code.replace("_", " "), status=exc.status, details=exc.details)
+
+
+def _ads_audit(user_id: str, action: str, old_value: Any, new_value: Any) -> None:
+    with _conn() as conn:
+        conn.execute(
+            "INSERT INTO mcp_admin_audit_log(created_at,admin_user_id,target_user_id,action,old_value,new_value) VALUES(?,?,?,?,?,?)",
+            (int(time.time() * 1000), user_id, "ads", action,
+             json.dumps(old_value, sort_keys=True, default=str), json.dumps(new_value, sort_keys=True, default=str)),
+        )
+        conn.commit()
+
+
+def _ads_state(_user_id: str, _params: dict[str, Any]) -> dict[str, Any]:
+    from app.advertising import admin_ops
+    return admin_ops.summary()
+
+
+def _ads_settings_update(user_id: str, params: dict[str, Any]) -> dict[str, Any]:
+    from app.advertising import admin_ops, store
+    before = store.get_settings()
+    after = _ads_call(lambda: admin_ops.update_settings(params))
+    changed = {key: after[key] for key in after if before.get(key) != after.get(key)}
+    if changed:
+        _ads_audit(user_id, "ads_settings_update", {key: before.get(key) for key in changed}, changed)
+    return {"settings": after, "changed": changed}
+
+
+def _ads_placements_update(user_id: str, params: dict[str, Any]) -> dict[str, Any]:
+    from app.advertising import admin_ops, store
+    keys = params.get("keys") or []
+    if not isinstance(keys, list):
+        raise McpServiceError("INVALID_KEYS", "keys must be a list of placement keys")
+    enabled = params.get("enabled")
+    priority = params.get("priority")
+    if enabled is None and priority is None:
+        raise McpServiceError("NOTHING_TO_UPDATE", "supply enabled and/or priority")
+    try:
+        priority = None if priority is None else max(0, min(int(priority), 1000))
+    except (TypeError, ValueError):
+        raise McpServiceError("INVALID_PRIORITY", "priority must be an integer")
+    before = {p["key"]: {"enabled": p["enabled"], "priority": p["priority"]} for p in store.list_placements()}
+    placements = _ads_call(lambda: admin_ops.update_placements(
+        keys, enabled=None if enabled is None else bool(enabled), priority=priority,
+    ))
+    after = {p["key"]: {"enabled": p["enabled"], "priority": p["priority"]} for p in placements}
+    changed = {key: value for key, value in after.items() if before.get(key) != value}
+    if changed:
+        _ads_audit(user_id, "ads_placements_update", {key: before.get(key) for key in changed}, changed)
+    return {"placements": placements, "changed": changed}
+
+
+def _ads_creative_set_enabled(user_id: str, params: dict[str, Any]) -> dict[str, Any]:
+    from app.advertising import admin_ops
+    try:
+        creative_id = int(params.get("creative_id"))
+    except (TypeError, ValueError):
+        raise McpServiceError("INVALID_CREATIVE_ID", "creative_id must be an integer")
+    enabled = bool(params.get("enabled"))
+    creative = _ads_call(lambda: admin_ops.set_creative_enabled(creative_id, enabled))
+    _ads_audit(user_id, "ads_creative_set_enabled", {"creative_id": creative_id}, {"enabled": enabled})
+    return {"creative_id": creative_id, "enabled": bool(creative.get("enabled"))}
+
+
+def _ads_import_preview(user_id: str, _params: dict[str, Any]) -> dict[str, Any]:
+    from app.advertising import preview_config
+    try:
+        result = preview_config.import_preview_config(preview_config.load_bundled())
+    except (OSError, ValueError) as exc:
+        raise McpServiceError("IMPORT_FAILED", str(exc))
+    _ads_audit(user_id, "ads_import_preview", {}, result)
+    return result
+
+
 def _admin_users_search(user_id: str, params: dict[str, Any]) -> dict[str, Any]:
     query = str(params.get("query") or "").strip()
     if not query:
@@ -1888,7 +1975,8 @@ def _cloud_fill(acting_user_id: str, owner_id: str, title: str, requirements: di
     from app.content_db import transaction
     from app.content_service import ensure_schema, resolve
     routes = _routes()
-    report = {"cloud_available": ai_platform.is_configured(), "calls": 0, "filled_fields": 0, "failed": 0, "truncated": False}
+    allow_provider = routes._paid_ai_allowed(acting_user_id)
+    report = {"cloud_available": bool(allow_provider and ai_platform.is_configured()), "calls": 0, "filled_fields": 0, "failed": 0, "truncated": False}
     languages = list(dict.fromkeys([*requirements["required_translation_languages"], *requirements["required_example_languages"]]))
     with _conn() as conn:
         rows = [dict(row) for row in _lesson_rows(conn,owner_id,title)]
@@ -1899,7 +1987,7 @@ def _cloud_fill(acting_user_id: str, owner_id: str, title: str, requirements: di
         try:
             with transaction(Config.DB_PATH) as conn:
                 ensure_schema(conn)
-                result = resolve(conn,data,languages,examples=True,allow_provider=True,source="fill")
+                result = resolve(conn,data,languages,examples=True,allow_provider=allow_provider,source="fill")
                 updates = {}
                 for language in languages:
                     for field in (language,f"ex_{language}"):
@@ -2104,6 +2192,11 @@ OPERATIONS: dict[str, Operation] = {
     "admin_analytics_summary": Operation(ANALYTICS_ADMIN_SCOPE, _admin_analytics_summary, admin_only=True),
     "admin_analytics_users": Operation(ANALYTICS_ADMIN_SCOPE, _admin_analytics_users, admin_only=True),
     "admin_audit_log_list": Operation(SUBSCRIPTIONS_ADMIN_SCOPE, _admin_audit_log_list, admin_only=True),
+    "ads_admin_state_get": Operation(ADS_ADMIN_SCOPE, _ads_state, admin_only=True),
+    "ads_settings_update": Operation(ADS_ADMIN_SCOPE, _ads_settings_update, admin_only=True),
+    "ads_placements_update": Operation(ADS_ADMIN_SCOPE, _ads_placements_update, admin_only=True),
+    "ads_creative_set_enabled": Operation(ADS_ADMIN_SCOPE, _ads_creative_set_enabled, admin_only=True),
+    "ads_import_preview": Operation(ADS_ADMIN_SCOPE, _ads_import_preview, admin_only=True),
 }
 
 

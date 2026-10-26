@@ -10,11 +10,12 @@ import re
 import sqlite3
 import asyncio
 import html
+import logging
 from io import BytesIO
 from urllib.parse import urlencode, urlparse
 from telegram import (
     InlineKeyboardButton, InlineKeyboardMarkup, Update,
-    WebAppInfo, KeyboardButton, ReplyKeyboardMarkup
+    WebAppInfo, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, MenuButtonWebApp
 )
 from telegram.ext import (
     Application, CallbackQueryHandler, CommandHandler, MessageHandler,
@@ -22,6 +23,7 @@ from telegram.ext import (
 )
 from config import Config
 from app.auth_links import create_auth_token
+from app.account_linking import telegram_account_id
 from app.account_types import migrate_account_types
 from app.i18n import SUPPORTED_UI_LANGUAGES
 from app.family_invites import invitation_payload, resolve_invitation, allow_invitation_attempt
@@ -35,6 +37,7 @@ from app.family_pairing import (
     linked_parents,
     pairing_code_details,
 )
+from bot.i18n import OPEN_LABELS, user_language, values as localized_values
 from bot.onboarding import (
     LANGUAGE_LABELS,
     account_type,
@@ -124,7 +127,12 @@ def _ensure_users_schema(db_path: str) -> None:
         migrate_account_types(c)
         c.commit()
 
+def _account_user_id(telegram_id, db_path=None):
+    return telegram_account_id(telegram_id, db_path)
+
+
 def _is_user_registered(db_path: str, user_id: int) -> bool:
+    user_id = _account_user_id(user_id, db_path)
     _ensure_users_schema(db_path)
     with _conn(db_path) as c:
         return bool(c.execute("SELECT 1 FROM users WHERE user_id=?", (str(user_id),)).fetchone())
@@ -144,7 +152,7 @@ def _register_user(db_path: str, user: "telegram.User") -> bool:
     if not _has_telegram_identity(user):
         return False
     with _conn(db_path) as c:
-        existed = bool(c.execute("SELECT 1 FROM users WHERE user_id=?", (str(user.id),)).fetchone())
+        existed = bool(c.execute("SELECT 1 FROM users WHERE user_id=?", (str(_account_user_id(user.id, db_path)),)).fetchone())
         c.execute("""
             INSERT INTO users (
                 user_id, username, first_name, last_name, is_active, account_type
@@ -155,7 +163,7 @@ def _register_user(db_path: str, user: "telegram.User") -> bool:
                 first_name=excluded.first_name,
                 last_name=excluded.last_name,
                 is_active=1
-        """, (str(user.id), user.username or "", user.first_name or "", user.last_name or ""))
+        """, (str(_account_user_id(user.id, db_path)), user.username or "", user.first_name or "", user.last_name or ""))
         c.commit()
     return not existed
 
@@ -178,7 +186,7 @@ def _format_new_user_notice(user: "telegram.User") -> str:
         full_name = "без имени"
     return (
         "👤 Новый пользователь\n"
-        f"ID: <code>{html.escape(str(user.id))}</code>\n"
+        f"ID: <code>{html.escape(str(_account_user_id(user.id)))}</code>\n"
         f"Имя: {html.escape(full_name)}\n"
         f"Username: {html.escape(username)}"
     )
@@ -189,8 +197,10 @@ async def _notify_admins_new_user(context: ContextTypes.DEFAULT_TYPE, user: "tel
     for admin_id in _admin_ids():
         try:
             await context.bot.send_message(chat_id=admin_id, text=text, parse_mode="HTML")
-        except Exception:
-            pass
+        except Exception as error:
+            logging.getLogger(__name__).warning(
+                "New-user notification failed for admin %s (%s)", admin_id, type(error).__name__
+            )
 
 # ---------- helpers ----------
 def _get_expected_password() -> str:
@@ -235,33 +245,16 @@ def _build_android_download_url() -> str:
     return base + "/static/downloads/learnwords.apk"
 
 def _user_interface_language(user_id: int | str, telegram_language: str | None = None) -> str:
-    return selected_ui_language(Config.DB_PATH, user_id) or normalize_telegram_language(
-        telegram_language
-    )
+    return user_language(Config.DB_PATH, user_id, telegram_language)
 
 
 def get_persistent_keyboard(
     user_id: int,
     telegram_language: str | None = None,
-) -> ReplyKeyboardMarkup:
-    language = _user_interface_language(user_id, telegram_language)
-    url, use_webapp, _ = _build_app_url(user_id)
-    if use_webapp:
-        btn_learn = KeyboardButton(
-            text=bot_interface_text(language, "learn_words"),
-            web_app=WebAppInfo(url=url),
-        )
-    else:
-        btn_learn = KeyboardButton(text=bot_interface_text(language, "learn_words"))
-    btn_add = KeyboardButton(text=bot_interface_text(language, "upload_words"))
-    return ReplyKeyboardMarkup(
-        keyboard=[[btn_learn], [btn_add]],
-        resize_keyboard=True,
-        is_persistent=True,
-        one_time_keyboard=False
-    )
+) -> ReplyKeyboardRemove:
+    return ReplyKeyboardRemove()
 
-# ---------- удаление/эфемерность ----------
+
 async def _safe_delete(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int) -> None:
     try: await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
     except Exception: pass
@@ -291,6 +284,17 @@ async def show_menu_with_keyboard(update: Update, context: ContextTypes.DEFAULT_
         asyncio.create_task(_safe_delete(context, update.effective_chat.id, old_id))
     telegram_language = getattr(update.effective_user, "language_code", None)
     language = _user_interface_language(user_id, telegram_language)
+    if _is_https(Config.PUBLIC_BASE_URL):
+        try:
+            await context.bot.set_chat_menu_button(
+                chat_id=update.effective_chat.id,
+                menu_button=MenuButtonWebApp(
+                    text=OPEN_LABELS[language],
+                    web_app=WebAppInfo(url=Config.PUBLIC_BASE_URL.rstrip("/") + "/"),
+                ),
+            )
+        except Exception:
+            logging.getLogger(__name__).warning("Could not update Telegram menu button", exc_info=True)
     m = await update.effective_chat.send_message(
         bot_interface_text(language, "menu"),
         reply_markup=get_persistent_keyboard(user_id, telegram_language),
@@ -312,7 +316,7 @@ async def _ensure_open_registration(update: Update, context: ContextTypes.DEFAUL
         )
         return False
     is_new = _register_user(Config.DB_PATH, user)
-    save_detected_language(Config.DB_PATH, user.id, user.language_code)
+    save_detected_language(Config.DB_PATH, _account_user_id(user.id), user.language_code)
     if is_new:
         await _notify_admins_new_user(context, user)
     return is_new
@@ -387,10 +391,13 @@ async def _replace_or_send_onboarding_message(
 
 async def _show_onboarding_step(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     user = update.effective_user
-    if not user or account_type(Config.DB_PATH, user.id) != "pending":
+    if not user or account_type(Config.DB_PATH, _account_user_id(user.id)) != "pending":
         return False
-    if selected_ui_language(Config.DB_PATH, user.id):
-        language = _onboarding_language(user.id, user.language_code)
+    if selected_ui_language(Config.DB_PATH, _account_user_id(user.id)):
+        if context.user_data.get("pending_family_code"):
+            # The family invitation decides the account type on accept.
+            return False
+        language = _onboarding_language(_account_user_id(user.id), user.language_code)
         await _replace_or_send_onboarding_message(
             update,
             context,
@@ -528,6 +535,9 @@ async def _send_parent_invite(
 
 
 def _pairing_error_text(language_code: str | None, error: str, kind: str = "family") -> str:
+    if error == "unlink_children_required":
+        from app.i18n import translate
+        return translate(language_code, "family.unlink_children_first")
     if error == "parent_limit_reached":
         key = "pairing_parent_limit"
     elif kind == "invite" and error in {
@@ -541,6 +551,14 @@ def _pairing_error_text(language_code: str | None, error: str, kind: str = "fami
     return onboarding_text(language_code, key)
 
 
+def _user_can_become_child(user_id) -> bool:
+    """Same rule as the server: only an account without its own children may become a child."""
+    from contextlib import closing
+    from app.family_pairing import _can_become_child, _connect
+    with closing(_connect(Config.DB_PATH)) as conn:
+        return _can_become_child(conn, str(user_id))
+
+
 async def _show_pending_family_confirmation(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -550,14 +568,17 @@ async def _show_pending_family_confirmation(
         return False
     kind = str(context.user_data.get("pending_family_kind", "") or "family")
     user = update.effective_user
-    language = _user_interface_language(user.id, user.language_code)
+    language = _user_interface_language(_account_user_id(user.id), user.language_code)
 
+    current_type = account_type(Config.DB_PATH, _account_user_id(user.id))
     if kind == "invite":
-        if account_type(Config.DB_PATH, user.id) != "child":
+        becomes_child = current_type != "child" and _user_can_become_child(_account_user_id(user.id))
+        if current_type != "child" and not becomes_child:
             context.user_data.pop("pending_family_code", None)
             context.user_data.pop("pending_family_kind", None)
+            from app.i18n import translate
             await update.effective_chat.send_message(
-                onboarding_text(language, "pairing_child_required")
+                translate(language, "family.unlink_children_first")
             )
             return False
         details = invite_code_details(Config.DB_PATH, code)
@@ -568,12 +589,16 @@ async def _show_pending_family_confirmation(
                 onboarding_text(language, "pairing_invalid")
             )
             return False
+        confirm_text = onboarding_text(
+            language,
+            "pairing_join_confirm",
+            name=details["parent_display_name"],
+        )
+        if becomes_child:
+            from app.i18n import translate
+            confirm_text += "\n\n" + translate(language, "family.becomes_child")
         await update.effective_chat.send_message(
-            onboarding_text(
-                language,
-                "pairing_join_confirm",
-                name=details["parent_display_name"],
-            ),
+            confirm_text,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
                     onboarding_text(language, "pairing_confirm_button"),
@@ -587,7 +612,7 @@ async def _show_pending_family_confirmation(
         )
         return True
 
-    if account_type(Config.DB_PATH, user.id) != "standard":
+    if current_type not in {"standard", "pending"}:
         context.user_data.pop("pending_family_code", None)
         context.user_data.pop("pending_family_kind", None)
         await update.effective_chat.send_message(
@@ -602,12 +627,16 @@ async def _show_pending_family_confirmation(
             onboarding_text(language, "pairing_invalid")
         )
         return False
+    confirm_text = onboarding_text(
+        language,
+        "pairing_confirm",
+        name=details["child_display_name"],
+    )
+    if current_type == "pending":
+        from app.i18n import translate
+        confirm_text += "\n\n" + translate(language, "family.becomes_parent")
     await update.effective_chat.send_message(
-        onboarding_text(
-            language,
-            "pairing_confirm",
-            name=details["child_display_name"],
-        ),
+        confirm_text,
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(
                 onboarding_text(language, "pairing_confirm_button"),
@@ -632,7 +661,7 @@ async def family_join_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.answer()
         return
     action, code = parts[1], parts[2]
-    language = _user_interface_language(user.id, user.language_code)
+    language = _user_interface_language(_account_user_id(user.id), user.language_code)
     await query.answer()
     if context.user_data.get("pending_family_code") == code:
         context.user_data.pop("pending_family_code", None)
@@ -644,7 +673,8 @@ async def family_join_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return
     if action != "confirm":
         return
-    result = link_child_with_invite_code(Config.DB_PATH, user.id, code)
+    was_pending = account_type(Config.DB_PATH, _account_user_id(user.id)) == "pending"
+    result = link_child_with_invite_code(Config.DB_PATH, _account_user_id(user.id), code)
     if result.get("ok"):
         text = onboarding_text(
             language,
@@ -654,6 +684,10 @@ async def family_join_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     else:
         text = _pairing_error_text(language, str(result.get("error") or ""), kind="invite")
     await query.edit_message_text(text)
+    if result.get("ok") and was_pending:
+        # The invitation completed onboarding instead of the account-type question.
+        await show_menu_with_keyboard(update, context, _account_user_id(user.id))
+        await _send_fresh_app_link(update, context, _account_user_id(user.id))
 
 
 async def family_link_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -666,7 +700,7 @@ async def family_link_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.answer()
         return
     action, code = parts[1], parts[2]
-    language = _user_interface_language(user.id, user.language_code)
+    language = _user_interface_language(_account_user_id(user.id), user.language_code)
     await query.answer()
     if context.user_data.get("pending_family_code") == code:
         context.user_data.pop("pending_family_code", None)
@@ -678,7 +712,8 @@ async def family_link_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return
     if action != "confirm":
         return
-    result = link_parent_with_pairing_code(Config.DB_PATH, user.id, code)
+    was_pending = account_type(Config.DB_PATH, _account_user_id(user.id)) == "pending"
+    result = link_parent_with_pairing_code(Config.DB_PATH, _account_user_id(user.id), code)
     if result.get("ok"):
         text = onboarding_text(
             language,
@@ -688,6 +723,10 @@ async def family_link_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     else:
         text = _pairing_error_text(language, str(result.get("error") or ""))
     await query.edit_message_text(text)
+    if result.get("ok") and was_pending:
+        # The invitation completed onboarding instead of the account-type question.
+        await show_menu_with_keyboard(update, context, _account_user_id(user.id))
+        await _send_fresh_app_link(update, context, _account_user_id(user.id))
 
 
 async def onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -702,15 +741,15 @@ async def onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     step, value = parts[1], parts[2]
 
-    if account_type(Config.DB_PATH, user.id) != "pending":
+    if account_type(Config.DB_PATH, _account_user_id(user.id)) != "pending":
         await query.answer()
         return
 
-    language = _onboarding_language(user.id, user.language_code)
+    language = _onboarding_language(_account_user_id(user.id), user.language_code)
 
     if step == "language_keep":
         if value not in SUPPORTED_UI_LANGUAGES or not save_selected_ui_language(
-            Config.DB_PATH, user.id, value
+            Config.DB_PATH, _account_user_id(user.id), value
         ):
             await query.answer(
                 onboarding_text(language, "invalid_choice"),
@@ -718,6 +757,12 @@ async def onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
             )
             return
         await query.answer()
+        if context.user_data.get("pending_family_code"):
+            old_id = context.user_data.pop("onboarding_msg_id", None)
+            if old_id:
+                asyncio.create_task(_safe_delete(context, update.effective_chat.id, old_id))
+            if await _show_pending_family_confirmation(update, context):
+                return
         await _replace_or_send_onboarding_message(
             update,
             context,
@@ -743,13 +788,19 @@ async def onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     if step == "language":
-        if not save_selected_ui_language(Config.DB_PATH, user.id, value):
+        if not save_selected_ui_language(Config.DB_PATH, _account_user_id(user.id), value):
             await query.answer(
                 onboarding_text(language, "invalid_choice"),
                 show_alert=True,
             )
             return
         await query.answer()
+        if context.user_data.get("pending_family_code"):
+            old_id = context.user_data.pop("onboarding_msg_id", None)
+            if old_id:
+                asyncio.create_task(_safe_delete(context, update.effective_chat.id, old_id))
+            if await _show_pending_family_confirmation(update, context):
+                return
         await _replace_or_send_onboarding_message(
             update,
             context,
@@ -764,7 +815,7 @@ async def onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
             show_alert=True,
         )
         return
-    if not selected_ui_language(Config.DB_PATH, user.id):
+    if not selected_ui_language(Config.DB_PATH, _account_user_id(user.id)):
         await query.answer(
             onboarding_text(language, "choose_language_first"),
             show_alert=True,
@@ -780,12 +831,12 @@ async def onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
             _detected_language_keyboard(language),
         )
         return
-    if not complete_account_type(Config.DB_PATH, user.id, value):
+    if not complete_account_type(Config.DB_PATH, _account_user_id(user.id), value):
         await query.answer()
         return
 
     await query.answer()
-    language = _onboarding_language(user.id, user.language_code)
+    language = _onboarding_language(_account_user_id(user.id), user.language_code)
     completion_text = onboarding_text(language, "completed")
     try:
         await query.edit_message_text(completion_text)
@@ -808,9 +859,9 @@ async def onboarding_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
                 )
             )
     if value != "standard" and not handled_pending:
-        await _send_child_pairing_invite(update, context, user.id)
-    await show_menu_with_keyboard(update, context, user.id)
-    await _send_fresh_app_link(update, context, user.id)
+        await _send_child_pairing_invite(update, context, _account_user_id(user.id))
+    await show_menu_with_keyboard(update, context, _account_user_id(user.id))
+    await _send_fresh_app_link(update, context, _account_user_id(user.id))
 
 
 async def _send_fresh_app_link(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int, text: str = "") -> None:
@@ -826,12 +877,10 @@ async def _send_fresh_app_link(update: Update, context: ContextTypes.DEFAULT_TYP
     )
     buttons = []
     if use_webapp:
-        buttons.append([InlineKeyboardButton(text=bot_interface_text(language, "open_mini_app"), web_app=WebAppInfo(url=url))])
         buttons.append([InlineKeyboardButton(text=bot_interface_text(language, "open_browser"), url=url)])
     elif use_inline:
         buttons.append([InlineKeyboardButton(text=bot_interface_text(language, "open_app"), url=url)])
     buttons.append([InlineKeyboardButton(text=bot_interface_text(language, "download_android"), url=_build_android_download_url())])
-    buttons.append([InlineKeyboardButton(text=bot_interface_text(language, "login_android"), url=_build_android_app_url(user_id))])
 
     if buttons:
         m = await update.effective_chat.send_message(
@@ -850,7 +899,7 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await _delete_user_trigger(update, context)
     context.user_data.pop("await_pwd", None)
     is_new = await _ensure_open_registration(update, context)
-    if not _is_user_registered(Config.DB_PATH, user.id):
+    if not _is_user_registered(Config.DB_PATH, _account_user_id(user.id)):
         return
     family_kind, family_code = _family_start_payload(context)
     if family_code:
@@ -860,17 +909,17 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     if await _show_pending_family_confirmation(update, context):
         return
-    await show_menu_with_keyboard(update, context, user.id)
-    await _send_fresh_app_link(update, context, user.id)
+    await show_menu_with_keyboard(update, context, _account_user_id(user.id))
+    await _send_fresh_app_link(update, context, _account_user_id(user.id))
     if is_new:
-        language = _user_interface_language(user.id, user.language_code)
+        language = _user_interface_language(_account_user_id(user.id), user.language_code)
         await _ephemeral_send(update, context, bot_interface_text(language, "trial_ready"))
     else:
-        language = _user_interface_language(user.id, user.language_code)
+        language = _user_interface_language(_account_user_id(user.id), user.language_code)
         await _ephemeral_send(update, context, bot_interface_text(language, "welcome_back"))
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = update.effective_user.id
+    user_id = _account_user_id(update.effective_user.id)
 
     text = str(getattr(update.effective_message, "text", "") or "").strip()
     if re.fullmatch(r"[23456789A-HJ-NP-Z]{5}[- ]?[23456789A-HJ-NP-Z]{5}", text, re.I) or "/family/connect?" in text:
@@ -922,11 +971,11 @@ async def family_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     user = update.effective_user
     await _delete_user_trigger(update, context)
     await _ensure_open_registration(update, context)
-    if not user or not _is_user_registered(Config.DB_PATH, user.id):
+    if not user or not _is_user_registered(Config.DB_PATH, _account_user_id(user.id)):
         return
     if context.args:
-        language = _user_interface_language(user.id, user.language_code)
-        if not allow_invitation_attempt(user.id):
+        language = _user_interface_language(_account_user_id(user.id), user.language_code)
+        if not allow_invitation_attempt(_account_user_id(user.id)):
             from app.i18n import translate
             await update.effective_chat.send_message(translate(language, "family.too_many_attempts"))
             return
@@ -941,13 +990,13 @@ async def family_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     if context.args:
         await _show_pending_family_confirmation(update, context)
         return
-    if account_type(Config.DB_PATH, user.id) == "standard":
-        await _send_parent_invite(update, context, user.id)
+    if account_type(Config.DB_PATH, _account_user_id(user.id)) == "standard":
+        await _send_parent_invite(update, context, _account_user_id(user.id))
     else:
-        await _send_child_pairing_invite(update, context, user.id)
+        await _send_child_pairing_invite(update, context, _account_user_id(user.id))
 
 async def send_open(update: Update, context: ContextTypes.DEFAULT_TYPE, hello: str = "") -> None:
-    user_id = update.effective_user.id if (update and update.effective_user) else 0
+    user_id = _account_user_id(update.effective_user.id) if (update and update.effective_user) else 0
     if update and update.effective_user:
         await _ensure_open_registration(update, context)
         if not _is_user_registered(Config.DB_PATH, user_id):
@@ -988,7 +1037,7 @@ def register_auth_handlers(application: Application) -> None:
     ) + ")$"
     application.add_handler(MessageHandler(filters.Regex(learn_words_pattern), open_cmd))
     # Исключаем кнопки подтверждения (регистронезависимо)
-    exclude_import_btns = ~filters.Regex(r"(?i)^(импортировать как есть|отменить импорт)$")
+    exclude_import_btns = ~filters.Regex("^(?:" + "|".join(re.escape(v) for key in ("confirm", "cancel") for v in localized_values(key)) + ")$")
     application.add_handler(
         MessageHandler(filters.TEXT & (~filters.COMMAND) & exclude_import_btns, on_text),
         group=100

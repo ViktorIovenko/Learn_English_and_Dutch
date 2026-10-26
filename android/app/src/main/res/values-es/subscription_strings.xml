@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plan_title">Planes</string>
+    <string name="plan_current">Tu plan</string>
+    <string name="plan_price_free">0 €</string>
+    <string name="plan_price_premium">4,99 € / mes</string>
+    <string name="plan_price_family">9,99 € / mes</string>
+    <string name="plan_f_learning">Aprendizaje y ejercicios gratis</string>
+    <string name="plan_f_manual">Añadir palabras y lecciones a mano</string>
+    <string name="plan_f_ads">Con anuncios</string>
+    <string name="plan_f_no_ads">Sin anuncios</string>
+    <string name="plan_f_ai">Funciones de IA avanzadas</string>
+    <string name="plan_f_limits">Límites más altos</string>
+    <string name="plan_f_family">Un adulto y hasta 4 hijos, panel familiar</string>
+    <string name="plan_free_note">Plan gratuito: aprendizaje, ejercicios y añadir palabras a mano. Tu progreso siempre se conserva.</string>
+    <string name="plan_upgrade_family">El panel familiar forma parte del plan Family.</string>
+    <string name="plan_ai_paused">Las funciones de IA están pausadas por ahora. Las traducciones, ejemplos y audios guardados siguen funcionando.</string>
+    <string name="plan_unlimited">Acceso completo</string>
+    <string name="plan_no_expiry">Sin fecha de caducidad</string>
+    <string name="plan_valid_until">Acceso hasta: %1$s</string>
+    <string name="plan_price_note">Precios web de referencia. El precio de compra en Google Play aparece abajo cuando el pago está disponible.</string>
+    <string name="plan_ai_upgrade">Las nuevas solicitudes de IA requieren Premium o Family. El contenido guardado y la entrada manual siguen siendo gratuitos.</string>
+    <string name="settings_subscribe">Suscribirse</string>
+</resources>

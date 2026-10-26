@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_link_google">Associer Google</string>
+    <string name="account_email_password_confirm">Confirmer le mot de passe</string>
+    <string name="account_email_password_hint">Utilisez 12 à 128 caractères.</string>
+    <string name="account_email_send">Envoyer un e-mail</string>
+    <string name="account_email_sent">Si cette adresse est éligible, un e-mail vous sera envoyé. Vérifiez aussi les indésirables.</string>
+    <string name="account_email_password_mismatch">Les mots de passe ne correspondent pas.</string>
+    <string name="account_link_conflict">Ce mode de connexion est déjà associé à un compte.</string>
+</resources>

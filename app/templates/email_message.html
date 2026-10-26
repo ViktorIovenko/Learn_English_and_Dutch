@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="{{ language }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ text[prefix ~ '_title'] }}</title></head>
+<body style="margin:0;padding:0;background:#f4f0fa;font-family:Arial,Helvetica,sans-serif;color:#282035;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">{{ text[prefix ~ '_body'] }}</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f0fa;"><tr><td align="center" style="padding:36px 16px;">
+    <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="width:100%;max-width:560px;background:#ffffff;border-radius:24px;overflow:hidden;">
+      <tr><td style="padding:32px 36px;background:#5d12c7;color:#ffffff;">
+        <div style="font-size:26px;font-weight:700;letter-spacing:-1px;">Parallel<span style="color:#dac4ff;">Lingvo</span><span style="color:#c7fa77;">.</span></div>
+        <div style="height:24px;"></div>
+        <h1 style="margin:0;font-size:28px;line-height:1.25;font-weight:700;">{{ text[prefix ~ '_title'] }}</h1>
+      </td></tr>
+      <tr><td style="padding:32px 36px;">
+        <p style="margin:0 0 28px;font-size:16px;line-height:1.7;color:#5f566c;">{{ text[prefix ~ '_body'] }}</p>
+        <table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="background:#5d12c7;border-radius:12px;">
+          <a href="{{ link }}" style="display:inline-block;padding:17px 24px;font-size:15px;line-height:1.4;font-weight:700;color:#ffffff;text-decoration:none;">{{ text[prefix ~ '_button'] }} &rarr;</a>
+        </td></tr></table>
+        <p style="margin:24px 0;font-size:13px;line-height:1.6;color:#756b82;">{{ text.expiry }}</p>
+        <div style="border-top:1px solid #eee8f5;padding-top:24px;">
+          <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:#8a8096;">{{ text.ignore }}</p>
+          <a href="{{ link }}" style="font-size:11px;line-height:1.6;color:#755494;word-break:break-all;">{{ link }}</a>
+        </div>
+      </td></tr>
+    </table>
+    <p style="margin:24px 0 0;font-size:12px;line-height:1.7;color:#91869e;">ParallelLingvo &nbsp;&middot;&nbsp; <a href="https://parallellingvo.app" style="color:#91869e;text-decoration:none;">parallellingvo.app</a></p>
+  </td></tr></table>
+</body></html>

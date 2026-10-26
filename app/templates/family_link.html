@@ -34,7 +34,9 @@
       if (!response.ok || !data.ok) {
         const message = data.error === "parent_limit_reached"
           ? window.I18N.t("family.parent_limit")
-          : (data.error || "link_failed");
+          : data.error === "children_limit_reached"
+            ? window.I18N.t("family.children_limit")
+            : (data.error || "link_failed");
         throw new Error(message);
       }
       status.className = "family-link-status ok";

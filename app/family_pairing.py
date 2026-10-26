@@ -11,6 +11,23 @@ PAIRING_CODE_TTL_SECONDS = 10 * 60
 MAX_PARENTS_PER_CHILD = 5
 
 
+def children_limit_reached(conn: sqlite3.Connection, parent_id: str) -> bool:
+    """Family plan: a parent may link at most MAX_FAMILY_CHILDREN children.
+
+    Existing links above the limit are kept; only new links are refused.
+    Admin accounts keep their unrestricted access.
+    """
+    from app.plans import MAX_FAMILY_CHILDREN
+    from app.routes import _is_admin_user_id
+    if _is_admin_user_id(parent_id):
+        return False
+    count = int(conn.execute(
+        "SELECT COUNT(*) FROM parent_child_links WHERE parent_user_id=?",
+        (str(parent_id),),
+    ).fetchone()[0])
+    return count >= MAX_FAMILY_CHILDREN
+
+
 def _connect(db_path: str) -> sqlite3.Connection:
     from app.content_db import connect
     conn = connect(db_path)
@@ -30,6 +47,23 @@ def _is_effectively_child(conn: sqlite3.Connection, user_id: str, account_type: 
         "SELECT 1 FROM parent_child_links WHERE child_user_id=?",
         (str(user_id),),
     ).fetchone())
+
+
+def _can_become_child(conn: sqlite3.Connection, user_id: str) -> bool:
+    """An adult/pending account that accepts a parent's invite is converted
+    into a child account, unless it already has its own linked children."""
+    return not conn.execute(
+        "SELECT 1 FROM parent_child_links WHERE parent_user_id=?",
+        (str(user_id),),
+    ).fetchone()
+
+
+def _set_account_type(conn: sqlite3.Connection, user_id: str, account_type: str) -> None:
+    """Switch the account type and drop the stored daily goal: it is minutes for
+    adults and words for children, so the old number is meaningless now."""
+    conn.execute("UPDATE users SET account_type=? WHERE user_id=?", (account_type, user_id))
+    if conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='user_daily_goals'").fetchone():
+        conn.execute("DELETE FROM user_daily_goals WHERE user_id=?", (user_id,))
 
 
 def ensure_pairing_code_schema(db_path: str) -> None:
@@ -195,10 +229,9 @@ def link_child_with_invite_code(
         ).fetchone()
         if not child:
             return {"ok": False, "error": "child_account_not_found"}
-        if child["account_type"] == "pending":
-            return {"ok": False, "error": "account_type_required"}
-        if not _is_effectively_child(conn, child_id, child["account_type"]):
-            return {"ok": False, "error": "parent_cannot_be_child"}
+        becomes_child = not _is_effectively_child(conn, child_id, child["account_type"])
+        if becomes_child and not _can_become_child(conn, child_id):
+            return {"ok": False, "error": "unlink_children_required"}
 
         used = conn.execute("SELECT user_id FROM family_invitation_uses WHERE code=? AND kind=?", (str(code), "invite")).fetchone()
         if used and used[0] != child_id:
@@ -245,7 +278,11 @@ def link_child_with_invite_code(
         ).fetchone()[0])
         if not existing and parents_count >= MAX_PARENTS_PER_CHILD:
             return {"ok": False, "error": "parent_limit_reached"}
+        if not existing and children_limit_reached(conn, parent_id):
+            return {"ok": False, "error": "children_limit_reached"}
 
+        if becomes_child:
+            _set_account_type(conn, child_id, "child")
         conn.execute("""
             INSERT INTO parent_child_links (parent_user_id, child_user_id)
             VALUES (?, ?)
@@ -346,9 +383,10 @@ def link_parent_with_pairing_code(
         ).fetchone()
         if not parent:
             return {"ok": False, "error": "parent_account_not_found"}
-        if parent["account_type"] == "pending":
-            return {"ok": False, "error": "account_type_required"}
-        if parent["account_type"] != "standard":
+        # A new account that has not chosen its type yet becomes a parent
+        # by accepting a child's code.
+        becomes_parent = parent["account_type"] == "pending"
+        if not becomes_parent and parent["account_type"] != "standard":
             return {"ok": False, "error": "child_cannot_be_parent"}
 
         used = conn.execute("SELECT user_id FROM family_invitation_uses WHERE code=? AND kind=?", (str(code), "family")).fetchone()
@@ -396,7 +434,14 @@ def link_parent_with_pairing_code(
         ).fetchone()[0])
         if not existing and parents_count >= MAX_PARENTS_PER_CHILD:
             return {"ok": False, "error": "parent_limit_reached"}
+        if not existing and children_limit_reached(conn, parent_id):
+            return {"ok": False, "error": "children_limit_reached"}
 
+        if becomes_parent:
+            _set_account_type(conn, parent_id, "standard")
+        if child["account_type"] != "child":
+            # Linked as a child: store the status explicitly, not only via the link.
+            _set_account_type(conn, child_id, "child")
         conn.execute("""
             INSERT INTO parent_child_links (parent_user_id, child_user_id)
             VALUES (?, ?)

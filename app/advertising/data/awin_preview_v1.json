@@ -1,0 +1,80 @@
+{
+  "schema": "parallellingvo.awin.preview.v1",
+  "source": "Awin MCP read-only checks on 2026-10-09",
+  "publisher_id": 3118768,
+  "publisher_name": "ParallelLingvo",
+  "mode": "PREVIEW",
+  "production_enabled": false,
+  "preview_admin_only": true,
+  "allowed_subscription": "free",
+  "disallow_subscription_statuses": ["trial_with_paid_access", "paid", "admin"],
+  "child_accounts_enabled": false,
+  "real_tracking_enabled": false,
+  "preview_clicks_enabled": false,
+  "ad_slots": [
+    {"id": "dashboard_top", "supported_formats": ["728x90", "320x100"]},
+    {"id": "dashboard_between", "supported_formats": ["300x250", "320x100"]},
+    {"id": "dashboard_bottom", "supported_formats": ["728x90", "320x50"]}
+  ],
+  "candidate_advertisers": [
+    {
+      "advertiser_id": 8177,
+      "name": "Laudius NL",
+      "target_region": "NL",
+      "website": "https://www.laudius.nl",
+      "membership_status": "Not joined",
+      "official_creative_available": false,
+      "epc_from_awin": 1.28,
+      "conversion_rate_from_awin_percent": 2.66,
+      "preview_headline_ru": "Изучайте новое в удобном формате",
+      "preview_description_ru": "Курсы и образовательные программы",
+      "preview_copy_is_official": false
+    },
+    {
+      "advertiser_id": 9243,
+      "name": "Paagman NL",
+      "target_region": "NL",
+      "website": "https://www.paagman.nl/",
+      "membership_status": "Not joined",
+      "official_creative_available": false,
+      "epc_from_awin": 0.07,
+      "conversion_rate_from_awin_percent": 5.09,
+      "preview_headline_ru": "Книги для новых знаний",
+      "preview_description_ru": "Книги и учебные материалы",
+      "preview_copy_is_official": false
+    },
+    {
+      "advertiser_id": 32301,
+      "name": "italki US",
+      "target_region": "US",
+      "website": "https://www.italki.com/",
+      "membership_status": "Not joined",
+      "official_creative_available": false,
+      "epc_from_awin": 0.97,
+      "conversion_rate_from_awin_percent": 8.63,
+      "preview_headline_ru": "Практикуйте язык с преподавателем",
+      "preview_description_ru": "Индивидуальные онлайн-уроки",
+      "preview_copy_is_official": false
+    },
+    {
+      "advertiser_id": 18785,
+      "name": "ESET Nederland B.V.",
+      "target_region": "NL",
+      "website": "https://www.eset.com/nl/thuis/awin/",
+      "membership_status": "Not joined",
+      "official_creative_available": false,
+      "epc_from_awin": 0.66,
+      "conversion_rate_from_awin_percent": 2.83,
+      "preview_headline_ru": "Защитите свою цифровую жизнь",
+      "preview_description_ru": "Решения для онлайн-безопасности",
+      "preview_copy_is_official": false
+    }
+  ],
+  "deployment_rules": {
+    "never_switch_to_live_without_explicit_user_approval": true,
+    "check_actual_server_side_free_tier_before_serving_real_ads": true,
+    "never_count_preview_as_impressions_or_clicks": true,
+    "do_not_create_affiliate_links_until_advertiser_joined": true,
+    "do_not_use_preview_copy_as_official_advertiser_creative": true
+  }
+}

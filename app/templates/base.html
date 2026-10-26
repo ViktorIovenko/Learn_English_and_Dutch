@@ -4,12 +4,21 @@
 <head>
   <meta charset="utf-8">
   <title>{{ title or t("app.title") }}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     if (window.Telegram && window.Telegram.WebApp &&
         (window.Telegram.WebApp.initData || window.Telegram.WebApp.initDataUnsafe?.user)) {
       document.documentElement.classList.add("tg-auth-pending");
+      // Telegram Mini App: everything ~10% smaller. Phones scale the viewport
+      // (touch coordinates stay exact); desktop clients ignore that, so they get CSS zoom.
+      document.documentElement.classList.add("tg-app");
+      if (/^(android|ios)$/.test(window.Telegram.WebApp.platform || "")) {
+        document.getElementById("viewportMeta").setAttribute(
+          "content", "width=device-width, initial-scale=0.9, maximum-scale=0.9, user-scalable=no");
+      } else {
+        document.documentElement.classList.add("tg-desktop");
+      }
     }
     {% if show_auth_gate %}
     document.documentElement.classList.add("auth-gate-pending");
@@ -128,7 +137,7 @@
     .auth-gate-btn.email-submit:hover{background:#4A0EA3;}
     .auth-gate-note{margin:4px 0 0;font-size:12px;color:#8A7A9E;}
   </style>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261007-buttons') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261012-touch') }}">
   <link rel="icon" href="{{ url_for('static', filename='brand-icon.svg') }}" type="image/svg+xml">
 </head>
 <body>
@@ -177,6 +186,7 @@
         <button type="button" class="auth-gate-btn email-submit" id="authGateEmailSubmit">{{ t("auth_gate.email_submit") }}</button>
         <p class="auth-gate-note">{{ t("auth_gate.email_note") }}</p>
       </div>
+      {% block auth_gate_extra %}{% endblock %}
     </div>
   </div>
   {% endif %}
@@ -396,9 +406,7 @@
       const emailInput = document.getElementById("authGateEmailInput");
       if (!emailBtn || !emailForm) return;
       emailBtn.addEventListener("click", () => {
-        emailForm.hidden = false;
-        emailBtn.hidden = true;
-        if (emailInput) emailInput.focus();
+        window.location.assign("/auth/email?lang=" + {{ current_ui_language | tojson }} + "&next=" + encodeURIComponent(location.pathname + location.search));
       });
       if (emailSubmit) {
         emailSubmit.addEventListener("click", () => {
@@ -461,9 +469,20 @@
         const r = await apiFetch("/api/me");
         const me = await r.json();
         if (me && me.ok && me.auth) {
+          const planState = me.plan_state || {};
+          const planFeatures = planState.features || {};
+          const familyLocked = !!(planState.enforced && !planFeatures.family);
+          document.documentElement.dataset.plan = planState.plan || "";
           document.querySelectorAll("[data-parent-only]").forEach((element) => {
-            element.hidden = !me.is_parent;
+            element.hidden = !me.is_parent || familyLocked;
           });
+          // Family-only entry points (Children nav, child invitations) are
+          // hidden whenever the effective plan has no Family features.
+          document.querySelectorAll("[data-family-feature]").forEach((element) => {
+            element.hidden = familyLocked;
+          });
+          window.PLAN_STATE = planState;
+          if (planState.preview) showPlanPreviewBanner(planState.preview);
           document.querySelectorAll("[data-subscription-nav]").forEach((element) => {
             element.hidden = !!(me.subscription && me.subscription.is_unlimited);
           });
@@ -475,6 +494,7 @@
           document.documentElement.classList.remove("tg-auth-pending");
           document.documentElement.classList.remove("auth-gate-pending");
           hideAppSplash();
+          document.dispatchEvent(new CustomEvent("auth-ready"));
           const name = (me.first_name && me.first_name.trim())
                        ? me.first_name.trim()
                        : ((me.username && me.username.trim()) ? "@"+me.username.trim() : "");
@@ -485,7 +505,8 @@
           maybeShowTerms(me.user_id || USER_ID);
           try {
             const path = window.location.pathname || "/";
-            if (me.needs_account_type && path !== "/account-type") {
+            // A family invitation decides the account type itself on accept.
+            if (me.needs_account_type && path !== "/account-type" && path !== "/family/connect") {
               window.location.href = "/account-type";
               return;
             }
@@ -513,6 +534,43 @@
         rejectTelegramWebApp();
       }
     })();
+    function showPlanPreviewBanner(plan){
+      if (document.getElementById("plan-preview-banner")) return;
+      const tr = (key, params) => (window.I18N && window.I18N.t) ? window.I18N.t(key, params) : key;
+      const names = {free: "Free", premium: "Premium", family: "Family"};
+      const bar = document.createElement("div");
+      bar.id = "plan-preview-banner";
+      bar.className = "plan-preview-banner";
+      bar.setAttribute("role", "status");
+      const label = document.createElement("span");
+      label.textContent = "⚠ " + tr("plan.preview_banner", {plan: names[plan] || plan});
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", "Preview subscription");
+      Object.entries(names).forEach(([value, text]) => {
+        const option = document.createElement("option");
+        option.value = value; option.textContent = text; option.selected = value === plan;
+        select.append(option);
+      });
+      const exit = document.createElement("button");
+      exit.type = "button";
+      exit.textContent = tr("plan.preview_exit");
+      async function apply(value){
+        try {
+          await fetch("/api/admin/plan-preview", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            credentials: "same-origin",
+            body: JSON.stringify({plan: value}),
+          });
+        } finally {
+          window.location.reload();
+        }
+      }
+      select.addEventListener("change", () => apply(select.value));
+      exit.addEventListener("click", () => apply("exit"));
+      bar.append(label, select, exit);
+      document.body.append(bar);
+    }
     /* ===========================================
        [ИЗМЕНЕНО v5.12] Таймер с сохранением в sessionStorage
        - НЕ сбрасывается при переходе по страницам
@@ -875,6 +933,11 @@
       });
     }
   </script>
+  {% if ads_client_enabled or ads_consent_ui %}
+  {# Ads: loaded only when the server decided this viewer may get ads or the
+     consent controls (never in OFF mode, for paid plans or children). #}
+  <script defer src="{{ url_for('static', filename='ads.js', v='20261010-places') }}"></script>
+  {% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

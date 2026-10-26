@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Square splash canvas; keep the portrait mark inside Android's circular safe area. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:width="288dp" android:height="288dp">
+        <shape android:shape="rectangle">
+            <size android:width="288dp" android:height="288dp" />
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+    <!-- 381:544 source aspect ratio; compensate for the transparent area above the mark.
+         Visible bounds (4,159)-(378,541) are centered on the 288dp canvas. -->
+    <item android:width="110dp" android:height="157dp" android:bottom="45dp" android:gravity="center">
+        <bitmap android:src="@drawable/logo_mark" android:gravity="fill" />
+    </item>
+</layer-list>

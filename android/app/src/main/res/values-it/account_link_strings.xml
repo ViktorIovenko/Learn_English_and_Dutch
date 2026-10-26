@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_link_google">Collega Google</string>
+    <string name="account_email_password_confirm">Conferma password</string>
+    <string name="account_email_password_hint">Usa da 12 a 128 caratteri.</string>
+    <string name="account_email_send">Invia e-mail</string>
+    <string name="account_email_sent">Se questo indirizzo è idoneo, riceverai un’e-mail. Controlla anche la cartella spam.</string>
+    <string name="account_email_password_mismatch">Le password non corrispondono.</string>
+    <string name="account_link_conflict">Questo metodo di accesso è già collegato a un account.</string>
+</resources>

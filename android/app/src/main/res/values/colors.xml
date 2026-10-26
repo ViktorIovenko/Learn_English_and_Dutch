@@ -9,9 +9,10 @@
     <color name="colorBackground">#F8FAFC</color>
     <color name="colorSurface">#FFFFFF</color>
     <color name="colorError">#E11D48</color>
+    <color name="colorOnSecondary">#FFFFFF</color>
     <color name="colorOnPrimary">#FFFFFF</color>
     <color name="colorOnBackground">#0F172A</color>
-    <color name="colorTextSecondary">#8A93A6</color>
+    <color name="colorTextSecondary">#596579</color>
     <color name="colorCorrect">#16A34A</color>
     <color name="colorWrong">#E11D48</color>
     <color name="colorTelegram">#26A5E4</color>
@@ -21,8 +22,8 @@
     <color name="colorLauncherBackground">#FFFFFF</color>
 
     <!-- Text shades (adapt in values-night) -->
-    <color name="colorTextTertiary">#888888</color>
-    <color name="colorTextHint">#AAAAAA</color>
+    <color name="colorTextTertiary">#64748B</color>
+    <color name="colorTextHint">#64748B</color>
     <color name="colorTextMedium">#555555</color>
 
     <!-- Surfaces / dividers (adapt in values-night) -->

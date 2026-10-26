@@ -12,22 +12,48 @@
         android:orientation="vertical"
         android:padding="24dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_login_language"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAllCaps="false"
+                android:text="@string/interface_language" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_login_theme"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAllCaps="false"
+                android:text="@string/theme_title" />
+        </LinearLayout>
+
         <ImageView
+            android:id="@+id/img_login_mark"
             android:layout_width="88dp"
             android:layout_height="88dp"
             android:layout_marginTop="40dp"
             android:contentDescription="@string/app_name"
+            android:cropToPadding="true"
+            android:scaleType="matrix"
             android:src="@drawable/logo_mark" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <ImageView
+            android:id="@+id/img_login_name"
+            android:layout_width="260dp"
+            android:layout_height="52dp"
             android:layout_marginTop="16dp"
-            android:text="@string/app_name"
-            android:textSize="26sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.01"
-            android:textColor="@color/colorPrimaryVariant" />
+            android:contentDescription="@string/app_name"
+            android:cropToPadding="true"
+            android:scaleType="matrix"
+            android:src="@drawable/header_wordmark" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -92,88 +118,48 @@
             app:cornerRadius="28dp"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
+        <LinearLayout
+            android:id="@+id/email_login_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:hint="@string/auth_email_address"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_email" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="textEmailAddress" android:autofillHints="emailAddress" android:singleLine="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" android:hint="@string/hint_password"
+                app:passwordToggleEnabled="true" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_email_password" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="textPassword" android:autofillHints="password" android:singleLine="true"
+                    android:imeOptions="actionGo" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_email_submit" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:textAllCaps="false" android:text="@string/btn_login" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_email_register" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textAllCaps="false" android:text="@string/auth_create_account"
+                style="@style/Widget.MaterialComponents.Button.TextButton" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_email_reset" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textAllCaps="false" android:text="@string/auth_forgot_password"
+                style="@style/Widget.MaterialComponents.Button.TextButton" />
+        </LinearLayout>
+
         <ProgressBar
             android:id="@+id/progress_bar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:visibility="gone" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_toggle_manual_login"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:textAllCaps="false"
-            android:textColor="@color/colorTextSecondary"
-            android:text="@string/manual_login_toggle"
-            style="@style/Widget.MaterialComponents.Button.TextButton" />
-
-        <LinearLayout
-            android:id="@+id/manual_login_section"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/hint_server_url"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_server_url"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textUri"
-                    android:text="" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="Telegram User ID"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_user_id"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="number" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="@string/hint_password_optional"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                app:passwordToggleEnabled="true">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_password"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textPassword" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_login"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:textAllCaps="false"
-                android:text="@string/btn_login" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_offline"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:textAllCaps="false"
-                android:text="@string/btn_offline"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

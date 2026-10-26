@@ -391,7 +391,8 @@
       const data = await response.json();
       if (requestId !== loadRequestId) return; // a newer request already resolved
       if (!response.ok || !data.ok) {
-        const message = response.status === 403 ? tr("parent.access_denied") : tr("parent.load_failed");
+        const message = response.status === 402 ? tr("plan.upgrade_family")
+          : response.status === 403 ? tr("parent.access_denied") : tr("parent.load_failed");
         throw new Error(message);
       }
       children = Array.isArray(data.children) ? data.children : [];
