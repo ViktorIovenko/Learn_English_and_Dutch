@@ -181,6 +181,60 @@ class AiGatewayTests(unittest.TestCase):
             self.assertEqual(result["ru"], "дом")
             self.assertEqual(external.call_count, 1)
 
+    # ------------------------------------------------------- request log/stats
+    def log_rows(self):
+        with closing(sqlite3.connect(self.db)) as conn:
+            conn.row_factory = sqlite3.Row
+            return [dict(r) for r in conn.execute("SELECT * FROM ai_gateway_requests ORDER BY id")]
+
+    def test_every_ai_attempt_is_logged_without_content(self):
+        with patch.object(Config, "PAID_AI_ENABLED", False):
+            content_service.resolve_word("house", "en", ["en", "ru"], examples=False)
+        gateway.save_settings(self.data)
+        with patch("app.ai_gateway.requests.post", return_value=self.response({"text": "дом"})):
+            content_service.resolve_word("house", "en", ["en", "ru"], examples=False)
+            content_service.resolve_word("house", "en", ["en", "ru"], examples=False)  # cache: no row
+        with patch("app.ai_gateway.requests.post", return_value=Mock(status_code=500)):
+            with self.assertRaises(RuntimeError):
+                content_service.resolve_word("garden", "en", ["en", "ru"], examples=False)
+        rows = self.log_rows()
+        self.assertEqual([r["status"] for r in rows], ["blocked", "ok", "error"],
+                         "error row survives the rolled-back content transaction")
+        self.assertEqual(rows[0]["error"], "disabled")
+        self.assertEqual((rows[1]["model"], rows[1]["total_tokens"], rows[1]["channel"]), ("model-one", 16, "bot"))
+        self.assertIn("HTTP 500", rows[2]["error"])
+        dump = json.dumps(rows, ensure_ascii=False)
+        for secret in ("secret-api-key", "дом", "garden"):
+            self.assertNotIn(secret, dump)
+
+    def test_channel_is_detected_on_the_server(self):
+        cases = [({"headers": {"X-Client": "android", "Authorization": "Bearer t"}}, "android"),
+                 ({"path": "/api/mcp/words"}, "mcp"),
+                 ({"headers": {"Cookie": "pl_client=telegram"}}, "telegram"),
+                 ({}, "web")]
+        for kwargs, expected in cases:
+            with self.subTest(expected=expected), self.app.test_request_context(**kwargs):
+                self.assertEqual(gateway._client()[0], expected)
+        self.assertEqual(gateway._client(), ("bot", ""))
+
+    def test_stats_and_connection_test_are_admin_only(self):
+        self.assertEqual(self.client.get("/api/admin/ai/stats").status_code, 401)
+        csrf = self.login()
+        gateway.save_settings(self.data)
+        self.assertEqual(self.client.post("/api/admin/ai/test", json={}).status_code, 403, "CSRF token required")
+        with patch("app.ai_gateway.requests.post", return_value=self.response({"text": "huis"})) as external:
+            tested = self.client.post("/api/admin/ai/test", json={}, headers={"X-CSRF-Token": csrf})
+        self.assertEqual((tested.status_code, tested.json["answer"]), (200, "huis"))
+        self.assertNotIn("secret-api-key", tested.text)
+        self.assertEqual(external.call_args.kwargs["headers"]["Authorization"], "Bearer secret-api-key")
+        stats = self.client.get("/api/admin/ai/stats?days=7").json
+        self.assertEqual((stats["summary"]["requests"], stats["summary"]["ok"]), (1, 1))
+        self.assertEqual(stats["by_channel"][0]["key"], "admin")
+        self.assertEqual(stats["recent"][0]["operation"], "translate_word")
+        with self.client.session_transaction() as state:
+            state["tg_user_id"] = "ordinary-user"
+        self.assertEqual(self.client.get("/api/admin/ai/stats").status_code, 401)
+
 
 if __name__ == "__main__":
     unittest.main()

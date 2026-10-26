@@ -133,19 +133,30 @@ def _request(conn, operation, request, allow_provider=True):
     row = conn.execute("SELECT result_json FROM content_results WHERE request_key=?", (key,)).fetchone()
     if row:
         return json.loads(row[0]), 0
+    # Every AI call of every client (web, Mini App, Android, MCP, bot) passes
+    # here; ai_gateway.log_request records it for the admin AI statistics.
+    from app.ai_gateway import log_request
     provider = adapter(operation) if allow_provider else None
     if provider:
-        result = provider(**request, request_key=key)
+        started = time.monotonic()
+        try:
+            result = provider(**request, request_key=key)
+        except Exception as exc:
+            log_request(operation, "error", started=started, error=str(exc))
+            raise
         if not isinstance(result, dict):
+            log_request(operation, "invalid", started=started, error="provider must return an object")
             raise ValueError("provider must return an object")
         valid = (_valid(result.get("text")) if operation in ("translate_word", "translate_sentence")
                  else any(_valid(result.get(f"ex_{lang}")) for lang in LANGUAGES) if operation == "generate_examples"
                  else isinstance(result.get("words"), list) and bool(result["words"]))
+        log_request(operation, "ok" if valid else "invalid", started=started, usage=result.get("_usage"))
         if not valid:
             conn.execute("INSERT OR IGNORE INTO content_pending VALUES(?,?,?,?)", (key, operation, canonical(request), int(time.time())))
             return result, 1
         _store_result(conn, operation, request, result)
         return result, 1
+    log_request(operation, "blocked", error="plan" if not allow_provider else "disabled")
     conn.execute("INSERT OR IGNORE INTO content_pending VALUES(?,?,?,?)", (key, operation, canonical(request), int(time.time())))
     return {}, 0
 

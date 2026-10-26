@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 import sqlite3
+import time
 from contextlib import closing
 from urllib.parse import urlsplit
 
@@ -192,6 +193,136 @@ def generate(settings, operation, arguments):
         raise RuntimeError("ИИ-сервис вернул ответ неподходящего формата") from None
 
 
+# ------------------------------------------------------------ request log
+# One row per AI attempt that missed the stored-content cache: the call (ok /
+# error / invalid answer) or a refusal (blocked: paid AI off / plan). Only
+# metadata: operation, client channel, user id, model, timing, tokens; never
+# prompts, answers, keys or provider responses.
+LOG_RETENTION_DAYS = 180
+CHANNELS = ("web", "telegram", "android", "mcp", "bot", "admin")
+
+
+def _ensure_log(conn):
+    conn.execute("""CREATE TABLE IF NOT EXISTS ai_gateway_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, operation TEXT NOT NULL,
+        channel TEXT NOT NULL, user_id TEXT NOT NULL DEFAULT '', model TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL, error TEXT NOT NULL DEFAULT '', latency_ms INTEGER NOT NULL DEFAULT 0,
+        prompt_tokens INTEGER NOT NULL DEFAULT 0, completion_tokens INTEGER NOT NULL DEFAULT 0,
+        total_tokens INTEGER NOT NULL DEFAULT 0)""")
+    conn.execute("CREATE INDEX IF NOT EXISTS ai_gateway_requests_at ON ai_gateway_requests(at)")
+
+
+def _client():
+    """(channel, user_id) of the current call; detected on the server."""
+    from flask import g, has_request_context, request, session
+    if not has_request_context():
+        return "bot", ""
+    if g.get("ai_channel"):
+        return g.ai_channel, ""
+    path = request.path or ""
+    if path.startswith(("/api/mcp", "/mcp")):
+        channel = "mcp"
+    elif request.headers.get("X-Client") == "android" or (
+            str(request.headers.get("Authorization") or "").lower().startswith("bearer ")
+            and not session.get("is_auth")):
+        channel = "android"
+    elif request.cookies.get("pl_client") == "telegram":
+        channel = "telegram"  # set by the page inside Telegram's own webview
+    else:
+        channel = "web"
+    try:
+        from app.routes import _request_user_id
+        user_id = _request_user_id()
+    except Exception:
+        user_id = ""
+    return channel, str(user_id or "")[:64]
+
+
+def _model_for(operation):
+    try:
+        settings = read_settings()
+    except Exception:
+        return ""
+    if not settings["revision"]:
+        return "legacy"
+    return ((settings["tasks"].get(operation) or {}).get("model") or settings["model"] or "")[:200]
+
+
+def log_request(operation, status, *, started=None, usage=None, error=""):
+    try:
+        channel, user_id = _client()
+        usage = usage if isinstance(usage, dict) else {}
+        row = (int(time.time() * 1000), str(operation)[:40], channel, user_id,
+               _model_for(operation) if status != "blocked" else "", status, str(error or "")[:300],
+               int((time.monotonic() - started) * 1000) if started else 0,
+               *(max(int(usage.get(k) or 0), 0) for k in ("prompt_tokens", "completion_tokens", "total_tokens")))
+    except Exception:
+        return
+
+    def write():
+        # Own short connection after the content transaction ends: an error
+        # row survives its rollback and never waits on that write lock.
+        with closing(sqlite3.connect(Config.DB_PATH, timeout=5)) as conn:
+            _ensure_log(conn)
+            conn.execute("""INSERT INTO ai_gateway_requests (at, operation, channel, user_id, model, status,
+                error, latency_ms, prompt_tokens, completion_tokens, total_tokens)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)""", row)
+            if row[0] % 50 == 0:
+                conn.execute("DELETE FROM ai_gateway_requests WHERE at < ?",
+                             (row[0] - LOG_RETENTION_DAYS * 86400000,))
+            conn.commit()
+    try:
+        from app.content_db import after_transaction
+        after_transaction(write)
+    except Exception:
+        pass
+
+
+_TOTALS = """COUNT(*) AS requests, SUM(r.status='ok') AS ok, SUM(r.status='error') AS errors,
+    SUM(r.status='invalid') AS invalid, SUM(r.status='blocked') AS blocked,
+    SUM(r.prompt_tokens) AS prompt_tokens, SUM(r.completion_tokens) AS completion_tokens,
+    SUM(r.total_tokens) AS total_tokens,
+    CAST(AVG(CASE WHEN r.status != 'blocked' THEN r.latency_ms END) AS INTEGER) AS avg_latency_ms"""
+
+
+def request_stats(days=30):
+    days = max(1, min(int(days), 365))
+    since = int(time.time() * 1000) - days * 86400000
+    with closing(sqlite3.connect(Config.DB_PATH, timeout=5)) as conn:
+        conn.row_factory = sqlite3.Row
+        _ensure_log(conn)
+
+        def rows(sql):
+            return [dict(r) for r in conn.execute(sql, (since,))]
+
+        def group(column):
+            return rows(f"SELECT r.{column} AS key, {_TOTALS} FROM ai_gateway_requests r "
+                        f"WHERE r.at>=? GROUP BY r.{column} ORDER BY requests DESC")
+        summary = rows(f"SELECT {_TOTALS} FROM ai_gateway_requests r WHERE r.at>=?")[0]
+        by_day = rows(f"SELECT date(r.at/1000,'unixepoch') AS key, {_TOTALS} FROM ai_gateway_requests r "
+                      f"WHERE r.at>=? GROUP BY key ORDER BY key")
+        try:
+            by_user = rows(f"""SELECT r.user_id AS key,
+                    COALESCE(NULLIF(TRIM(COALESCE(u.first_name,'')||' '||COALESCE(u.last_name,'')),''), u.username, '') AS name,
+                    {_TOTALS}
+                FROM ai_gateway_requests r LEFT JOIN users u ON u.user_id = r.user_id
+                WHERE r.at>=? AND r.user_id != '' GROUP BY r.user_id ORDER BY requests DESC LIMIT 50""")
+        except sqlite3.OperationalError:  # no users table (isolated tests)
+            by_user = rows(f"""SELECT r.user_id AS key, '' AS name, {_TOTALS} FROM ai_gateway_requests r
+                WHERE r.at>=? AND r.user_id != '' GROUP BY r.user_id ORDER BY requests DESC LIMIT 50""")
+        recent = [dict(r) for r in conn.execute(
+            """SELECT at, operation, channel, user_id, model, status, error, latency_ms, total_tokens
+               FROM ai_gateway_requests ORDER BY id DESC LIMIT 100""")]
+        result = {"days": days, "summary": summary, "by_day": by_day, "by_user": by_user, "recent": recent,
+                  "by_channel": group("channel"), "by_operation": group("operation"), "by_model": group("model")}
+    for item in [result["summary"], *by_day, *by_user, *result["by_channel"],
+                 *result["by_operation"], *result["by_model"]]:
+        for key, value in list(item.items()):
+            if value is None and key != "avg_latency_ms":
+                item[key] = 0
+    return result
+
+
 def install_legacy_bridge(module):
     """Keep an older deployed facade working until its first managed save."""
     import inspect
@@ -276,6 +407,47 @@ def register(web):
         csrf_token()
         # API key itself is never returned: only key_configured.
         return jsonify(ok=True, settings=public_settings(), tasks=TASKS), 200, {"Cache-Control": "no-store"}
+
+    @web.get("/api/admin/ai/stats")
+    def admin_ai_stats():
+        from app.routes import _require_admin
+        _, error = _require_admin()
+        if error:
+            return error
+        try:
+            days = int(request.args.get("days", 30))
+        except (TypeError, ValueError):
+            days = 30
+        return jsonify(ok=True, **request_stats(days)), 200, {"Cache-Control": "no-store"}
+
+    @web.post("/api/admin/ai/test")
+    def admin_ai_test():
+        """One real call through the saved connection (logged as channel "admin")."""
+        from flask import g
+        from app.admin_api import csrf_valid
+        from app.routes import _require_admin
+        _, error = _require_admin()
+        if error:
+            return error
+        if not request.is_json or not csrf_valid():
+            return jsonify(ok=False, error="Обновите страницу и повторите"), 403
+        settings = read_settings()
+        if not settings["revision"] or not settings["enabled"]:
+            return jsonify(ok=False, error="Подключение выключено или ещё не сохранено"), 409
+        g.ai_channel = "admin"
+        operation = "translate_word"
+        started = time.monotonic()
+        arguments = {"text": "house", "source_language": "en", "target_language": "nl", "sense": "", "context": ""}
+        try:
+            result = generate(settings, operation, arguments)
+        except RuntimeError as exc:
+            message = ("Платный ИИ выключен на сервере (PAID_AI_ENABLED)"
+                       if str(exc) == "paid_ai_disabled" else str(exc))
+            log_request(operation, "error", started=started, error=message)
+            return jsonify(ok=False, error=message), 502
+        log_request(operation, "ok", started=started, usage=result.get("_usage"))
+        return jsonify(ok=True, answer=result.get("text", ""), model=_model_for(operation),
+                       latency_ms=int((time.monotonic() - started) * 1000), usage=result.get("_usage") or {})
 
     @web.post("/api/admin/ai/settings")
     def admin_ai_save():

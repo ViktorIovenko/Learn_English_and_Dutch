@@ -290,6 +290,11 @@
     const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
     const isTelegramWebApp = Boolean(tg && (tg.initData || (tg.initDataUnsafe && tg.initDataUnsafe.user)));
     if (tg) { try { tg.expand(); tg.enableClosingConfirmation(); } catch(e){} }
+    // Client label for the admin AI statistics only (Telegram's webview has its
+    // own cookie jar, so the browser is never marked); grants no rights.
+    if (isTelegramWebApp) {
+      try { document.cookie = "pl_client=telegram; path=/; max-age=31536000; SameSite=Lax" + (location.protocol === "https:" ? "; Secure" : ""); } catch(e) {}
+    }
     (function putNameInstant(){
       try{
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user){

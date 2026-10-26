@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
+import logging
 import sqlite3
 
 _active = ContextVar("content_transaction", default=None)
@@ -67,7 +68,8 @@ def transaction(db_path):
         return
     connection = connect(db_path)
     connection.execute("BEGIN IMMEDIATE")
-    token = _active.set((path, connection))
+    callbacks = []
+    token = _active.set((path, connection, callbacks))
     try:
         yield BorrowedConnection(connection)
         connection.commit()
@@ -77,3 +79,19 @@ def transaction(db_path):
     finally:
         _active.reset(token)
         connection.close()
+        for callback in callbacks:
+            try:
+                callback()
+            except Exception:
+                logging.getLogger(__name__).exception("after_transaction callback failed")
+
+
+def after_transaction(callback):
+    """Run callback once the current content transaction ends (commit or
+    rollback), or at once when none is open. Used for audit rows that must
+    survive a rolled-back write and must not wait on its write lock."""
+    active = _active.get()
+    if active:
+        active[2].append(callback)
+    else:
+        callback()
