@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<script>(function(){try{var t=localStorage.getItem('pl-theme');if(t!=='dark'&&t!=='light')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<title>ParallelLingvo — Администрирование</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/styles.css?v=20261021-icons-login">
+<link rel="stylesheet" href="/assets/admin/admin.css?v=20261026">
+</head>
+<body>
+<div class="pl-root adm-root">
+
+  <!-- AdminShell: one header + tab bar for all five sections -->
+  <header class="site-header adm-header">
+    <div class="container adm-header-row">
+      <a href="/" class="adm-brand">
+        <span class="adm-brand-name">ParallelLingvo</span>
+        <span class="adm-brand-sub">Администрирование</span>
+      </a>
+      <div class="adm-header-actions">
+        <span class="adm-user" id="adm-user" hidden></span>
+        <button type="button" class="theme-btn js-theme-toggle" title="Тема"><span class="js-theme-icon">☾</span></button>
+        <a class="btn btn-outline" href="/">Главная</a>
+      </div>
+    </div>
+    <nav class="container adm-tabs" id="adm-tabs" role="tablist" aria-label="Разделы администрирования" hidden>
+      <button type="button" class="adm-tab" role="tab" data-tab="general">Общее</button>
+      <button type="button" class="adm-tab" role="tab" data-tab="subscriptions">Подписки</button>
+      <button type="button" class="adm-tab" role="tab" data-tab="costs">Затраты и лимиты</button>
+      <button type="button" class="adm-tab" role="tab" data-tab="ai">ИИ</button>
+      <button type="button" class="adm-tab" role="tab" data-tab="ads">Реклама</button>
+    </nav>
+  </header>
+
+  <main class="adm-main">
+    <div id="adm-gate" class="adm-card adm-gate" role="status">Проверяю доступ администратора…</div>
+    <div id="adm-flash" class="adm-flash" role="status" aria-live="polite"></div>
+    <section class="adm-panel" data-panel="general" role="tabpanel" hidden></section>
+    <section class="adm-panel" data-panel="subscriptions" role="tabpanel" hidden></section>
+    <section class="adm-panel" data-panel="costs" role="tabpanel" hidden></section>
+    <section class="adm-panel" data-panel="ai" role="tabpanel" hidden></section>
+    <section class="adm-panel" data-panel="ads" role="tabpanel" hidden></section>
+  </main>
+
+  <div id="adm-confirm" class="adm-modal-backdrop" aria-hidden="true">
+    <div class="adm-modal" role="dialog" aria-modal="true" aria-labelledby="adm-confirm-title">
+      <h3 id="adm-confirm-title" class="adm-modal-title">Подтвердите действие</h3>
+      <div class="adm-modal-body">
+        <div id="adm-confirm-text"></div>
+        <div class="adm-modal-subject">
+          <div id="adm-confirm-subject" class="adm-modal-subject-main"></div>
+          <div id="adm-confirm-meta" class="adm-modal-subject-meta"></div>
+        </div>
+      </div>
+      <div class="adm-modal-actions">
+        <button type="button" class="adm-btn" id="adm-confirm-cancel">Отмена</button>
+        <button type="button" class="adm-btn primary" id="adm-confirm-ok">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/main.js?v=20260912a"></script>
+<script src="/assets/admin/core.js?v=20261026"></script>
+<script src="/assets/admin/tab-general.js?v=20261026"></script>
+<script src="/assets/admin/tab-subscriptions.js?v=20261026"></script>
+<script src="/assets/admin/tab-costs.js?v=20261026"></script>
+<script src="/assets/admin/tab-ai.js?v=20261026"></script>
+<script src="/assets/admin/tab-ads.js?v=20261026"></script>
+<script>PLAdmin.start();</script>
+</body>
+</html>

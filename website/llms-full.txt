@@ -87,7 +87,12 @@ Localized blog indexes and article translations exist in English and Russian:
 Articles (newest first):
 
 <!-- BLOG-LIST:START -->
-1. How the parallel learning method works — One word opens the door to several languages at once — the mechanics. https://parallellingvo.app/blog/parallel-method/
+1. Why We Forget New Words — And How to Remember Them — Why do familiar words disappear from memory when you need them most? Discover practical vocabulary learning techniques and how ParallelLingvo helps you review difficult words, practice pronunciation, and organize vocabulary across multiple languages. https://parallellingvo.app/blog/why-we-forget-new-words-and-how-to-remember-them-f50e6882/
+2. Why Do We Keep Forgetting the Same Words When Learning Languages? — Why do we keep forgetting foreign words? Discover practical ways to improve vocabulary retention, review difficult words, and learn multiple languages more effectively. https://parallellingvo.app/blog/why-do-we-keep-forgetting-the-same-words-when-learning-langu-960efac8/
+3. Why Learning Words in Context Is Better Than Memorizing Translations — Memorizing translations is only the beginning. Learn how studying words in context improves understanding, strengthens memory, and builds real communication skills. https://parallellingvo.app/blog/why-learning-words-in-context-is-better-than-memorizing-tran-3686ffa1/
+4. One Word, Multiple Languages: A Better Way to Build Multilingual Vocabulary — One concept, multiple languages. Discover how ParallelLingvo connects translations, simplifies vocabulary organization, and makes multilingual learning more efficient. https://parallellingvo.app/blog/one-word-multiple-languages-a-better-way-to-build-multilingu-932b4aad/
+5. How to Learn Multiple Languages at the Same Time Without Mixing Them Up — Can you learn several languages without mixing them up? Explore practical strategies for organizing vocabulary, comparing languages, and building lasting knowledge. https://parallellingvo.app/blog/how-to-learn-multiple-languages-at-the-same-time-without-mix-e496c345/
+6. How the parallel learning method works — One word opens the door to several languages at once — the mechanics. https://parallellingvo.app/blog/parallel-method/
 <!-- BLOG-LIST:END -->
 
 ## Brand

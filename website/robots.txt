@@ -1,43 +1,35 @@
+# Search and AI crawlers are welcome on all public content.
+# A crawler obeys only the most specific User-agent group that names it, so
+# every named crawler shares this one group (and its Disallow rules) with "*".
+#
+# OpenAI: OAI-SearchBot (search), ChatGPT-User (user retrieval), GPTBot (training, intentionally allowed)
+# Anthropic: Claude-SearchBot, Claude-User, ClaudeBot
+# Perplexity: PerplexityBot
+# Google: Googlebot (Search), Google-Extended (Gemini usage)
+# Apple: Applebot, Applebot-Extended
 User-agent: *
-Allow: /
-
-# OpenAI search and user retrieval
 User-agent: OAI-SearchBot
-Allow: /
-
 User-agent: ChatGPT-User
-Allow: /
-
-# OpenAI model-training crawler: intentionally allowed
 User-agent: GPTBot
-Allow: /
-
-# Anthropic search, user retrieval and model-development crawlers
 User-agent: Claude-SearchBot
-Allow: /
-
 User-agent: Claude-User
-Allow: /
-
 User-agent: ClaudeBot
-Allow: /
-
-# Perplexity search crawler
 User-agent: PerplexityBot
-Allow: /
-
-# Google Search and Gemini-related usage
 User-agent: Googlebot
-Allow: /
-
 User-agent: Google-Extended
-Allow: /
-
-# Apple search and foundation-model usage
 User-agent: Applebot
-Allow: /
-
 User-agent: Applebot-Extended
 Allow: /
+# Sign-in hand-offs redirect to the app and to Google/Telegram OAuth pages.
+Disallow: /auth/
+Disallow: /auth
+# "/app" only redirects to the private app (app.parallellingvo.app, noindex);
+# "$" keeps other public paths that merely start with "app" crawlable.
+Disallow: /app$
+Disallow: /app/
+# Admin panel (session-protected; robots is not access control) and API paths.
+Disallow: /admin/
+Disallow: /admin$
+Disallow: /api/
 
 Sitemap: https://parallellingvo.app/sitemap.xml

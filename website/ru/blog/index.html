@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/styles.css">
+<link rel="stylesheet" href="/assets/styles.css?v=20261021-icons-login">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -36,16 +36,18 @@
   "mainEntity": {
     "@type": "ItemList",
     "itemListElement": [
-      {"@type": "ListItem", "position": 1, "url": "https://parallellingvo.app/ru/blog/parallel-method/", "name": "Как работает метод параллельного изучения"},
-      {"@type": "ListItem", "position": 2, "url": "https://parallellingvo.app/ru/blog/vocabulary-habits/", "name": "Привычки, которые ускоряют запоминание слов"},
-      {"@type": "ListItem", "position": 3, "url": "https://parallellingvo.app/ru/blog/family-accounts/", "name": "Семейный аккаунт: учим языки вместе"},
-      {"@type": "ListItem", "position": 4, "url": "https://parallellingvo.app/ru/blog/forty-eight-languages/", "name": "48 языков в одном приложении: как мы это строим"},
-      {"@type": "ListItem", "position": 5, "url": "https://parallellingvo.app/ru/blog/spaced-repetition/", "name": "Интервальное повторение без скучных карточек"},
-      {"@type": "ListItem", "position": 6, "url": "https://parallellingvo.app/ru/blog/add-words-sources/", "name": "Источники слов: откуда берётся ваш словарь"}
+      {"@type": "ListItem", "position": 1, "url": "https://parallellingvo.app/blog/why-we-forget-new-words-and-how-to-remember-them-f50e6882/", "name": "Why We Forget New Words — And How to Remember Them"},
+      {"@type": "ListItem", "position": 2, "url": "https://parallellingvo.app/blog/why-do-we-keep-forgetting-the-same-words-when-learning-langu-960efac8/", "name": "Why Do We Keep Forgetting the Same Words When Learning Languages?"},
+      {"@type": "ListItem", "position": 3, "url": "https://parallellingvo.app/blog/why-learning-words-in-context-is-better-than-memorizing-tran-3686ffa1/", "name": "Why Learning Words in Context Is Better Than Memorizing Translations"},
+      {"@type": "ListItem", "position": 4, "url": "https://parallellingvo.app/blog/one-word-multiple-languages-a-better-way-to-build-multilingu-932b4aad/", "name": "One Word, Multiple Languages: A Better Way to Build Multilingual Vocabulary"},
+      {"@type": "ListItem", "position": 5, "url": "https://parallellingvo.app/blog/how-to-learn-multiple-languages-at-the-same-time-without-mix-e496c345/", "name": "How to Learn Multiple Languages at the Same Time Without Mixing Them Up"},
+      {"@type": "ListItem", "position": 6, "url": "https://parallellingvo.app/ru/blog/parallel-method/", "name": "Как работает метод параллельного изучения"}
     ]
   }
 }
 </script>
+<script>window.monitorAI=window.monitorAI||function(){(window.monitorAI.q=window.monitorAI.q||[]).push(arguments)};</script>
+<script async src="https://monitor.iovenko.eu/static/analytics/ma.js" data-site="ma_parallellingvo" data-api="https://monitor.iovenko.eu/api/v1/analytics/collect" data-mode="cookieless"></script>
 </head>
 <body>
 <div class="pl-root">
@@ -56,11 +58,6 @@
         <img class="js-logo" src="/assets/new-logo-full.png" alt="ParallelLingvo">
       </a>
       <button type="button" class="theme-btn js-theme-toggle" title="Переключить тему"><span class="js-theme-icon">☾</span></button>
-      <div class="social-row">
-        <a class="icon-btn" href="https://facebook.com/parallellingvo" target="_blank" rel="noopener" title="Facebook"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M14 8.5h2.5V5.3c-.43-.06-1.9-.18-3.2-.18-3.4 0-5 2.1-5 5.2v2.4H5.5V16h2.8v8h3.4v-8h3l.5-3.3h-3.5v-2c0-1 .3-2.2 2.3-2.2z" fill="currentColor"></path></svg></a>
-        <a class="icon-btn" href="https://instagram.com/parallellingvo" target="_blank" rel="noopener" title="Instagram"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8"></rect><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"></circle><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor"></circle></svg></a>
-        <a class="icon-btn" href="https://t.me/parallellingvo" target="_blank" rel="noopener" title="Telegram"><svg width="15" height="15" viewBox="0 0 240 240"><circle cx="120" cy="120" r="120" fill="#229ED9"></circle><path fill="#fff" d="M54 118l125-48c6-2 11 1 9 10l-21 100c-2 8-7 10-14 6l-38-28-18 17c-2 2-4 4-8 4l3-40 74-67c3-3-1-5-5-2l-91 57-39-12c-8-3-8-9 2-13z"></path></svg></a>
-      </div>
       <div class="lang-wrap">
         <button type="button" class="lang-btn" data-toggle="lang-menu">🌐 RU <span style="font-size:9px;color:#8A7A9E;">▾</span></button>
         <div id="lang-menu" class="lang-menu-small" data-menu hidden>
@@ -68,18 +65,27 @@
           <a class="dropdown-item link" href="https://parallellingvo.app/blog/">English</a>
         </div>
       </div>
+      <button type="button" class="mobile-menu-btn" aria-label="Меню" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+      <div class="site-header-collapsible">
+      <div class="social-row">
+        <a class="icon-btn" href="https://facebook.com/parallellingvo" target="_blank" rel="noopener" title="Facebook"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M14 8.5h2.5V5.3c-.43-.06-1.9-.18-3.2-.18-3.4 0-5 2.1-5 5.2v2.4H5.5V16h2.8v8h3.4v-8h3l.5-3.3h-3.5v-2c0-1 .3-2.2 2.3-2.2z" fill="currentColor"></path></svg></a>
+        <a class="icon-btn" href="https://instagram.com/parallel_lingvo" target="_blank" rel="noopener" title="Instagram"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8"></rect><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"></circle><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor"></circle></svg></a>
+        <a class="icon-btn" href="https://t.me/parallellingvo" target="_blank" rel="noopener" title="Telegram"><svg width="15" height="15" viewBox="0 0 240 240"><circle cx="120" cy="120" r="120" fill="#229ED9"></circle><path fill="#fff" d="M54 118l125-48c6-2 11 1 9 10l-21 100c-2 8-7 10-14 6l-38-28-18 17c-2 2-4 4-8 4l3-40 74-67c3-3-1-5-5-2l-91 57-39-12c-8-3-8-9 2-13z"></path></svg></a>
+      </div>
+      <div class="lang-wrap-placeholder"></div>
       <nav class="main-nav blog-nav">
         <a href="https://parallellingvo.app/ru/" style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>На главную</a>
         <a href="https://parallellingvo.app/ru/blog/">Blog</a>
         <div class="dropdown">
           <button type="button" class="btn btn-purple" style="padding:9px 16px;font-size:13.5px;" data-toggle="signup-menu">Зарегистрироваться <span class="caret">▾</span></button>
           <div id="signup-menu" class="dropdown-panel top-right" data-menu hidden>
-            <a class="dropdown-item link" href="https://parallellingvo.app/auth"><svg width="15" height="15" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.07 5.07 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"></path><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.85A11 11 0 0 0 12 23z"></path><path fill="#FBBC05" d="M5.84 14.09A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.43.34-2.09V7.06H2.18A11 11 0 0 0 1 12c0 1.77.43 3.45 1.18 4.94z"></path><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1a11 11 0 0 0-9.82 6.06l3.66 2.85C6.71 7.31 9.14 5.38 12 5.38z"></path></svg>Через Google</a>
-            <a class="dropdown-item link" href="https://parallellingvo.app/auth"><svg width="15" height="15" viewBox="0 0 240 240"><circle cx="120" cy="120" r="120" fill="#229ED9"></circle><path fill="#fff" d="M54 118l125-48c6-2 11 1 9 10l-21 100c-2 8-7 10-14 6l-38-28-18 17c-2 2-4 4-8 4l3-40 74-67c3-3-1-5-5-2l-91 57-39-12c-8-3-8-9 2-13z"></path></svg>Через Telegram</a>
-            <a class="dropdown-item link" href="https://parallellingvo.app/auth"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2.5" stroke="#5D12C7" stroke-width="1.8"></rect><path d="M3 6l9 7 9-7" stroke="#5D12C7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>Через почту</a>
+            <a class="dropdown-item link js-google-login" href="/auth/google" data-next="/upload" rel="nofollow"><svg width="15" height="15" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.07 5.07 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"></path><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.85A11 11 0 0 0 12 23z"></path><path fill="#FBBC05" d="M5.84 14.09A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.43.34-2.09V7.06H2.18A11 11 0 0 0 1 12c0 1.77.43 3.45 1.18 4.94z"></path><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1a11 11 0 0 0-9.82 6.06l3.66 2.85C6.71 7.31 9.14 5.38 12 5.38z"></path></svg>Через Google</a>
+            <a class="dropdown-item link js-telegram-login" href="/auth/telegram" data-next="/upload" rel="nofollow"><svg width="15" height="15" viewBox="0 0 240 240"><circle cx="120" cy="120" r="120" fill="#229ED9"></circle><path fill="#fff" d="M54 118l125-48c6-2 11 1 9 10l-21 100c-2 8-7 10-14 6l-38-28-18 17c-2 2-4 4-8 4l3-40 74-67c3-3-1-5-5-2l-91 57-39-12c-8-3-8-9 2-13z"></path></svg>Через Telegram</a>
+            <a class="dropdown-item link" href="https://app.parallellingvo.app/" rel="nofollow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2.5" stroke="#5D12C7" stroke-width="1.8"></rect><path d="M3 6l9 7 9-7" stroke="#5D12C7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>Через почту</a>
           </div>
         </div>
       </nav>
+      </div>
     </div>
   </header>
 
@@ -100,7 +106,16 @@
 
     <div class="tag-row js-blog-tags"></div>
 
-    <div class="article-grid js-blog-grid"></div>
+    <div class="article-grid js-blog-grid">
+<!-- BLOG-INDEX:START -->
+      <a class="article-card" href="https://parallellingvo.app/blog/why-we-forget-new-words-and-how-to-remember-them-f50e6882/"><img src="/assets/blog/why-we-forget-new-words-and-how-to-remember-them-f50e6882-5a104f84f6cf1536.png" alt="Изображение статьи" loading="lazy"><div class="article-card-body"><div class="article-cat">Vocabulary</div><h2>Why We Forget New Words — And How to Remember Them</h2><p>Why do familiar words disappear from memory when you need them most? Discover practical vocabulary learning techniques and how ParallelLingvo helps you review difficult words, practice pronunciation, and organize vocabulary across multiple languages.</p><div class="article-meta"><span>17 окт. 2026 г.</span><span>·</span><span>3 мин чтения</span></div></div></a>
+      <a class="article-card" href="https://parallellingvo.app/blog/why-do-we-keep-forgetting-the-same-words-when-learning-langu-960efac8/"><img src="/assets/blog/why-do-we-keep-forgetting-the-same-words-when-learning-langu-960efac8-3db209b7ef9f96a5.png" alt="Изображение статьи" loading="lazy"><div class="article-card-body"><div class="article-cat">Vocabulary</div><h2>Why Do We Keep Forgetting the Same Words When Learning Languages?</h2><p>Why do we keep forgetting foreign words? Discover practical ways to improve vocabulary retention, review difficult words, and learn multiple languages more effectively.</p><div class="article-meta"><span>14 окт. 2026 г.</span><span>·</span><span>3 мин чтения</span></div></div></a>
+      <a class="article-card" href="https://parallellingvo.app/blog/why-learning-words-in-context-is-better-than-memorizing-tran-3686ffa1/"><img src="/assets/blog/why-learning-words-in-context-is-better-than-memorizing-tran-3686ffa1-f36381fb982a8f5d.png" alt="Изображение статьи" loading="lazy"><div class="article-card-body"><div class="article-cat">Vocabulary</div><h2>Why Learning Words in Context Is Better Than Memorizing Translations</h2><p>Memorizing translations is only the beginning. Learn how studying words in context improves understanding, strengthens memory, and builds real communication skills.</p><div class="article-meta"><span>9 окт. 2026 г.</span><span>·</span><span>3 мин чтения</span></div></div></a>
+      <a class="article-card" href="https://parallellingvo.app/blog/one-word-multiple-languages-a-better-way-to-build-multilingu-932b4aad/"><img src="/assets/blog/one-word-multiple-languages-a-better-way-to-build-multilingu-932b4aad.png" alt="Изображение статьи" loading="lazy"><div class="article-card-body"><div class="article-cat">Vocabulary</div><h2>One Word, Multiple Languages: A Better Way to Build Multilingual Vocabulary</h2><p>One concept, multiple languages. Discover how ParallelLingvo connects translations, simplifies vocabulary organization, and makes multilingual learning more efficient.</p><div class="article-meta"><span>5 окт. 2026 г.</span><span>·</span><span>3 мин чтения</span></div></div></a>
+      <a class="article-card" href="https://parallellingvo.app/blog/how-to-learn-multiple-languages-at-the-same-time-without-mix-e496c345/"><img src="/assets/blog/how-to-learn-multiple-languages-at-the-same-time-without-mix-e496c345.png" alt="Изображение статьи" loading="lazy"><div class="article-card-body"><div class="article-cat">Tips</div><h2>How to Learn Multiple Languages at the Same Time Without Mixing Them Up</h2><p>Can you learn several languages without mixing them up? Explore practical strategies for organizing vocabulary, comparing languages, and building lasting knowledge.</p><div class="article-meta"><span>28 сент. 2026 г.</span><span>·</span><span>5 мин чтения</span></div></div></a>
+      <a class="article-card" href="https://parallellingvo.app/ru/blog/parallel-method/"><img src="/assets/blog/parallel-method-70976c2bc84f5e43.png" alt="Изображение статьи" loading="lazy"><div class="article-card-body"><div class="article-cat">Языки</div><h2>Как работает метод параллельного изучения</h2><p>Одно слово открывает дверь сразу в несколько языков — разбираем механику.</p><div class="article-meta"><span>11 сент. 2026 г.</span><span>·</span><span>6 мин чтения</span></div></div></a>
+<!-- BLOG-INDEX:END -->
+    </div>
     <div class="empty-state js-blog-empty" hidden>
       <p>Ничего не найдено</p>
       <p>Попробуйте изменить запрос или снять фильтр по тегам.</p>
@@ -116,7 +131,7 @@
         <a class="cta" href="https://parallellingvo.app/ru/#signup">Попробовать<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
       </div>
       <div class="qrs">
-        <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=104x104&bgcolor=ffffff&color=17092B&data=https://instagram.com/parallellingvo" alt="QR Instagram"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8"></rect><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"></circle><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor"></circle></svg>Instagram</span></div>
+        <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=104x104&bgcolor=ffffff&color=17092B&data=https://instagram.com/parallel_lingvo" alt="QR Instagram"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8"></rect><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"></circle><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor"></circle></svg>Instagram</span></div>
         <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=104x104&bgcolor=ffffff&color=17092B&data=https://t.me/parallellingvo" alt="QR Telegram"><span><svg width="13" height="13" viewBox="0 0 240 240"><circle cx="120" cy="120" r="120" fill="#229ED9"></circle><path fill="#fff" d="M54 118l125-48c6-2 11 1 9 10l-21 100c-2 8-7 10-14 6l-38-28-18 17c-2 2-4 4-8 4l3-40 74-67c3-3-1-5-5-2l-91 57-39-12c-8-3-8-9 2-13z"></path></svg>Telegram</span></div>
         <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=104x104&bgcolor=ffffff&color=17092B&data=https://facebook.com/parallellingvo" alt="QR Facebook"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M14 8.5h2.5V5.3c-.43-.06-1.9-.18-3.2-.18-3.4 0-5 2.1-5 5.2v2.4H5.5V16h2.8v8h3.4v-8h3l.5-3.3h-3.5v-2c0-1 .3-2.2 2.3-2.2z" fill="currentColor"></path></svg>Facebook</span></div>
       </div>
@@ -144,9 +159,15 @@
           <a href="https://parallellingvo.app/ru/#faq">FAQ</a>
         </div>
         <div class="footer-col">
+          <div class="footer-col-title">Документы</div>
+          <a href="https://parallellingvo.app/privacy/">Privacy Policy</a>
+          <a href="https://parallellingvo.app/terms/">Terms of Service</a>
+        </div>
+        <div class="footer-col">
           <div class="footer-col-title">Мы в соцсетях</div>
+          <a href="mailto:info@parallellingvo.app">info@parallellingvo.app</a>
           <a href="https://facebook.com/parallellingvo" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M14 8.5h2.5V5.3c-.43-.06-1.9-.18-3.2-.18-3.4 0-5 2.1-5 5.2v2.4H5.5V16h2.8v8h3.4v-8h3l.5-3.3h-3.5v-2c0-1 .3-2.2 2.3-2.2z" fill="currentColor"></path></svg>Facebook</a>
-          <a href="https://instagram.com/parallellingvo" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8"></rect><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"></circle><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor"></circle></svg>Instagram</a>
+          <a href="https://instagram.com/parallel_lingvo" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8"></rect><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"></circle><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor"></circle></svg>Instagram</a>
           <a href="https://t.me/parallellingvo" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 240 240"><circle cx="120" cy="120" r="120" fill="#229ED9"></circle><path fill="#fff" d="M54 118l125-48c6-2 11 1 9 10l-21 100c-2 8-7 10-14 6l-38-28-18 17c-2 2-4 4-8 4l3-40 74-67c3-3-1-5-5-2l-91 57-39-12c-8-3-8-9 2-13z"></path></svg>Telegram</a>
         </div>
       </div>
@@ -155,7 +176,7 @@
   </footer>
 </div>
 
-<script src="/assets/main.js"></script>
-<script src="/assets/blog.js"></script>
+<script src="/assets/main.js?v=20260912a"></script>
+<script src="/assets/blog.js?v=20260929a"></script>
 </body>
 </html>
